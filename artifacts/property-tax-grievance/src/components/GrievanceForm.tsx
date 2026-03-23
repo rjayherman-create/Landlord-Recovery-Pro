@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateGrievance, useUpdateGrievance } from "@/hooks/use-grievances";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, CheckCircle2, AlertTriangle, Info, Sparkles } from "lucide-react";
+import { Search, Loader2, CheckCircle2, AlertTriangle, Info, Sparkles, LocateFixed } from "lucide-react";
 import type { Grievance } from "@workspace/api-client-react";
 import { PropertyRecordCard } from "@/components/PropertyRecordCard";
 import type { LookupResult } from "@/components/PropertyRecordCard";
@@ -98,6 +98,7 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
   // Lookup state
   const [lookupAddress, setLookupAddress] = useState("");
   const [isLookingUp, setIsLookingUp] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
   const [lookupResult, setLookupResult] = useState<LookupResult | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
@@ -135,43 +136,49 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
         },
   });
 
+  /* ── setValue helper — always forces re-render ── */
+  const setField = <K extends keyof GrievanceFormValues>(
+    field: K,
+    value: GrievanceFormValues[K],
+  ) => form.setValue(field, value, { shouldDirty: true, shouldTouch: true, shouldValidate: false });
+
   /* ── Property lookup ── */
-  const handleLookup = async () => {
-    if (!lookupAddress.trim()) return;
+  const runLookup = async (addr: string) => {
+    const trimmed = addr.trim();
+    if (!trimmed) return;
     setIsLookingUp(true);
     setLookupError(null);
     setLookupResult(null);
 
     try {
       const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-      const res = await fetch(`${BASE}/api/property-lookup?address=${encodeURIComponent(lookupAddress)}`);
+      const res = await fetch(`${BASE}/api/property-lookup?address=${encodeURIComponent(trimmed)}`);
       const data = await res.json();
 
       if (!res.ok) {
-        setLookupError(data.error || "Lookup failed. Please enter details manually.");
+        setLookupError(data.error || "Address not found. Try including your town and state — e.g. '123 Main St, Garden City, NY'.");
         return;
       }
 
       const result = data as LookupResult;
       setLookupResult(result);
 
-      // Auto-fill form fields
+      // Auto-fill form fields — { shouldDirty: true } forces Select/Input re-renders
       const filled = new Set<string>();
-      if (result.county) { form.setValue("county", result.county); filled.add("county"); }
-      if (result.municipality) { form.setValue("municipality", result.municipality); filled.add("municipality"); }
-      if (result.schoolDistrict) { form.setValue("schoolDistrict", result.schoolDistrict); filled.add("schoolDistrict"); }
-      if (result.parcelId) { form.setValue("parcelId", result.parcelId); filled.add("parcelId"); }
-      if (result.propertyClass) { form.setValue("propertyClass", result.propertyClass); filled.add("propertyClass"); }
-      if (result.yearBuilt) { form.setValue("yearBuilt", result.yearBuilt); filled.add("yearBuilt"); }
-      if (result.livingArea) { form.setValue("livingArea", result.livingArea); filled.add("livingArea"); }
-      if (result.lotSize) { form.setValue("lotSize", result.lotSize); filled.add("lotSize"); }
-      if (result.estimatedMarketValue) { form.setValue("estimatedMarketValue", result.estimatedMarketValue); filled.add("estimatedMarketValue"); }
 
-      // Auto-fill address if blank
-      if (!form.getValues("propertyAddress")) {
-        form.setValue("propertyAddress", lookupAddress);
-        filled.add("propertyAddress");
-      }
+      if (result.county) { setField("county", result.county); filled.add("county"); }
+      if (result.municipality) { setField("municipality", result.municipality); filled.add("municipality"); }
+      if (result.schoolDistrict) { setField("schoolDistrict", result.schoolDistrict); filled.add("schoolDistrict"); }
+      if (result.parcelId) { setField("parcelId", result.parcelId); filled.add("parcelId"); }
+      if (result.propertyClass) { setField("propertyClass", result.propertyClass); filled.add("propertyClass"); }
+      if (result.yearBuilt) { setField("yearBuilt", result.yearBuilt); filled.add("yearBuilt"); }
+      if (result.livingArea) { setField("livingArea", result.livingArea); filled.add("livingArea"); }
+      if (result.lotSize) { setField("lotSize", result.lotSize); filled.add("lotSize"); }
+      if (result.estimatedMarketValue) { setField("estimatedMarketValue", result.estimatedMarketValue); filled.add("estimatedMarketValue"); }
+
+      // Always fill in property address from what was looked up
+      setField("propertyAddress", trimmed);
+      filled.add("propertyAddress");
 
       setAutoFilledFields(filled);
 
@@ -180,6 +187,50 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
     } finally {
       setIsLookingUp(false);
     }
+  };
+
+  const handleLookup = () => runLookup(lookupAddress);
+
+  /* ── Use device location ── */
+  const handleUseLocation = () => {
+    if (!navigator.geolocation) {
+      setLookupError("Location access is not supported by this browser.");
+      return;
+    }
+    setIsLocating(true);
+    setLookupError(null);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+          const res = await fetch(`${BASE}/api/reverse-geocode?lat=${latitude}&lon=${longitude}`);
+          const data = await res.json();
+          if (!res.ok) {
+            setLookupError(data.error || "Could not determine your address. Please type it manually.");
+            setIsLocating(false);
+            return;
+          }
+          const addr = data.formattedAddress as string;
+          setLookupAddress(addr);
+          setIsLocating(false);
+          // Automatically run the lookup with the detected address
+          await runLookup(addr);
+        } catch {
+          setLookupError("Could not determine your address. Please type it manually.");
+          setIsLocating(false);
+        }
+      },
+      (err) => {
+        setIsLocating(false);
+        if (err.code === err.PERMISSION_DENIED) {
+          setLookupError("Location access was denied. Please type your address or allow location in your browser settings.");
+        } else {
+          setLookupError("Could not get your location. Please type your address manually.");
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   };
 
   const isAutoFilled = (field: string) => autoFilledFields.has(field);
@@ -223,25 +274,42 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
           <span className="text-sm font-semibold text-primary">Auto-fill from Public Records</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          Enter the property address and we'll look up county, municipality, year built, living area, and more from public tax records. You can edit anything afterwards.
+          Tap <strong>Use My Current Location</strong> to detect your property address automatically, or type it below. We'll pull county, municipality, year built, living area, and more from public records — all editable.
         </p>
-        <div className="flex gap-2">
-          <Input
-            placeholder="123 Main St, Garden City, NY 11530"
-            value={lookupAddress}
-            onChange={(e) => setLookupAddress(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleLookup())}
-            className="flex-1 bg-white"
-          />
+        <div className="flex flex-col gap-2">
+          <div className="flex gap-2">
+            <Input
+              placeholder="123 Main St, Garden City, NY 11530"
+              value={lookupAddress}
+              onChange={(e) => setLookupAddress(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleLookup())}
+              className="flex-1 bg-white"
+              autoComplete="street-address"
+              inputMode="text"
+            />
+            <Button
+              type="button"
+              onClick={handleLookup}
+              disabled={isLookingUp || isLocating || !lookupAddress.trim()}
+              className="gap-2 shrink-0"
+            >
+              {isLookingUp
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Looking up…</>
+                : <><Search className="w-4 h-4" /> Look Up</>
+              }
+            </Button>
+          </div>
           <Button
             type="button"
-            onClick={handleLookup}
-            disabled={isLookingUp || !lookupAddress.trim()}
-            className="gap-2 shrink-0"
+            variant="outline"
+            size="sm"
+            onClick={handleUseLocation}
+            disabled={isLocating || isLookingUp}
+            className="gap-2 w-full border-primary/30 text-primary hover:bg-primary/5"
           >
-            {isLookingUp
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Looking up…</>
-              : <><Search className="w-4 h-4" /> Look Up</>
+            {isLocating
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Detecting your location…</>
+              : <><LocateFixed className="w-4 h-4" /> Use My Current Location</>
             }
           </Button>
         </div>
