@@ -1,15 +1,20 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: NY Property Tax Grievance Assistant API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: grievances
+    description: Property tax grievance operations
+  - name: comparables
+    description: Comparable property sales operations
+  - name: counties
+    description: County-specific information
 paths:
   /healthz:
     get:
@@ -24,6 +29,177 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /grievances:
+    get:
+      operationId: listGrievances
+      tags: [grievances]
+      summary: List all grievances
+      description: Returns all saved grievance cases for the user session
+      responses:
+        "200":
+          description: List of grievances
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Grievance"
+    post:
+      operationId: createGrievance
+      tags: [grievances]
+      summary: Create a new grievance
+      description: Creates a new property tax grievance case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGrievanceRequest"
+      responses:
+        "201":
+          description: Created grievance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Grievance"
+
+  /grievances/{id}:
+    get:
+      operationId: getGrievance
+      tags: [grievances]
+      summary: Get a grievance by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Grievance details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Grievance"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateGrievance
+      tags: [grievances]
+      summary: Update a grievance
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGrievanceRequest"
+      responses:
+        "200":
+          description: Updated grievance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Grievance"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteGrievance
+      tags: [grievances]
+      summary: Delete a grievance
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /comparables:
+    get:
+      operationId: listComparables
+      tags: [comparables]
+      summary: List comparables for a grievance
+      parameters:
+        - name: grievanceId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of comparable sales
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Comparable"
+    post:
+      operationId: addComparable
+      tags: [comparables]
+      summary: Add a comparable sale
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateComparableRequest"
+      responses:
+        "201":
+          description: Created comparable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comparable"
+
+  /comparables/{id}:
+    delete:
+      operationId: deleteComparable
+      tags: [comparables]
+      summary: Delete a comparable
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /counties:
+    get:
+      operationId: listCounties
+      tags: [counties]
+      summary: List all supported NY counties
+      description: Returns all supported NY counties with filing information
+      responses:
+        "200":
+          description: List of counties
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/County"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +210,235 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - error
+        - message
+
+    Grievance:
+      type: object
+      properties:
+        id:
+          type: integer
+        ownerName:
+          type: string
+        propertyAddress:
+          type: string
+        county:
+          type: string
+        municipality:
+          type: string
+        taxYear:
+          type: integer
+        currentAssessment:
+          type: number
+        equalizationRate:
+          type: number
+        estimatedMarketValue:
+          type: number
+        requestedAssessment:
+          type: number
+        status:
+          type: string
+          enum: [draft, submitted, pending, reduced, denied]
+        filingDeadline:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - ownerName
+        - propertyAddress
+        - county
+        - municipality
+        - taxYear
+        - currentAssessment
+        - estimatedMarketValue
+        - requestedAssessment
+        - status
+        - createdAt
+        - updatedAt
+
+    CreateGrievanceRequest:
+      type: object
+      properties:
+        ownerName:
+          type: string
+        propertyAddress:
+          type: string
+        county:
+          type: string
+        municipality:
+          type: string
+        taxYear:
+          type: integer
+        currentAssessment:
+          type: number
+        equalizationRate:
+          type: number
+        estimatedMarketValue:
+          type: number
+        requestedAssessment:
+          type: number
+        filingDeadline:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - ownerName
+        - propertyAddress
+        - county
+        - municipality
+        - taxYear
+        - currentAssessment
+        - estimatedMarketValue
+        - requestedAssessment
+
+    UpdateGrievanceRequest:
+      type: object
+      properties:
+        ownerName:
+          type: string
+        propertyAddress:
+          type: string
+        county:
+          type: string
+        municipality:
+          type: string
+        taxYear:
+          type: integer
+        currentAssessment:
+          type: number
+        equalizationRate:
+          type: number
+        estimatedMarketValue:
+          type: number
+        requestedAssessment:
+          type: number
+        status:
+          type: string
+          enum: [draft, submitted, pending, reduced, denied]
+        filingDeadline:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    Comparable:
+      type: object
+      properties:
+        id:
+          type: integer
+        grievanceId:
+          type: integer
+        address:
+          type: string
+        salePrice:
+          type: number
+        saleDate:
+          type: string
+        squareFeet:
+          type: number
+          nullable: true
+        bedrooms:
+          type: integer
+          nullable: true
+        bathrooms:
+          type: number
+          nullable: true
+        assessedValue:
+          type: number
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+      required:
+        - id
+        - grievanceId
+        - address
+        - salePrice
+        - saleDate
+        - createdAt
+
+    CreateComparableRequest:
+      type: object
+      properties:
+        grievanceId:
+          type: integer
+        address:
+          type: string
+        salePrice:
+          type: number
+        saleDate:
+          type: string
+        squareFeet:
+          type: number
+          nullable: true
+        bedrooms:
+          type: integer
+          nullable: true
+        bathrooms:
+          type: number
+          nullable: true
+        assessedValue:
+          type: number
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - grievanceId
+        - address
+        - salePrice
+        - saleDate
+
+    County:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        region:
+          type: string
+        filingPortal:
+          type: string
+          nullable: true
+        formRequired:
+          type: string
+        grievanceDay:
+          type: string
+          nullable: true
+        deadline:
+          type: string
+          nullable: true
+        notes:
+          type: string
+        municipalities:
+          type: array
+          items:
+            type: string
+      required:
+        - id
+        - name
+        - region
+        - formRequired
+        - notes
+        - municipalities

@@ -1,0 +1,19 @@
+packages:
+  "framer-motion": "Animations and page transitions for premium feel"
+  "react-hook-form": "Form state management"
+  "@hookform/resolvers": "Zod validation for forms"
+  "date-fns": "Date formatting for deadlines and sale dates"
+  "clsx": "Classname utility"
+  "tailwind-merge": "Classname merging utility"
+
+images:
+  - path: "artifacts/property-tax-grievance/public/images/logo-icon.png"
+    description: "A minimal, modern, trustworthy geometric logo icon combining a house silhouette and a subtle scales of justice or checkmark, flat vector style, deep navy blue and gold colors, transparent background"
+    aspect_ratio: "1:1"
+  - path: "artifacts/property-tax-grievance/public/images/hero-bg.png"
+    description: "Abstract, very subtle and faded background pattern featuring elegant architectural line drawings and blueprint elements of suburban homes, monochromatic light slate gray, high key, plenty of negative space"
+    aspect_ratio: "16:9"
+
+notes:
+  - Using generated hooks from @workspace/api-client-react but wrapping them in local hooks for query invalidation.
+  - Forms use Zod for validation to match the generated OpenAPI schema types.

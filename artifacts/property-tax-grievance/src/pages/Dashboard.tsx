@@ -1,0 +1,173 @@
+import { Link } from "wouter";
+import { useGrievances } from "@/hooks/use-grievances";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { GrievanceForm } from "@/components/GrievanceForm";
+import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck } from "lucide-react";
+import { useState } from "react";
+import { format } from "date-fns";
+
+const STATUS_COLORS = {
+  draft: "bg-slate-100 text-slate-700 border-slate-200",
+  submitted: "bg-blue-50 text-blue-700 border-blue-200",
+  pending: "bg-amber-50 text-amber-700 border-amber-200",
+  reduced: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  denied: "bg-red-50 text-red-700 border-red-200",
+};
+
+export function Dashboard() {
+  const { data: grievances, isLoading } = useGrievances();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const totalCases = grievances?.length || 0;
+  const reducedCases = grievances?.filter(g => g.status === 'reduced').length || 0;
+
+  return (
+    <AppLayout>
+      <div className="space-y-8">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-primary text-primary-foreground p-8 md:p-12 shadow-xl shadow-primary/10">
+          <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
+            <img 
+              src={`${import.meta.env.BASE_URL}images/hero-bg.png`} 
+              alt="Decorative background" 
+              className="w-full h-full object-cover"
+            />
+          </div>
+          
+          <div className="relative z-10 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm font-medium mb-6 backdrop-blur-sm">
+              <ShieldCheck className="w-4 h-4 text-accent" />
+              <span>File your own grievance and save 50% commission</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4 leading-tight">
+              Take Control of Your <br/><span className="text-accent">Property Taxes</span>
+            </h1>
+            <p className="text-lg text-primary-foreground/80 mb-8 max-w-xl leading-relaxed">
+              Filing a grievance is your legal right and cannot increase your taxes. Build your case, track comparables, and submit with confidence.
+            </p>
+            
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold px-8 shadow-lg shadow-black/20 hover:-translate-y-0.5 transition-transform">
+                  <Plus className="w-5 h-5 mr-2" />
+                  Start New Case
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="font-serif text-2xl">Create New Grievance Case</DialogTitle>
+                  <DialogDescription>
+                    Enter the basic details from your Notice of Tentative Assessment.
+                  </DialogDescription>
+                </DialogHeader>
+                <GrievanceForm onSuccess={() => setIsDialogOpen(false)} />
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Stats Row */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm flex items-start gap-4">
+            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Active Cases</p>
+              <h3 className="text-3xl font-bold font-serif">{totalCases}</h3>
+            </div>
+          </div>
+          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm flex items-start gap-4">
+            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
+              <TrendingDown className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Successful Reductions</p>
+              <h3 className="text-3xl font-bold font-serif">{reducedCases}</h3>
+            </div>
+          </div>
+          <div className="bg-card p-6 rounded-2xl border border-border shadow-sm flex items-start gap-4">
+            <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
+              <Clock className="w-6 h-6" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Upcoming Deadlines</p>
+              <h3 className="text-3xl font-bold font-serif">
+                {grievances?.filter(g => g.filingDeadline && new Date(g.filingDeadline) > new Date()).length || 0}
+              </h3>
+            </div>
+          </div>
+        </div>
+
+        {/* Case List */}
+        <div>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-serif font-bold text-foreground">Your Cases</h2>
+          </div>
+
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2].map(i => (
+                <div key={i} className="h-48 bg-secondary/50 animate-pulse rounded-2xl border border-border"></div>
+              ))}
+            </div>
+          ) : grievances?.length === 0 ? (
+            <div className="text-center py-16 bg-card rounded-2xl border border-border border-dashed">
+              <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No cases yet</h3>
+              <p className="text-muted-foreground max-w-sm mx-auto mb-6">
+                Start by creating a grievance case for your property to begin tracking assessment details and comparables.
+              </p>
+              <Button onClick={() => setIsDialogOpen(true)} variant="outline" className="font-medium">
+                Create First Case
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {grievances?.map((g) => (
+                <Link key={g.id} href={`/grievances/${g.id}`}>
+                  <div className="group bg-card p-6 rounded-2xl border border-border shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300 cursor-pointer flex flex-col h-full">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-bold text-lg text-foreground group-hover:text-primary transition-colors line-clamp-1">
+                          {g.propertyAddress}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">{g.municipality}, {g.county} County</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border uppercase tracking-wider ${STATUS_COLORS[g.status as keyof typeof STATUS_COLORS]}`}>
+                        {g.status}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 my-4 bg-secondary/30 p-4 rounded-xl">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Current Assessment</p>
+                        <p className="font-semibold">${g.currentAssessment.toLocaleString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Requested</p>
+                        <p className="font-semibold text-emerald-600">${g.requestedAssessment.toLocaleString()}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-auto flex items-center justify-between pt-4 border-t border-border/50">
+                      <div className="text-sm text-muted-foreground flex items-center gap-1.5">
+                        <Clock className="w-4 h-4" />
+                        {g.filingDeadline ? format(new Date(g.filingDeadline), 'MMM d, yyyy') : 'No deadline set'}
+                      </div>
+                      <div className="text-primary font-medium text-sm flex items-center group-hover:translate-x-1 transition-transform">
+                        Manage Case <ArrowRight className="w-4 h-4 ml-1" />
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </AppLayout>
+  );
+}

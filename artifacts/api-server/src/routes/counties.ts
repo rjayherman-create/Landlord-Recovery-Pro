@@ -1,0 +1,111 @@
+import { Router, type IRouter } from "express";
+
+const router: IRouter = Router();
+
+const counties = [
+  {
+    id: "nassau",
+    name: "Nassau County",
+    region: "Long Island",
+    filingPortal: "https://www.nassaucountyny.gov/agencies/Assessor/ARBReview.html",
+    formRequired: "AR-1 (online via AROW portal)",
+    grievanceDay: null,
+    deadline: "March 1 (tentative)",
+    notes: "Nassau uses the Assessment Review on the Web (AROW) portal. It is highly automated with a built-in Sales Locator tool for finding comparable sales. ~80% success rate in 2024.",
+    municipalities: ["Hempstead", "North Hempstead", "Oyster Bay"],
+  },
+  {
+    id: "suffolk-islip",
+    name: "Town of Islip (Suffolk County)",
+    region: "Long Island",
+    filingPortal: "https://www.islipny.gov/departments/assessor",
+    formRequired: "RP-524",
+    grievanceDay: "3rd Tuesday in May",
+    deadline: "3rd Tuesday in May",
+    notes: "Suffolk County filing is done at the town level. You must file Form RP-524 with your specific Town Assessor's office.",
+    municipalities: ["Bay Shore", "Brentwood", "Central Islip", "East Islip", "West Islip", "Bohemia", "Holbrook"],
+  },
+  {
+    id: "suffolk-huntington",
+    name: "Town of Huntington (Suffolk County)",
+    region: "Long Island",
+    filingPortal: "https://www.huntingtonny.gov/content/1434/1497/default.aspx",
+    formRequired: "RP-524",
+    grievanceDay: "3rd Tuesday in May",
+    deadline: "3rd Tuesday in May",
+    notes: "File Form RP-524 with the Town of Huntington Assessor. Bring comparable sales evidence to the BAR hearing.",
+    municipalities: ["Huntington", "Huntington Station", "Melville", "Dix Hills", "Cold Spring Harbor", "Centerport"],
+  },
+  {
+    id: "suffolk-brookhaven",
+    name: "Town of Brookhaven (Suffolk County)",
+    region: "Long Island",
+    filingPortal: "https://www.brookhavenny.gov/Government/Departments/Assessor",
+    formRequired: "RP-524",
+    grievanceDay: "3rd Tuesday in May",
+    deadline: "3rd Tuesday in May",
+    notes: "File Form RP-524 with the Town of Brookhaven Assessor. The BAR meets on Grievance Day.",
+    municipalities: ["Coram", "Medford", "Port Jefferson", "Stony Brook", "Patchogue", "Bellport", "East Patchogue"],
+  },
+  {
+    id: "suffolk-smithtown",
+    name: "Town of Smithtown (Suffolk County)",
+    region: "Long Island",
+    filingPortal: "https://www.smithtownny.gov/152/Assessor",
+    formRequired: "RP-524",
+    grievanceDay: "3rd Tuesday in May",
+    deadline: "3rd Tuesday in May",
+    notes: "File Form RP-524 with the Town of Smithtown Assessor.",
+    municipalities: ["Smithtown", "Kings Park", "Saint James", "Nesconset", "Commack"],
+  },
+  {
+    id: "nyc-class1",
+    name: "New York City (Class 1)",
+    region: "New York City",
+    filingPortal: "https://www.nyc.gov/site/taxcommission/index.page",
+    formRequired: "NYC Tax Commission Application (TC101/TC201)",
+    grievanceDay: null,
+    deadline: "March 15",
+    notes: "NYC residents must use the NYC Tax Commission portal for Class 1 properties (1-3 family homes). File by March 15 each year.",
+    municipalities: ["Manhattan", "Brooklyn", "Queens", "The Bronx", "Staten Island"],
+  },
+  {
+    id: "westchester",
+    name: "Westchester County",
+    region: "Westchester / Hudson Valley",
+    filingPortal: null,
+    formRequired: "RP-524",
+    grievanceDay: "4th Tuesday in May",
+    deadline: "4th Tuesday in May",
+    notes: "Westchester municipalities follow the state-standard Form RP-524, filed by Grievance Day (often 4th Tuesday in May). File with your local Town Assessor.",
+    municipalities: ["Yonkers", "Mount Vernon", "White Plains", "New Rochelle", "Scarsdale", "Harrison", "Rye", "Mamaroneck", "Tarrytown"],
+  },
+  {
+    id: "rockland",
+    name: "Rockland County",
+    region: "Westchester / Hudson Valley",
+    filingPortal: null,
+    formRequired: "RP-524",
+    grievanceDay: "4th Tuesday in May",
+    deadline: "4th Tuesday in May",
+    notes: "Follow the state-standard RP-524 process, filed with your local Town Assessor by Grievance Day.",
+    municipalities: ["Clarkstown", "Ramapo", "Orangetown", "Haverstraw", "Stony Point"],
+  },
+  {
+    id: "upstate",
+    name: "Upstate NY (General)",
+    region: "Upstate New York",
+    filingPortal: "https://www.tax.ny.gov/pit/property/grievance/",
+    formRequired: "RP-524",
+    grievanceDay: "4th Tuesday in May (varies by municipality)",
+    deadline: "Varies by municipality — check with your local assessor",
+    notes: "Most upstate NY municipalities follow the state-standard Form RP-524 filed by Grievance Day. Check with your local Town or City Assessor for the exact date. Some cities have different deadlines.",
+    municipalities: ["Albany", "Syracuse", "Buffalo", "Rochester", "Troy", "Utica", "Saratoga Springs"],
+  },
+];
+
+router.get("/counties", (_req, res) => {
+  res.json(counties);
+});
+
+export default router;

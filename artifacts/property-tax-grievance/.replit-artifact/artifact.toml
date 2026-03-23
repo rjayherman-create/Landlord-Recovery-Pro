@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "NY Property Tax Grievance Assistant"
+version = "1.0.0"
+id = "artifacts/property-tax-grievance"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 19972
+
+[services.development]
+run = "pnpm --filter @workspace/property-tax-grievance run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/property-tax-grievance", "run", "build" ]
+publicDir = "artifacts/property-tax-grievance/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "19972"
+BASE_PATH = "/"
