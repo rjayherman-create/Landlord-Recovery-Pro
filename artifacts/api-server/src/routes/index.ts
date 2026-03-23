@@ -5,6 +5,7 @@ import comparablesRouter from "./comparables";
 import countiesRouter from "./counties";
 import propertyLookupRouter from "./property-lookup";
 import reverseGeocodeRouter from "./reverse-geocode";
+import ocrTaxRecordRouter from "./ocr-tax-record";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(comparablesRouter);
 router.use(countiesRouter);
 router.use(propertyLookupRouter);
 router.use(reverseGeocodeRouter);
+router.use(ocrTaxRecordRouter);
 
 export default router;

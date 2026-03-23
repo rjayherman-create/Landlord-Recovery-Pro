@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateGrievance, useUpdateGrievance } from "@/hooks/use-grievances";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, CheckCircle2, AlertTriangle, Info, Sparkles, LocateFixed } from "lucide-react";
+import { Search, Loader2, CheckCircle2, AlertTriangle, Info, Sparkles, LocateFixed, Camera, X } from "lucide-react";
+import { useRef } from "react";
 import type { Grievance } from "@workspace/api-client-react";
 import { PropertyRecordCard } from "@/components/PropertyRecordCard";
 import type { LookupResult } from "@/components/PropertyRecordCard";
@@ -102,6 +103,11 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
   const [lookupResult, setLookupResult] = useState<LookupResult | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
+
+  const [isOcring, setIsOcring] = useState(false);
+  const [ocrPreview, setOcrPreview] = useState<string | null>(null);
+  const [ocrError, setOcrError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<GrievanceFormValues>({
     resolver: zodResolver(grievanceSchema),
@@ -232,6 +238,70 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
     );
   };
 
+  /* ── OCR upload ── */
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Show image preview immediately
+    const reader = new FileReader();
+    reader.onload = (ev) => setOcrPreview(ev.target?.result as string);
+    reader.readAsDataURL(file);
+
+    setIsOcring(true);
+    setOcrError(null);
+    setLookupError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const res = await fetch(`${BASE}/api/ocr-tax-record`, { method: "POST", body: formData });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setOcrError(data.error || "Could not read the document. Try a clearer photo.");
+        return;
+      }
+
+      // Merge OCR results into the form exactly like a property lookup
+      const current = form.getValues();
+      const filled = new Set<string>(autoFilledFields);
+      const merged: GrievanceFormValues = { ...current };
+
+      const str = (v: any) => (v != null && v !== "" ? String(v) : undefined);
+      const num = (v: any) => (v != null && !isNaN(Number(v)) ? Number(v) : undefined);
+
+      if (data.propertyAddress) { merged.propertyAddress = data.propertyAddress; filled.add("propertyAddress"); }
+      if (data.county)          { merged.county          = data.county;          filled.add("county"); }
+      if (data.municipality)    { merged.municipality    = data.municipality;    filled.add("municipality"); }
+      if (data.schoolDistrict)  { merged.schoolDistrict  = data.schoolDistrict;  filled.add("schoolDistrict"); }
+      if (data.parcelId)        { merged.parcelId        = data.parcelId;        filled.add("parcelId"); }
+      if (data.propertyClass)   { merged.propertyClass   = data.propertyClass;   filled.add("propertyClass"); }
+      if (num(data.yearBuilt))  { merged.yearBuilt       = num(data.yearBuilt);  filled.add("yearBuilt"); }
+      if (num(data.livingArea)) { merged.livingArea      = num(data.livingArea); filled.add("livingArea"); }
+      if (data.lotSize)         { merged.lotSize         = data.lotSize;         filled.add("lotSize"); }
+      if (num(data.estimatedMarketValue)) { merged.estimatedMarketValue = num(data.estimatedMarketValue)!; filled.add("estimatedMarketValue"); }
+      if (num(data.totalAssessment))      { merged.currentAssessment   = num(data.totalAssessment)!;      filled.add("currentAssessment"); }
+      if (num(data.taxYear))              { merged.taxYear             = num(data.taxYear)!;              filled.add("taxYear"); }
+      if (data.ownerName && !current.ownerName) { merged.ownerName = data.ownerName; filled.add("ownerName"); }
+      if (data.filingDeadline) { merged.filingDeadline = str(data.filingDeadline); filled.add("filingDeadline"); }
+
+      form.reset(merged, { keepErrors: false, keepIsSubmitted: false });
+      setAutoFilledFields(filled);
+
+      // Also fill the address bar if we got an address
+      if (data.propertyAddress) setLookupAddress(data.propertyAddress);
+
+    } catch {
+      setOcrError("Could not connect to the scanning service. Please try again.");
+    } finally {
+      setIsOcring(false);
+      // Reset the input so the same file can be re-uploaded if needed
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
   const isAutoFilled = (field: string) => autoFilledFields.has(field);
   const autoFillClass = (field: string) =>
     isAutoFilled(field) ? "border-emerald-400 bg-emerald-50/50 ring-1 ring-emerald-300" : "";
@@ -273,8 +343,18 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
           <span className="text-sm font-semibold text-primary">Auto-fill from Public Records</span>
         </div>
         <p className="text-xs text-muted-foreground">
-          Tap <strong>Use My Current Location</strong> to detect your property address automatically, or type it below. We'll pull county, municipality, year built, living area, and more from public records — all editable.
+          Type your address and tap <strong>Look Up</strong>, use your location, or <strong>scan your tax bill</strong> — we'll extract county, parcel ID, year built, living area, and more automatically.
         </p>
+
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
+
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
             <Input
@@ -289,7 +369,7 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
             <Button
               type="button"
               onClick={handleLookup}
-              disabled={isLookingUp || isLocating || !lookupAddress.trim()}
+              disabled={isLookingUp || isLocating || isOcring || !lookupAddress.trim()}
               className="gap-2 shrink-0"
             >
               {isLookingUp
@@ -298,20 +378,77 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               }
             </Button>
           </div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleUseLocation}
-            disabled={isLocating || isLookingUp}
-            className="gap-2 w-full border-primary/30 text-primary hover:bg-primary/5"
-          >
-            {isLocating
-              ? <><Loader2 className="w-4 h-4 animate-spin" /> Detecting your location…</>
-              : <><LocateFixed className="w-4 h-4" /> Use My Current Location</>
-            }
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleUseLocation}
+              disabled={isLocating || isLookingUp || isOcring}
+              className="gap-2 border-primary/30 text-primary hover:bg-primary/5"
+            >
+              {isLocating
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Detecting…</>
+                : <><LocateFixed className="w-4 h-4" /> Use My Location</>
+              }
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isOcring || isLookingUp || isLocating}
+              className="gap-2 border-amber-400/60 text-amber-700 hover:bg-amber-50"
+            >
+              {isOcring
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning…</>
+                : <><Camera className="w-4 h-4" /> Scan Tax Bill</>
+              }
+            </Button>
+          </div>
         </div>
+
+        {/* OCR image preview + status */}
+        {ocrPreview && (
+          <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <img
+              src={ocrPreview}
+              alt="Tax bill preview"
+              className="w-16 h-16 object-cover rounded-md border border-amber-300 flex-shrink-0"
+            />
+            <div className="flex-1 min-w-0">
+              {isOcring ? (
+                <div className="flex items-center gap-2 text-sm text-amber-800 font-medium">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Reading your tax bill with AI — this takes a few seconds…
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-emerald-700 font-medium">
+                  <CheckCircle2 className="w-4 h-4" />
+                  Document scanned — fields filled below
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">
+                Review each auto-filled field and correct anything that doesn't look right.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setOcrPreview(null); setOcrError(null); }}
+              className="text-muted-foreground hover:text-foreground p-0.5 flex-shrink-0"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {/* OCR error */}
+        {ocrError && (
+          <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>{ocrError}</span>
+          </div>
+        )}
 
         {/* Error */}
         {lookupError && (
