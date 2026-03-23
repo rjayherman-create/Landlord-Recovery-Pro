@@ -136,12 +136,6 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
         },
   });
 
-  /* ── setValue helper — always forces re-render ── */
-  const setField = <K extends keyof GrievanceFormValues>(
-    field: K,
-    value: GrievanceFormValues[K],
-  ) => form.setValue(field, value, { shouldDirty: true, shouldTouch: true, shouldValidate: false });
-
   /* ── Property lookup ── */
   const runLookup = async (addr: string) => {
     const trimmed = addr.trim();
@@ -163,22 +157,27 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
       const result = data as LookupResult;
       setLookupResult(result);
 
-      // Auto-fill form fields — { shouldDirty: true } forces Select/Input re-renders
+      // Build merged values — start from current form values, overlay lookup results
+      const current = form.getValues();
       const filled = new Set<string>();
+      const merged: GrievanceFormValues = { ...current };
 
-      if (result.county) { setField("county", result.county); filled.add("county"); }
-      if (result.municipality) { setField("municipality", result.municipality); filled.add("municipality"); }
-      if (result.schoolDistrict) { setField("schoolDistrict", result.schoolDistrict); filled.add("schoolDistrict"); }
-      if (result.parcelId) { setField("parcelId", result.parcelId); filled.add("parcelId"); }
-      if (result.propertyClass) { setField("propertyClass", result.propertyClass); filled.add("propertyClass"); }
-      if (result.yearBuilt) { setField("yearBuilt", result.yearBuilt); filled.add("yearBuilt"); }
-      if (result.livingArea) { setField("livingArea", result.livingArea); filled.add("livingArea"); }
-      if (result.lotSize) { setField("lotSize", result.lotSize); filled.add("lotSize"); }
-      if (result.estimatedMarketValue) { setField("estimatedMarketValue", result.estimatedMarketValue); filled.add("estimatedMarketValue"); }
-
-      // Always fill in property address from what was looked up
-      setField("propertyAddress", trimmed);
+      // Always set the address
+      merged.propertyAddress = trimmed;
       filled.add("propertyAddress");
+
+      if (result.county)              { merged.county              = result.county;              filled.add("county"); }
+      if (result.municipality)        { merged.municipality        = result.municipality;        filled.add("municipality"); }
+      if (result.schoolDistrict)      { merged.schoolDistrict      = result.schoolDistrict;      filled.add("schoolDistrict"); }
+      if (result.parcelId)            { merged.parcelId            = result.parcelId;            filled.add("parcelId"); }
+      if (result.propertyClass)       { merged.propertyClass       = result.propertyClass;       filled.add("propertyClass"); }
+      if (result.yearBuilt)           { merged.yearBuilt           = result.yearBuilt;           filled.add("yearBuilt"); }
+      if (result.livingArea)          { merged.livingArea          = result.livingArea;          filled.add("livingArea"); }
+      if (result.lotSize)             { merged.lotSize             = result.lotSize;             filled.add("lotSize"); }
+      if (result.estimatedMarketValue){ merged.estimatedMarketValue= result.estimatedMarketValue;filled.add("estimatedMarketValue"); }
+
+      // form.reset with merged values atomically updates ALL Controller-managed fields
+      form.reset(merged, { keepErrors: false, keepIsSubmitted: false });
 
       setAutoFilledFields(filled);
 
