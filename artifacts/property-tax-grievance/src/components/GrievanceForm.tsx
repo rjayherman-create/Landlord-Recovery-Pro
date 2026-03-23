@@ -11,6 +11,8 @@ import { useCreateGrievance, useUpdateGrievance } from "@/hooks/use-grievances";
 import { useToast } from "@/hooks/use-toast";
 import { Search, Loader2, CheckCircle2, AlertTriangle, Info, Sparkles } from "lucide-react";
 import type { Grievance } from "@workspace/api-client-react";
+import { PropertyRecordCard } from "@/components/PropertyRecordCard";
+import type { LookupResult } from "@/components/PropertyRecordCard";
 
 /* ─── Schema ────────────────────────────────────────── */
 
@@ -39,22 +41,6 @@ const grievanceSchema = z.object({
 });
 
 type GrievanceFormValues = z.infer<typeof grievanceSchema>;
-
-interface LookupResult {
-  municipality?: string;
-  county?: string;
-  schoolDistrict?: string;
-  parcelId?: string;
-  propertyClass?: string;
-  yearBuilt?: number;
-  livingArea?: number;
-  lotSize?: string;
-  estimatedMarketValue?: number;
-  source: string;
-  confidence: "high" | "partial" | "geocode-only";
-  fieldsFound: string[];
-  message?: string;
-}
 
 /* ─── Constants ─────────────────────────────────────── */
 
@@ -270,46 +256,48 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
 
         {/* Success result */}
         {lookupResult && (
-          <div className={`rounded-lg border p-3 text-sm space-y-2 ${
-            lookupResult.confidence === "high"
-              ? "border-emerald-200 bg-emerald-50"
-              : lookupResult.confidence === "partial"
-              ? "border-amber-200 bg-amber-50"
-              : "border-blue-200 bg-blue-50"
-          }`}>
-            <div className="flex items-center gap-2 font-semibold">
-              {lookupResult.confidence === "high"
-                ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                : <Info className="w-4 h-4 text-amber-600" />
-              }
-              <span>
+          <div className="space-y-3">
+            {/* Quick summary badge row */}
+            <div className={`rounded-lg border p-3 text-sm space-y-2 ${
+              lookupResult.confidence === "high"
+                ? "border-emerald-200 bg-emerald-50"
+                : lookupResult.confidence === "partial"
+                ? "border-amber-200 bg-amber-50"
+                : "border-blue-200 bg-blue-50"
+            }`}>
+              <div className="flex items-center gap-2 font-semibold">
                 {lookupResult.confidence === "high"
-                  ? `Found via ${lookupResult.source}`
-                  : lookupResult.confidence === "partial"
-                  ? `Partial data from ${lookupResult.source}`
-                  : `Location confirmed via ${lookupResult.source}`
+                  ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  : <Info className="w-4 h-4 text-amber-600" />
                 }
-              </span>
+                <span>
+                  {lookupResult.confidence === "high"
+                    ? `Found via ${lookupResult.source}`
+                    : lookupResult.confidence === "partial"
+                    ? `Partial data from ${lookupResult.source}`
+                    : `Location confirmed via ${lookupResult.source}`
+                  }
+                </span>
+              </div>
+
+              {lookupResult.fieldsFound.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium mb-1">
+                    Fields auto-filled ({lookupResult.fieldsFound.length}):
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {lookupResult.fieldsFound.map(f => (
+                      <span key={f} className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 font-medium">
+                        ✓ {FIELD_LABELS[f] || f}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
-            {lookupResult.fieldsFound.length > 0 && (
-              <div>
-                <p className="text-xs font-medium mb-1">
-                  Fields auto-filled ({lookupResult.fieldsFound.length}):
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {lookupResult.fieldsFound.map(f => (
-                    <span key={f} className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 font-medium">
-                      ✓ {FIELD_LABELS[f] || f}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {lookupResult.message && (
-              <p className="text-xs text-muted-foreground leading-relaxed">{lookupResult.message}</p>
-            )}
+            {/* Full property record card */}
+            <PropertyRecordCard result={lookupResult} />
           </div>
         )}
       </div>

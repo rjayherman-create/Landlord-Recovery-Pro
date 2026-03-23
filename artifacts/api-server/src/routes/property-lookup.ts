@@ -18,6 +18,52 @@ interface LookupResult {
   confidence: "high" | "partial" | "geocode-only";
   fieldsFound: string[];
   message?: string;
+  // Raw record for visual confirmation and PDF printing
+  rawRecord?: PropertyRecord;
+  lookupAddress?: string;
+  lookupDate?: string;
+}
+
+interface PropertyRecord {
+  // Identity
+  address?: string;
+  borough?: string;
+  block?: string;
+  lot?: string;
+  bbl?: string;
+  zipcode?: string;
+  // Ownership
+  ownerName?: string;
+  // Physical
+  buildingClass?: string;
+  buildingClassDesc?: string;
+  yearBuilt?: number;
+  yearAltered?: number;
+  numBuildings?: number;
+  numFloors?: number;
+  unitCount?: number;
+  buildingArea?: number;
+  lotArea?: number;
+  lotFrontage?: number;
+  lotDepth?: number;
+  // Areas breakdown
+  residentialArea?: number;
+  commercialArea?: number;
+  // Assessment
+  landAssessment?: number;
+  totalAssessment?: number;
+  exemptTotal?: number;
+  // Zoning
+  zoneDist?: string;
+  landUse?: string;
+  historicDistrict?: string;
+  // School / sanitation
+  schoolDist?: string;
+  councilDist?: string;
+  // Data provenance
+  dataVersion?: string;
+  dataSource: string;
+  retrievedAt: string;
 }
 
 /* ─── Nominatim geocoding ────────────────────────────── */
@@ -165,7 +211,7 @@ async function lookupNycPluto(address: string, lat: number, lon: number): Promis
   }
   // Map building class to NY property class code
   const bldgClass = (match.bldgclass || "").toUpperCase();
-  if (bldgClass.startsWith("A")) result.propertyClass = "210"; // single family
+  if (bldgClass.startsWith("A")) result.propertyClass = "210";
   else if (bldgClass.startsWith("B")) result.propertyClass = "220";
   else if (bldgClass.startsWith("C")) result.propertyClass = "220";
   if (result.propertyClass) fieldsFound.push("propertyClass");
@@ -174,6 +220,53 @@ async function lookupNycPluto(address: string, lat: number, lon: number): Promis
     result.estimatedMarketValue = Math.round(parseFloat(match.assesstot));
     fieldsFound.push("estimatedMarketValue");
   }
+
+  // NYC school district label
+  if (match.schooldist) {
+    result.schoolDistrict = `NYC School District ${match.schooldist}`;
+    fieldsFound.push("schoolDistrict");
+  }
+
+  // Raw record for visual confirmation
+  const LAND_USE_LABELS: Record<string, string> = {
+    "1": "One & Two Family Buildings", "2": "Multi-Family Walkup Buildings",
+    "3": "Multi-Family Elevator Buildings", "4": "Mixed Residential & Commercial",
+    "5": "Commercial & Office Buildings", "6": "Industrial & Manufacturing",
+    "7": "Transportation & Utility", "8": "Public Facilities & Institutions",
+    "9": "Open Space & Outdoor Recreation", "10": "Parking Facilities", "11": "Vacant Land",
+  };
+  result.rawRecord = {
+    address: match.address,
+    borough: match.borough,
+    block: match.block,
+    lot: match.lot,
+    bbl: match.bbl ? String(Math.round(parseFloat(match.bbl))) : undefined,
+    zipcode: match.zipcode,
+    ownerName: match.ownername,
+    buildingClass: match.bldgclass,
+    yearBuilt: match.yearbuilt ? parseInt(match.yearbuilt) : undefined,
+    yearAltered: match.yearalter1 && parseInt(match.yearalter1) > 0 ? parseInt(match.yearalter1) : undefined,
+    numBuildings: match.numbldgs ? parseInt(match.numbldgs) : undefined,
+    numFloors: match.numfloors ? parseFloat(match.numfloors) : undefined,
+    unitCount: match.unitstotal ? parseInt(match.unitstotal) : undefined,
+    buildingArea: match.bldgarea ? Math.round(parseFloat(match.bldgarea)) : undefined,
+    lotArea: match.lotarea ? Math.round(parseFloat(match.lotarea)) : undefined,
+    lotFrontage: match.lotfront ? parseFloat(match.lotfront) : undefined,
+    lotDepth: match.lotdepth ? parseFloat(match.lotdepth) : undefined,
+    residentialArea: match.resarea ? Math.round(parseFloat(match.resarea)) : undefined,
+    commercialArea: match.comarea ? Math.round(parseFloat(match.comarea)) : undefined,
+    landAssessment: match.assessland ? Math.round(parseFloat(match.assessland)) : undefined,
+    totalAssessment: match.assesstot ? Math.round(parseFloat(match.assesstot)) : undefined,
+    exemptTotal: match.exempttot ? Math.round(parseFloat(match.exempttot)) : undefined,
+    zoneDist: match.zonedist1,
+    landUse: match.landuse ? LAND_USE_LABELS[match.landuse] || `Code ${match.landuse}` : undefined,
+    historicDistrict: match.histdist || undefined,
+    schoolDist: match.schooldist ? `NYC SD ${match.schooldist}` : undefined,
+    councilDist: match.council,
+    dataVersion: match.version,
+    dataSource: "NYC Open Data — MapPLUTO",
+    retrievedAt: new Date().toISOString(),
+  };
 
   result.fieldsFound = fieldsFound;
   return result;
@@ -326,6 +419,20 @@ router.get("/property-lookup", async (req, res) => {
 
     // Deduplicate fieldsFound
     result.fieldsFound = [...new Set(result.fieldsFound)];
+
+    // Add provenance
+    result.lookupAddress = address;
+    result.lookupDate = new Date().toISOString();
+
+    // For non-NYC (geocode only), build a minimal raw record from geocode data
+    if (!result.rawRecord) {
+      result.rawRecord = {
+        address: geo.displayName.split(",").slice(0, 2).join(",").trim(),
+        zipcode: geo.postcode,
+        dataSource: "OpenStreetMap Nominatim (geocode only)",
+        retrievedAt: new Date().toISOString(),
+      };
+    }
 
     res.json(result);
   } catch (err) {
