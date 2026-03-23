@@ -351,9 +351,10 @@ router.get("/property-lookup", async (req, res) => {
     if (isNYC) {
       try {
         const pluto = await lookupNycPluto(address, geo.lat, geo.lon);
-        Object.assign(result, pluto);
-        if (pluto.fieldsFound?.length) {
-          result.fieldsFound.push(...(pluto.fieldsFound || []));
+        const { fieldsFound: plutoFields, ...plutoRest } = pluto;
+        Object.assign(result, plutoRest);
+        if (plutoFields?.length) {
+          result.fieldsFound.push(...plutoFields);
           result.source = "NYC Open Data (PLUTO)";
           result.confidence = "high";
         } else {
@@ -380,9 +381,10 @@ router.get("/property-lookup", async (req, res) => {
     } else if (isNassau) {
       try {
         const nassau = await lookupNassauCounty(address);
-        Object.assign(result, nassau);
-        if (nassau.fieldsFound?.length) {
-          result.fieldsFound.push(...(nassau.fieldsFound || []));
+        const { fieldsFound: nassauFields, ...nassauRest } = nassau;
+        Object.assign(result, nassauRest);
+        if (nassauFields?.length) {
+          result.fieldsFound.push(...nassauFields);
           result.source = "Nassau County Assessor";
           result.confidence = "high";
         } else {
