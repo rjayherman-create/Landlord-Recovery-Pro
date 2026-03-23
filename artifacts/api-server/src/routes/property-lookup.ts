@@ -272,43 +272,128 @@ async function lookupNycPluto(address: string, lat: number, lon: number): Promis
   return result;
 }
 
-/* ─── Nassau County assessor lookup ─────────────────── */
+/* ─── NYS ORPS Assessment Roll lookup (Nassau, Suffolk, Westchester, etc.) ─── */
+// Data source: data.ny.gov dataset 7vem-aaz7 — 4.7M+ parcels, all NY counties outside NYC
+// Fields: parcel address, parcel ID (SBL), property class, school district,
+//         full market value, total assessment, lot frontage × depth, owner name
 
-async function lookupNassauCounty(address: string): Promise<Partial<LookupResult>> {
-  // Nassau uses a public assessor search — try their API endpoint
-  const streetParts = address.match(/^(\d+[A-Z]?)\s+(.+?)(?:\s*,|\s+NY|\s+New York|\s*$)/i);
-  if (!streetParts) return {};
+function toTitleCase(s: string): string {
+  return s.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
 
-  const houseNum = streetParts[1];
-  const streetName = streetParts[2].replace(/\s+(apt|unit|#|ste).*/i, "").trim();
+async function lookupNYSOrps(
+  address: string,
+  countyName: string,
+  geocodeMunicipality: string,
+): Promise<Partial<LookupResult>> {
+  // Strip everything from the first comma or "NY"/"New York" or zip onward
+  const cleanAddr = address.replace(/,.*$/, "").replace(/\s+NY\b.*/i, "").trim();
+  const addrMatch = cleanAddr.match(/^(\d+[A-Z]?)\s+(.+)$/i);
+  if (!addrMatch) return {};
 
-  // Nassau's property search (public endpoint)
+  const houseNum = addrMatch[1];
+  // Remove apt/unit/# suffixes; uppercase; keep first word only for LIKE match
+  const streetRaw = addrMatch[2].replace(/\s+(apt|unit|#|ste|floor).*/i, "").trim().toUpperCase();
+  const streetFirstWord = streetRaw.split(/\s+/)[0];
+
+  if (!streetFirstWord || streetFirstWord.length < 2) return {};
+
+  const where = `county_name='${countyName}' AND parcel_address_number='${houseNum}' AND parcel_address_street LIKE '${streetFirstWord}%'`;
+
+  let data: any[];
   try {
-    const url = `https://apps.nassaucountyny.gov/Property/Property/SearchByAddress?houseNum=${encodeURIComponent(houseNum)}&streetName=${encodeURIComponent(streetName)}&limit=5`;
-    const res = await fetch(url, {
-      headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0" },
-      signal: AbortSignal.timeout(5000),
+    const url = "https://data.ny.gov/resource/7vem-aaz7.json?" + new URLSearchParams({
+      "$where": where,
+      "$limit": "20",
+      "$order": "roll_year DESC",
     });
-    if (res.ok) {
-      const data = await res.json() as any;
-      if (Array.isArray(data) && data.length > 0) {
-        const p = data[0];
-        const found: string[] = [];
-        const r: Partial<LookupResult> = {};
-        if (p.yearBuilt) { r.yearBuilt = parseInt(p.yearBuilt); found.push("yearBuilt"); }
-        if (p.livingArea) { r.livingArea = parseInt(p.livingArea); found.push("livingArea"); }
-        if (p.schoolDistrict) { r.schoolDistrict = p.schoolDistrict; found.push("schoolDistrict"); }
-        if (p.parcelId || p.sbl) { r.parcelId = p.parcelId || p.sbl; found.push("parcelId"); }
-        if (p.municipality) { r.municipality = p.municipality; found.push("municipality"); }
-        r.fieldsFound = found;
-        return r;
-      }
-    }
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return {};
+    data = await res.json() as any[];
+    if (!Array.isArray(data) || data.length === 0) return {};
   } catch {
-    // Nassau API not reachable — that's fine, fall through
+    return {};
   }
 
-  return {};
+  // Filter out "County Roll" duplicates (those are county-level roll copies)
+  const primaryRecords = data.filter(d => !String(d.municipality_name || "").toLowerCase().includes("county roll"));
+  const candidates = primaryRecords.length > 0 ? primaryRecords : data;
+
+  // Prefer records whose municipality matches the geocoded municipality
+  let best = candidates[0];
+  if (geocodeMunicipality) {
+    const geoLower = geocodeMunicipality.toLowerCase();
+    const muniMatch = candidates.find(d => {
+      const mLower = String(d.municipality_name || "").toLowerCase();
+      return mLower.includes(geoLower) || geoLower.includes(mLower);
+    });
+    if (muniMatch) best = muniMatch;
+  }
+
+  const result: Partial<LookupResult> = {};
+  const fieldsFound: string[] = [];
+
+  // Parcel ID (SBL / print key) — critical for grievance forms
+  if (best.print_key_code) {
+    result.parcelId = best.print_key_code;
+    fieldsFound.push("parcelId");
+  }
+
+  // Property class code (e.g. "210" = One Family Year-Round)
+  if (best.property_class) {
+    result.propertyClass = best.property_class;
+    fieldsFound.push("propertyClass");
+  }
+
+  // Municipality — stored in ALL CAPS, convert to Title Case
+  if (best.municipality_name) {
+    result.municipality = toTitleCase(best.municipality_name);
+    fieldsFound.push("municipality");
+  }
+
+  // School district
+  if (best.school_district_name) {
+    result.schoolDistrict = toTitleCase(best.school_district_name);
+    fieldsFound.push("schoolDistrict");
+  }
+
+  // Full market value (what the assessor says your property is worth)
+  const fmv = parseFloat(best.full_market_value || "0");
+  if (fmv > 0) {
+    result.estimatedMarketValue = Math.round(fmv);
+    fieldsFound.push("estimatedMarketValue");
+  }
+
+  // Lot size from frontage × depth
+  const front = parseFloat(best.front || "0");
+  const depth = parseFloat(best.depth || "0");
+  if (front > 0 && depth > 0) {
+    const sqft = Math.round(front * depth);
+    const acres = (sqft / 43560).toFixed(3);
+    result.lotSize = `${front}×${depth} ft (≈${sqft.toLocaleString()} sq ft / ${acres} acres)`;
+    fieldsFound.push("lotSize");
+  }
+
+  // Raw property record card
+  result.rawRecord = {
+    address: `${best.parcel_address_number} ${best.parcel_address_street}`,
+    zipcode: best.mailing_address_zip,
+    ownerName: best.primary_owner_last_name || best.primary_owner_first_name,
+    buildingClass: best.property_class,
+    buildingClassDesc: best.property_class_description ? toTitleCase(best.property_class_description) : undefined,
+    lotFrontage: front > 0 ? front : undefined,
+    lotDepth: depth > 0 ? depth : undefined,
+    landAssessment: best.assessment_land ? Math.round(parseFloat(best.assessment_land)) : undefined,
+    totalAssessment: best.assessment_total ? Math.round(parseFloat(best.assessment_total)) : undefined,
+    dataSource: `NYS Assessment Roll (ORPS) — ${countyName} County`,
+    retrievedAt: new Date().toISOString(),
+  };
+
+  result.fieldsFound = fieldsFound;
+  return result;
 }
 
 /* ─── Main route ─────────────────────────────────────── */
@@ -378,45 +463,43 @@ router.get("/property-lookup", async (req, res) => {
       result.municipality = boroughMap[countyLower] || result.municipality;
       result.county = "New York City";
 
-    } else if (isNassau) {
+    } else {
+      // ── All non-NYC NY counties: query NYS ORPS Assessment Roll ──────────
+      // Covers Nassau, Suffolk, Westchester, Rockland, and every other county.
+      // Normalise the county name to match what ORPS stores (e.g. "Nassau", "Suffolk").
+      const orpsCounty = countyLower.includes("nassau")      ? "Nassau"
+                       : countyLower.includes("suffolk")     ? "Suffolk"
+                       : countyLower.includes("westchester") ? "Westchester"
+                       : countyLower.includes("rockland")    ? "Rockland"
+                       : countyLower.includes("orange")      ? "Orange"
+                       : countyLower.includes("dutchess")    ? "Dutchess"
+                       : countyLower.includes("putnam")      ? "Putnam"
+                       : countyLower.includes("ulster")      ? "Ulster"
+                       : geo.county; // pass raw geocoded county for other counties
+
+      result.county = orpsCounty;
+
       try {
-        const nassau = await lookupNassauCounty(address);
-        const { fieldsFound: nassauFields, ...nassauRest } = nassau;
-        Object.assign(result, nassauRest);
-        if (nassauFields?.length) {
-          result.fieldsFound.push(...nassauFields);
-          result.source = "Nassau County Assessor";
+        const orps = await lookupNYSOrps(address, orpsCounty, geo.municipality);
+        const { fieldsFound: orpsFields, rawRecord: orpsRaw, ...orpsRest } = orps;
+
+        Object.assign(result, orpsRest);
+        if (orpsRaw) result.rawRecord = orpsRaw;
+
+        if (orpsFields && orpsFields.length > 0) {
+          result.fieldsFound.push(...orpsFields);
+          result.source = `NYS Assessment Roll (${orpsCounty} County)`;
           result.confidence = "high";
         } else {
           result.source = "OpenStreetMap";
           result.confidence = "partial";
-          result.message = "Nassau County address confirmed. For full details (SBL, year built, school district), look up your property on the Nassau County AROW portal or your tax bill.";
+          result.message = `${orpsCounty} County address confirmed. Property details not found by address — enter your SBL number and other details from your tax bill.`;
         }
       } catch {
         result.source = "OpenStreetMap";
         result.confidence = "partial";
-        result.message = "Nassau County address confirmed. For full details, look up your property on the Nassau County AROW portal.";
+        result.message = `${orpsCounty} County address confirmed. Enter your SBL and property details from your tax bill.`;
       }
-      result.county = "Nassau";
-
-    } else if (countyLower.includes("suffolk")) {
-      result.county = "Suffolk";
-      result.confidence = "partial";
-      result.message = "Suffolk County address confirmed. Find your SBL number and property details on your tax bill or your Town Assessor's website.";
-
-    } else if (countyLower.includes("westchester")) {
-      result.county = "Westchester";
-      result.confidence = "partial";
-      result.message = "Westchester address confirmed. Find your property details on the Westchester County GIS portal or your tax bill.";
-
-    } else if (countyLower.includes("rockland")) {
-      result.county = "Rockland";
-      result.confidence = "partial";
-      result.message = "Rockland County address confirmed. Find your property details on your tax bill or local assessor's office.";
-
-    } else {
-      result.confidence = "partial";
-      result.message = `${result.county || "Your"} County address confirmed. Find your SBL number and property details on your local assessor's website or tax bill.`;
     }
 
     // Deduplicate fieldsFound
