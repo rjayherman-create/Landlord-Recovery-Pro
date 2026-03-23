@@ -28,14 +28,24 @@ export const GrievanceStatus = {
 export interface Grievance {
   id: number;
   ownerName: string;
+  ownerPhone?: string | null;
+  ownerEmail?: string | null;
+  ownerMailingAddress?: string | null;
   propertyAddress: string;
   county: string;
   municipality: string;
+  schoolDistrict?: string | null;
+  parcelId?: string | null;
+  propertyClass?: string | null;
+  yearBuilt?: number | null;
+  livingArea?: number | null;
+  lotSize?: string | null;
   taxYear: number;
   currentAssessment: number;
-  equalizationRate?: number;
+  equalizationRate?: number | null;
   estimatedMarketValue: number;
   requestedAssessment: number;
+  basisOfComplaint?: string | null;
   status: GrievanceStatus;
   filingDeadline?: string | null;
   notes?: string | null;
@@ -45,14 +55,24 @@ export interface Grievance {
 
 export interface CreateGrievanceRequest {
   ownerName: string;
+  ownerPhone?: string | null;
+  ownerEmail?: string | null;
+  ownerMailingAddress?: string | null;
   propertyAddress: string;
   county: string;
   municipality: string;
+  schoolDistrict?: string | null;
+  parcelId?: string | null;
+  propertyClass?: string | null;
+  yearBuilt?: number | null;
+  livingArea?: number | null;
+  lotSize?: string | null;
   taxYear: number;
   currentAssessment: number;
-  equalizationRate?: number;
+  equalizationRate?: number | null;
   estimatedMarketValue: number;
   requestedAssessment: number;
+  basisOfComplaint?: string | null;
   filingDeadline?: string | null;
   notes?: string | null;
 }
@@ -70,14 +90,24 @@ export const UpdateGrievanceRequestStatus = {
 
 export interface UpdateGrievanceRequest {
   ownerName?: string;
+  ownerPhone?: string | null;
+  ownerEmail?: string | null;
+  ownerMailingAddress?: string | null;
   propertyAddress?: string;
   county?: string;
   municipality?: string;
+  schoolDistrict?: string | null;
+  parcelId?: string | null;
+  propertyClass?: string | null;
+  yearBuilt?: number | null;
+  livingArea?: number | null;
+  lotSize?: string | null;
   taxYear?: number;
   currentAssessment?: number;
-  equalizationRate?: number;
+  equalizationRate?: number | null;
   estimatedMarketValue?: number;
   requestedAssessment?: number;
+  basisOfComplaint?: string | null;
   status?: UpdateGrievanceRequestStatus;
   filingDeadline?: string | null;
   notes?: string | null;
@@ -93,6 +123,10 @@ export interface Comparable {
   bedrooms?: number | null;
   bathrooms?: number | null;
   assessedValue?: number | null;
+  lotSize?: string | null;
+  yearBuilt?: number | null;
+  distance?: string | null;
+  sourceUrl?: string | null;
   notes?: string | null;
   createdAt: string;
 }
@@ -106,6 +140,10 @@ export interface CreateComparableRequest {
   bedrooms?: number | null;
   bathrooms?: number | null;
   assessedValue?: number | null;
+  lotSize?: string | null;
+  yearBuilt?: number | null;
+  distance?: string | null;
+  sourceUrl?: string | null;
   notes?: string | null;
 }
 

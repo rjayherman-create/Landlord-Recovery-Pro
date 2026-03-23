@@ -9,21 +9,24 @@ import {
 
 const router: IRouter = Router();
 
+function formatComparable(c: typeof comparablesTable.$inferSelect) {
+  return {
+    ...c,
+    salePrice: Number(c.salePrice),
+    squareFeet: c.squareFeet != null ? Number(c.squareFeet) : null,
+    bathrooms: c.bathrooms != null ? Number(c.bathrooms) : null,
+    assessedValue: c.assessedValue != null ? Number(c.assessedValue) : null,
+    createdAt: c.createdAt.toISOString(),
+  };
+}
+
 router.get("/comparables", async (req, res) => {
   try {
     const { grievanceId } = ListComparablesQueryParams.parse({ grievanceId: Number(req.query.grievanceId) });
     const comparables = await db.select().from(comparablesTable)
       .where(eq(comparablesTable.grievanceId, grievanceId))
       .orderBy(comparablesTable.createdAt);
-    const result = comparables.map((c) => ({
-      ...c,
-      salePrice: Number(c.salePrice),
-      squareFeet: c.squareFeet != null ? Number(c.squareFeet) : undefined,
-      bathrooms: c.bathrooms != null ? Number(c.bathrooms) : undefined,
-      assessedValue: c.assessedValue != null ? Number(c.assessedValue) : undefined,
-      createdAt: c.createdAt.toISOString(),
-    }));
-    res.json(result);
+    res.json(comparables.map(formatComparable));
   } catch (err) {
     req.log.error({ err }, "Failed to list comparables");
     res.status(400).json({ error: "validation_error", message: String(err) });
@@ -38,20 +41,17 @@ router.post("/comparables", async (req, res) => {
       address: body.address,
       salePrice: String(body.salePrice),
       saleDate: body.saleDate,
-      squareFeet: body.squareFeet != null ? String(body.squareFeet) : undefined,
-      bedrooms: body.bedrooms ?? undefined,
-      bathrooms: body.bathrooms != null ? String(body.bathrooms) : undefined,
-      assessedValue: body.assessedValue != null ? String(body.assessedValue) : undefined,
-      notes: body.notes ?? undefined,
+      squareFeet: body.squareFeet != null ? String(body.squareFeet) : null,
+      bedrooms: body.bedrooms ?? null,
+      bathrooms: body.bathrooms != null ? String(body.bathrooms) : null,
+      assessedValue: body.assessedValue != null ? String(body.assessedValue) : null,
+      lotSize: body.lotSize ?? null,
+      yearBuilt: body.yearBuilt ?? null,
+      distance: body.distance ?? null,
+      sourceUrl: body.sourceUrl ?? null,
+      notes: body.notes ?? null,
     }).returning();
-    res.status(201).json({
-      ...created,
-      salePrice: Number(created.salePrice),
-      squareFeet: created.squareFeet != null ? Number(created.squareFeet) : undefined,
-      bathrooms: created.bathrooms != null ? Number(created.bathrooms) : undefined,
-      assessedValue: created.assessedValue != null ? Number(created.assessedValue) : undefined,
-      createdAt: created.createdAt.toISOString(),
-    });
+    res.status(201).json(formatComparable(created));
   } catch (err) {
     req.log.error({ err }, "Failed to add comparable");
     res.status(400).json({ error: "validation_error", message: String(err) });

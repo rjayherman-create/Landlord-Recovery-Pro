@@ -21,7 +21,6 @@ paths:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -35,7 +34,6 @@ paths:
       operationId: listGrievances
       tags: [grievances]
       summary: List all grievances
-      description: Returns all saved grievance cases for the user session
       responses:
         "200":
           description: List of grievances
@@ -49,7 +47,6 @@ paths:
       operationId: createGrievance
       tags: [grievances]
       summary: Create a new grievance
-      description: Creates a new property tax grievance case
       requestBody:
         required: true
         content:
@@ -189,7 +186,6 @@ paths:
       operationId: listCounties
       tags: [counties]
       summary: List all supported NY counties
-      description: Returns all supported NY counties with filing information
       responses:
         "200":
           description: List of counties
@@ -228,22 +224,53 @@ components:
           type: integer
         ownerName:
           type: string
+        ownerPhone:
+          type: string
+          nullable: true
+        ownerEmail:
+          type: string
+          nullable: true
+        ownerMailingAddress:
+          type: string
+          nullable: true
         propertyAddress:
           type: string
         county:
           type: string
         municipality:
           type: string
+        schoolDistrict:
+          type: string
+          nullable: true
+        parcelId:
+          type: string
+          nullable: true
+        propertyClass:
+          type: string
+          nullable: true
+        yearBuilt:
+          type: integer
+          nullable: true
+        livingArea:
+          type: number
+          nullable: true
+        lotSize:
+          type: string
+          nullable: true
         taxYear:
           type: integer
         currentAssessment:
           type: number
         equalizationRate:
           type: number
+          nullable: true
         estimatedMarketValue:
           type: number
         requestedAssessment:
           type: number
+        basisOfComplaint:
+          type: string
+          nullable: true
         status:
           type: string
           enum: [draft, submitted, pending, reduced, denied]
@@ -276,22 +303,53 @@ components:
       properties:
         ownerName:
           type: string
+        ownerPhone:
+          type: string
+          nullable: true
+        ownerEmail:
+          type: string
+          nullable: true
+        ownerMailingAddress:
+          type: string
+          nullable: true
         propertyAddress:
           type: string
         county:
           type: string
         municipality:
           type: string
+        schoolDistrict:
+          type: string
+          nullable: true
+        parcelId:
+          type: string
+          nullable: true
+        propertyClass:
+          type: string
+          nullable: true
+        yearBuilt:
+          type: integer
+          nullable: true
+        livingArea:
+          type: number
+          nullable: true
+        lotSize:
+          type: string
+          nullable: true
         taxYear:
           type: integer
         currentAssessment:
           type: number
         equalizationRate:
           type: number
+          nullable: true
         estimatedMarketValue:
           type: number
         requestedAssessment:
           type: number
+        basisOfComplaint:
+          type: string
+          nullable: true
         filingDeadline:
           type: string
           nullable: true
@@ -313,22 +371,53 @@ components:
       properties:
         ownerName:
           type: string
+        ownerPhone:
+          type: string
+          nullable: true
+        ownerEmail:
+          type: string
+          nullable: true
+        ownerMailingAddress:
+          type: string
+          nullable: true
         propertyAddress:
           type: string
         county:
           type: string
         municipality:
           type: string
+        schoolDistrict:
+          type: string
+          nullable: true
+        parcelId:
+          type: string
+          nullable: true
+        propertyClass:
+          type: string
+          nullable: true
+        yearBuilt:
+          type: integer
+          nullable: true
+        livingArea:
+          type: number
+          nullable: true
+        lotSize:
+          type: string
+          nullable: true
         taxYear:
           type: integer
         currentAssessment:
           type: number
         equalizationRate:
           type: number
+          nullable: true
         estimatedMarketValue:
           type: number
         requestedAssessment:
           type: number
+        basisOfComplaint:
+          type: string
+          nullable: true
         status:
           type: string
           enum: [draft, submitted, pending, reduced, denied]
@@ -363,6 +452,18 @@ components:
           nullable: true
         assessedValue:
           type: number
+          nullable: true
+        lotSize:
+          type: string
+          nullable: true
+        yearBuilt:
+          type: integer
+          nullable: true
+        distance:
+          type: string
+          nullable: true
+        sourceUrl:
+          type: string
           nullable: true
         notes:
           type: string
@@ -399,6 +500,18 @@ components:
           nullable: true
         assessedValue:
           type: number
+          nullable: true
+        lotSize:
+          type: string
+          nullable: true
+        yearBuilt:
+          type: integer
+          nullable: true
+        distance:
+          type: string
+          nullable: true
+        sourceUrl:
+          type: string
           nullable: true
         notes:
           type: string

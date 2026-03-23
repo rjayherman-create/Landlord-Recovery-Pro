@@ -15,5 +15,9 @@ export interface CreateComparableRequest {
   bedrooms?: number | null;
   bathrooms?: number | null;
   assessedValue?: number | null;
+  lotSize?: string | null;
+  yearBuilt?: number | null;
+  distance?: string | null;
+  sourceUrl?: string | null;
   notes?: string | null;
 }

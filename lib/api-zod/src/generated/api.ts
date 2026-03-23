@@ -8,7 +8,6 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -16,20 +15,29 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
- * Returns all saved grievance cases for the user session
  * @summary List all grievances
  */
 export const ListGrievancesResponseItem = zod.object({
   id: zod.number(),
   ownerName: zod.string(),
+  ownerPhone: zod.string().nullish(),
+  ownerEmail: zod.string().nullish(),
+  ownerMailingAddress: zod.string().nullish(),
   propertyAddress: zod.string(),
   county: zod.string(),
   municipality: zod.string(),
+  schoolDistrict: zod.string().nullish(),
+  parcelId: zod.string().nullish(),
+  propertyClass: zod.string().nullish(),
+  yearBuilt: zod.number().nullish(),
+  livingArea: zod.number().nullish(),
+  lotSize: zod.string().nullish(),
   taxYear: zod.number(),
   currentAssessment: zod.number(),
-  equalizationRate: zod.number().optional(),
+  equalizationRate: zod.number().nullish(),
   estimatedMarketValue: zod.number(),
   requestedAssessment: zod.number(),
+  basisOfComplaint: zod.string().nullish(),
   status: zod.enum(["draft", "submitted", "pending", "reduced", "denied"]),
   filingDeadline: zod.string().nullish(),
   notes: zod.string().nullish(),
@@ -39,19 +47,28 @@ export const ListGrievancesResponseItem = zod.object({
 export const ListGrievancesResponse = zod.array(ListGrievancesResponseItem);
 
 /**
- * Creates a new property tax grievance case
  * @summary Create a new grievance
  */
 export const CreateGrievanceBody = zod.object({
   ownerName: zod.string(),
+  ownerPhone: zod.string().nullish(),
+  ownerEmail: zod.string().nullish(),
+  ownerMailingAddress: zod.string().nullish(),
   propertyAddress: zod.string(),
   county: zod.string(),
   municipality: zod.string(),
+  schoolDistrict: zod.string().nullish(),
+  parcelId: zod.string().nullish(),
+  propertyClass: zod.string().nullish(),
+  yearBuilt: zod.number().nullish(),
+  livingArea: zod.number().nullish(),
+  lotSize: zod.string().nullish(),
   taxYear: zod.number(),
   currentAssessment: zod.number(),
-  equalizationRate: zod.number().optional(),
+  equalizationRate: zod.number().nullish(),
   estimatedMarketValue: zod.number(),
   requestedAssessment: zod.number(),
+  basisOfComplaint: zod.string().nullish(),
   filingDeadline: zod.string().nullish(),
   notes: zod.string().nullish(),
 });
@@ -66,14 +83,24 @@ export const GetGrievanceParams = zod.object({
 export const GetGrievanceResponse = zod.object({
   id: zod.number(),
   ownerName: zod.string(),
+  ownerPhone: zod.string().nullish(),
+  ownerEmail: zod.string().nullish(),
+  ownerMailingAddress: zod.string().nullish(),
   propertyAddress: zod.string(),
   county: zod.string(),
   municipality: zod.string(),
+  schoolDistrict: zod.string().nullish(),
+  parcelId: zod.string().nullish(),
+  propertyClass: zod.string().nullish(),
+  yearBuilt: zod.number().nullish(),
+  livingArea: zod.number().nullish(),
+  lotSize: zod.string().nullish(),
   taxYear: zod.number(),
   currentAssessment: zod.number(),
-  equalizationRate: zod.number().optional(),
+  equalizationRate: zod.number().nullish(),
   estimatedMarketValue: zod.number(),
   requestedAssessment: zod.number(),
+  basisOfComplaint: zod.string().nullish(),
   status: zod.enum(["draft", "submitted", "pending", "reduced", "denied"]),
   filingDeadline: zod.string().nullish(),
   notes: zod.string().nullish(),
@@ -90,14 +117,24 @@ export const UpdateGrievanceParams = zod.object({
 
 export const UpdateGrievanceBody = zod.object({
   ownerName: zod.string().optional(),
+  ownerPhone: zod.string().nullish(),
+  ownerEmail: zod.string().nullish(),
+  ownerMailingAddress: zod.string().nullish(),
   propertyAddress: zod.string().optional(),
   county: zod.string().optional(),
   municipality: zod.string().optional(),
+  schoolDistrict: zod.string().nullish(),
+  parcelId: zod.string().nullish(),
+  propertyClass: zod.string().nullish(),
+  yearBuilt: zod.number().nullish(),
+  livingArea: zod.number().nullish(),
+  lotSize: zod.string().nullish(),
   taxYear: zod.number().optional(),
   currentAssessment: zod.number().optional(),
-  equalizationRate: zod.number().optional(),
+  equalizationRate: zod.number().nullish(),
   estimatedMarketValue: zod.number().optional(),
   requestedAssessment: zod.number().optional(),
+  basisOfComplaint: zod.string().nullish(),
   status: zod
     .enum(["draft", "submitted", "pending", "reduced", "denied"])
     .optional(),
@@ -108,14 +145,24 @@ export const UpdateGrievanceBody = zod.object({
 export const UpdateGrievanceResponse = zod.object({
   id: zod.number(),
   ownerName: zod.string(),
+  ownerPhone: zod.string().nullish(),
+  ownerEmail: zod.string().nullish(),
+  ownerMailingAddress: zod.string().nullish(),
   propertyAddress: zod.string(),
   county: zod.string(),
   municipality: zod.string(),
+  schoolDistrict: zod.string().nullish(),
+  parcelId: zod.string().nullish(),
+  propertyClass: zod.string().nullish(),
+  yearBuilt: zod.number().nullish(),
+  livingArea: zod.number().nullish(),
+  lotSize: zod.string().nullish(),
   taxYear: zod.number(),
   currentAssessment: zod.number(),
-  equalizationRate: zod.number().optional(),
+  equalizationRate: zod.number().nullish(),
   estimatedMarketValue: zod.number(),
   requestedAssessment: zod.number(),
+  basisOfComplaint: zod.string().nullish(),
   status: zod.enum(["draft", "submitted", "pending", "reduced", "denied"]),
   filingDeadline: zod.string().nullish(),
   notes: zod.string().nullish(),
@@ -147,6 +194,10 @@ export const ListComparablesResponseItem = zod.object({
   bedrooms: zod.number().nullish(),
   bathrooms: zod.number().nullish(),
   assessedValue: zod.number().nullish(),
+  lotSize: zod.string().nullish(),
+  yearBuilt: zod.number().nullish(),
+  distance: zod.string().nullish(),
+  sourceUrl: zod.string().nullish(),
   notes: zod.string().nullish(),
   createdAt: zod.string(),
 });
@@ -164,6 +215,10 @@ export const AddComparableBody = zod.object({
   bedrooms: zod.number().nullish(),
   bathrooms: zod.number().nullish(),
   assessedValue: zod.number().nullish(),
+  lotSize: zod.string().nullish(),
+  yearBuilt: zod.number().nullish(),
+  distance: zod.string().nullish(),
+  sourceUrl: zod.string().nullish(),
   notes: zod.string().nullish(),
 });
 
@@ -175,7 +230,6 @@ export const DeleteComparableParams = zod.object({
 });
 
 /**
- * Returns all supported NY counties with filing information
  * @summary List all supported NY counties
  */
 export const ListCountiesResponseItem = zod.object({

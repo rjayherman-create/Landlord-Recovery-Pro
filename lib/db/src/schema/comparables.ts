@@ -12,6 +12,10 @@ export const comparablesTable = pgTable("comparables", {
   bedrooms: integer("bedrooms"),
   bathrooms: numeric("bathrooms", { precision: 4, scale: 1 }),
   assessedValue: numeric("assessed_value", { precision: 12, scale: 2 }),
+  lotSize: text("lot_size"),
+  yearBuilt: integer("year_built"),
+  distance: text("distance"),
+  sourceUrl: text("source_url"),
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

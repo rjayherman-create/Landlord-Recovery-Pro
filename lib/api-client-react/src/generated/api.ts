@@ -38,7 +38,6 @@ type Awaited<O> = O extends AwaitedInput<infer T> ? T : never;
 type SecondParameter<T extends (...args: never) => unknown> = Parameters<T>[1];
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const getHealthCheckUrl = () => {
@@ -114,7 +113,6 @@ export function useHealthCheck<
 }
 
 /**
- * Returns all saved grievance cases for the user session
  * @summary List all grievances
  */
 export const getListGrievancesUrl = () => {
@@ -190,7 +188,6 @@ export function useListGrievances<
 }
 
 /**
- * Creates a new property tax grievance case
  * @summary Create a new grievance
  */
 export const getCreateGrievanceUrl = () => {
@@ -799,7 +796,6 @@ export const useDeleteComparable = <
 };
 
 /**
- * Returns all supported NY counties with filing information
  * @summary List all supported NY counties
  */
 export const getListCountiesUrl = () => {

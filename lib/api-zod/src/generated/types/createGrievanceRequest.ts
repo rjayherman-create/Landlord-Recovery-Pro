@@ -8,14 +8,24 @@
 
 export interface CreateGrievanceRequest {
   ownerName: string;
+  ownerPhone?: string | null;
+  ownerEmail?: string | null;
+  ownerMailingAddress?: string | null;
   propertyAddress: string;
   county: string;
   municipality: string;
+  schoolDistrict?: string | null;
+  parcelId?: string | null;
+  propertyClass?: string | null;
+  yearBuilt?: number | null;
+  livingArea?: number | null;
+  lotSize?: string | null;
   taxYear: number;
   currentAssessment: number;
-  equalizationRate?: number;
+  equalizationRate?: number | null;
   estimatedMarketValue: number;
   requestedAssessment: number;
+  basisOfComplaint?: string | null;
   filingDeadline?: string | null;
   notes?: string | null;
 }
