@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Scale, Home, Map, FileText, Info } from "lucide-react";
+import { Scale, Home, Map, FileText, Info, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -14,6 +14,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
     { href: "/counties", label: "County Guide", icon: Map },
+    { href: "/calendar", label: "Filing Deadlines", icon: Calendar },
     { href: "/how-it-works", label: "How It Works", icon: Info },
   ];
 

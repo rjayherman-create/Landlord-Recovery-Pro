@@ -8,6 +8,7 @@ import { Dashboard } from "@/pages/Dashboard";
 import { GrievanceDetail } from "@/pages/GrievanceDetail";
 import { CountyGuide } from "@/pages/CountyGuide";
 import { HowItWorks } from "@/pages/HowItWorks";
+import { FilingCalendar } from "@/pages/FilingCalendar";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/counties" component={CountyGuide} />
       <Route path="/how-it-works" component={HowItWorks} />
+      <Route path="/calendar" component={FilingCalendar} />
       <Route path="/grievances/:id" component={GrievanceDetail} />
       <Route component={NotFound} />
     </Switch>
