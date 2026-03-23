@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,15 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateGrievance, useUpdateGrievance } from "@/hooks/use-grievances";
 import { useToast } from "@/hooks/use-toast";
+import { Search, Loader2, CheckCircle2, AlertTriangle, Info, Sparkles } from "lucide-react";
 import type { Grievance } from "@workspace/api-client-react";
 
+/* ─── Schema ────────────────────────────────────────── */
+
 const grievanceSchema = z.object({
-  // Owner / Complainant
   ownerName: z.string().min(2, "Owner name is required"),
   ownerPhone: z.string().optional(),
   ownerEmail: z.string().optional(),
   ownerMailingAddress: z.string().optional(),
-  // Property identification
   propertyAddress: z.string().min(5, "Property address is required"),
   county: z.string().min(2, "County is required"),
   municipality: z.string().min(2, "Municipality/Town is required"),
@@ -26,7 +28,6 @@ const grievanceSchema = z.object({
   yearBuilt: z.coerce.number().min(1600).max(2030).optional(),
   livingArea: z.coerce.number().positive().optional(),
   lotSize: z.string().optional(),
-  // Assessment
   taxYear: z.coerce.number().min(2020).max(2030),
   currentAssessment: z.coerce.number().positive("Must be a positive number"),
   equalizationRate: z.coerce.number().min(0).max(100).optional(),
@@ -39,10 +40,23 @@ const grievanceSchema = z.object({
 
 type GrievanceFormValues = z.infer<typeof grievanceSchema>;
 
-interface GrievanceFormProps {
-  initialData?: Grievance;
-  onSuccess?: () => void;
+interface LookupResult {
+  municipality?: string;
+  county?: string;
+  schoolDistrict?: string;
+  parcelId?: string;
+  propertyClass?: string;
+  yearBuilt?: number;
+  livingArea?: number;
+  lotSize?: string;
+  estimatedMarketValue?: number;
+  source: string;
+  confidence: "high" | "partial" | "geocode-only";
+  fieldsFound: string[];
+  message?: string;
 }
+
+/* ─── Constants ─────────────────────────────────────── */
 
 const BASIS_OPTIONS = [
   { value: "overvaluation", label: "Overvaluation — Market value is lower than assessment implies" },
@@ -66,6 +80,27 @@ const PROPERTY_CLASS_OPTIONS = [
   { value: "400", label: "400 — Commercial" },
 ];
 
+const FIELD_LABELS: Record<string, string> = {
+  county: "County",
+  municipality: "Municipality",
+  schoolDistrict: "School District",
+  parcelId: "Parcel ID",
+  propertyClass: "Property Class",
+  yearBuilt: "Year Built",
+  livingArea: "Living Area",
+  lotSize: "Lot Size",
+  estimatedMarketValue: "Est. Market Value",
+};
+
+/* ─── Props ─────────────────────────────────────────── */
+
+interface GrievanceFormProps {
+  initialData?: Grievance;
+  onSuccess?: () => void;
+}
+
+/* ─── Component ─────────────────────────────────────── */
+
 export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
   const { toast } = useToast();
   const createMutation = useCreateGrievance();
@@ -73,6 +108,13 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
 
   const isEditing = !!initialData;
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  // Lookup state
+  const [lookupAddress, setLookupAddress] = useState("");
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [lookupResult, setLookupResult] = useState<LookupResult | null>(null);
+  const [lookupError, setLookupError] = useState<string | null>(null);
+  const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
 
   const form = useForm<GrievanceFormValues>({
     resolver: zodResolver(grievanceSchema),
@@ -107,6 +149,58 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
         },
   });
 
+  /* ── Property lookup ── */
+  const handleLookup = async () => {
+    if (!lookupAddress.trim()) return;
+    setIsLookingUp(true);
+    setLookupError(null);
+    setLookupResult(null);
+
+    try {
+      const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+      const res = await fetch(`${BASE}/api/property-lookup?address=${encodeURIComponent(lookupAddress)}`);
+      const data = await res.json();
+
+      if (!res.ok) {
+        setLookupError(data.error || "Lookup failed. Please enter details manually.");
+        return;
+      }
+
+      const result = data as LookupResult;
+      setLookupResult(result);
+
+      // Auto-fill form fields
+      const filled = new Set<string>();
+      if (result.county) { form.setValue("county", result.county); filled.add("county"); }
+      if (result.municipality) { form.setValue("municipality", result.municipality); filled.add("municipality"); }
+      if (result.schoolDistrict) { form.setValue("schoolDistrict", result.schoolDistrict); filled.add("schoolDistrict"); }
+      if (result.parcelId) { form.setValue("parcelId", result.parcelId); filled.add("parcelId"); }
+      if (result.propertyClass) { form.setValue("propertyClass", result.propertyClass); filled.add("propertyClass"); }
+      if (result.yearBuilt) { form.setValue("yearBuilt", result.yearBuilt); filled.add("yearBuilt"); }
+      if (result.livingArea) { form.setValue("livingArea", result.livingArea); filled.add("livingArea"); }
+      if (result.lotSize) { form.setValue("lotSize", result.lotSize); filled.add("lotSize"); }
+      if (result.estimatedMarketValue) { form.setValue("estimatedMarketValue", result.estimatedMarketValue); filled.add("estimatedMarketValue"); }
+
+      // Auto-fill address if blank
+      if (!form.getValues("propertyAddress")) {
+        form.setValue("propertyAddress", lookupAddress);
+        filled.add("propertyAddress");
+      }
+
+      setAutoFilledFields(filled);
+
+    } catch (err) {
+      setLookupError("Could not reach lookup service. Please enter details manually.");
+    } finally {
+      setIsLookingUp(false);
+    }
+  };
+
+  const isAutoFilled = (field: string) => autoFilledFields.has(field);
+  const autoFillClass = (field: string) =>
+    isAutoFilled(field) ? "border-emerald-400 bg-emerald-50/50 ring-1 ring-emerald-300" : "";
+
+  /* ── Submit ── */
   const onSubmit = async (data: GrievanceFormValues) => {
     try {
       if (isEditing && initialData) {
@@ -135,6 +229,90 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 py-2">
+
+      {/* ── Auto-fill lookup panel ── */}
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
+          <span className="text-sm font-semibold text-primary">Auto-fill from Public Records</span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Enter the property address and we'll look up county, municipality, year built, living area, and more from public tax records. You can edit anything afterwards.
+        </p>
+        <div className="flex gap-2">
+          <Input
+            placeholder="123 Main St, Garden City, NY 11530"
+            value={lookupAddress}
+            onChange={(e) => setLookupAddress(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleLookup())}
+            className="flex-1 bg-white"
+          />
+          <Button
+            type="button"
+            onClick={handleLookup}
+            disabled={isLookingUp || !lookupAddress.trim()}
+            className="gap-2 shrink-0"
+          >
+            {isLookingUp
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Looking up…</>
+              : <><Search className="w-4 h-4" /> Look Up</>
+            }
+          </Button>
+        </div>
+
+        {/* Error */}
+        {lookupError && (
+          <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <span>{lookupError}</span>
+          </div>
+        )}
+
+        {/* Success result */}
+        {lookupResult && (
+          <div className={`rounded-lg border p-3 text-sm space-y-2 ${
+            lookupResult.confidence === "high"
+              ? "border-emerald-200 bg-emerald-50"
+              : lookupResult.confidence === "partial"
+              ? "border-amber-200 bg-amber-50"
+              : "border-blue-200 bg-blue-50"
+          }`}>
+            <div className="flex items-center gap-2 font-semibold">
+              {lookupResult.confidence === "high"
+                ? <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                : <Info className="w-4 h-4 text-amber-600" />
+              }
+              <span>
+                {lookupResult.confidence === "high"
+                  ? `Found via ${lookupResult.source}`
+                  : lookupResult.confidence === "partial"
+                  ? `Partial data from ${lookupResult.source}`
+                  : `Location confirmed via ${lookupResult.source}`
+                }
+              </span>
+            </div>
+
+            {lookupResult.fieldsFound.length > 0 && (
+              <div>
+                <p className="text-xs font-medium mb-1">
+                  Fields auto-filled ({lookupResult.fieldsFound.length}):
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {lookupResult.fieldsFound.map(f => (
+                    <span key={f} className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 font-medium">
+                      ✓ {FIELD_LABELS[f] || f}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {lookupResult.message && (
+              <p className="text-xs text-muted-foreground leading-relaxed">{lookupResult.message}</p>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* ---- Part 1A: Owner / Complainant ---- */}
       <div>
@@ -171,20 +349,35 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
       <div>
         <SectionHeader
           title="Part 1B — Property Identification"
-          subtitle="Find your parcel ID (SBL / Section-Block-Lot) on your tax bill or county assessor's website."
+          subtitle="Use the auto-fill above to populate these fields, or enter them manually from your tax bill."
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5 md:col-span-2">
-            <Label htmlFor="propertyAddress">Property Street Address *</Label>
-            <Input id="propertyAddress" placeholder="123 Main Street, Town, NY 11000" {...form.register("propertyAddress")} />
+            <Label htmlFor="propertyAddress">
+              Property Street Address *
+              {isAutoFilled("propertyAddress") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+            </Label>
+            <Input
+              id="propertyAddress"
+              placeholder="123 Main Street, Town, NY 11000"
+              className={autoFillClass("propertyAddress")}
+              {...form.register("propertyAddress")}
+            />
             {form.formState.errors.propertyAddress && (
               <p className="text-xs text-destructive">{form.formState.errors.propertyAddress.message}</p>
             )}
           </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="county">County *</Label>
-            <Select onValueChange={(v) => form.setValue("county", v)} defaultValue={form.getValues("county")}>
-              <SelectTrigger id="county">
+            <Label htmlFor="county">
+              County *
+              {isAutoFilled("county") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+            </Label>
+            <Select
+              onValueChange={(v) => form.setValue("county", v)}
+              value={form.watch("county")}
+            >
+              <SelectTrigger id="county" className={autoFillClass("county")}>
                 <SelectValue placeholder="Select county" />
               </SelectTrigger>
               <SelectContent>
@@ -194,23 +387,57 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               </SelectContent>
             </Select>
           </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="municipality">Municipality / Town *</Label>
-            <Input id="municipality" placeholder="Town of Hempstead" {...form.register("municipality")} />
+            <Label htmlFor="municipality">
+              Municipality / Town *
+              {isAutoFilled("municipality") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+            </Label>
+            <Input
+              id="municipality"
+              placeholder="Town of Hempstead"
+              className={autoFillClass("municipality")}
+              {...form.register("municipality")}
+            />
           </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="schoolDistrict">School District</Label>
-            <Input id="schoolDistrict" placeholder="Garden City UFSD" {...form.register("schoolDistrict")} />
+            <Label htmlFor="schoolDistrict">
+              School District
+              {isAutoFilled("schoolDistrict") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+            </Label>
+            <Input
+              id="schoolDistrict"
+              placeholder="Garden City UFSD"
+              className={autoFillClass("schoolDistrict")}
+              {...form.register("schoolDistrict")}
+            />
           </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="parcelId">Tax Map Number / Parcel ID (SBL)</Label>
-            <Input id="parcelId" placeholder="e.g. 0400-056.00-01.00-001.000" {...form.register("parcelId")} />
+            <Label htmlFor="parcelId">
+              Tax Map Number / Parcel ID (SBL)
+              {isAutoFilled("parcelId") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+            </Label>
+            <Input
+              id="parcelId"
+              placeholder="e.g. 0400-056.00-01.00-001.000"
+              className={autoFillClass("parcelId")}
+              {...form.register("parcelId")}
+            />
             <p className="text-xs text-muted-foreground">Found on your tax bill under "Section/Block/Lot"</p>
           </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="propertyClass">Property Classification Code</Label>
-            <Select onValueChange={(v) => form.setValue("propertyClass", v)} defaultValue={form.getValues("propertyClass")}>
-              <SelectTrigger id="propertyClass">
+            <Label htmlFor="propertyClass">
+              Property Classification Code
+              {isAutoFilled("propertyClass") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+            </Label>
+            <Select
+              onValueChange={(v) => form.setValue("propertyClass", v)}
+              value={form.watch("propertyClass")}
+            >
+              <SelectTrigger id="propertyClass" className={autoFillClass("propertyClass")}>
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
               <SelectContent>
@@ -220,17 +447,46 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               </SelectContent>
             </Select>
           </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="yearBuilt">Year Built</Label>
-            <Input id="yearBuilt" type="number" placeholder="1978" {...form.register("yearBuilt")} />
+            <Label htmlFor="yearBuilt">
+              Year Built
+              {isAutoFilled("yearBuilt") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+            </Label>
+            <Input
+              id="yearBuilt"
+              type="number"
+              placeholder="1978"
+              className={autoFillClass("yearBuilt")}
+              {...form.register("yearBuilt")}
+            />
           </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="livingArea">Living Area (sq ft)</Label>
-            <Input id="livingArea" type="number" placeholder="1850" {...form.register("livingArea")} />
+            <Label htmlFor="livingArea">
+              Living Area (sq ft)
+              {isAutoFilled("livingArea") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+            </Label>
+            <Input
+              id="livingArea"
+              type="number"
+              placeholder="1850"
+              className={autoFillClass("livingArea")}
+              {...form.register("livingArea")}
+            />
           </div>
+
           <div className="space-y-1.5">
-            <Label htmlFor="lotSize">Lot Size</Label>
-            <Input id="lotSize" placeholder="0.25 acres / 10,890 sq ft" {...form.register("lotSize")} />
+            <Label htmlFor="lotSize">
+              Lot Size
+              {isAutoFilled("lotSize") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+            </Label>
+            <Input
+              id="lotSize"
+              placeholder="0.25 acres / 10,890 sq ft"
+              className={autoFillClass("lotSize")}
+              {...form.register("lotSize")}
+            />
           </div>
         </div>
       </div>
@@ -288,8 +544,17 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
             <p className="text-xs text-muted-foreground">Found on your tax bill or NYS Dept. of Tax</p>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="estimatedMarketValue">Your Est. Market Value ($) *</Label>
-            <Input id="estimatedMarketValue" type="number" placeholder="550000" {...form.register("estimatedMarketValue")} />
+            <Label htmlFor="estimatedMarketValue">
+              Your Est. Market Value ($) *
+              {isAutoFilled("estimatedMarketValue") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+            </Label>
+            <Input
+              id="estimatedMarketValue"
+              type="number"
+              placeholder="550000"
+              className={autoFillClass("estimatedMarketValue")}
+              {...form.register("estimatedMarketValue")}
+            />
             <p className="text-xs text-muted-foreground">What you believe your home is worth</p>
             {form.formState.errors.estimatedMarketValue && (
               <p className="text-xs text-destructive">{form.formState.errors.estimatedMarketValue.message}</p>
