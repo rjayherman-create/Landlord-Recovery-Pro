@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useState } from "react";
@@ -413,11 +413,18 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               Property Street Address *
               {isAutoFilled("propertyAddress") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Input
-              id="propertyAddress"
-              placeholder="123 Main Street, Town, NY 11000"
-              className={autoFillClass("propertyAddress")}
-              {...form.register("propertyAddress")}
+            <Controller
+              control={form.control}
+              name="propertyAddress"
+              render={({ field }) => (
+                <Input
+                  id="propertyAddress"
+                  placeholder="123 Main Street, Town, NY 11000"
+                  className={autoFillClass("propertyAddress")}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              )}
             />
             {form.formState.errors.propertyAddress && (
               <p className="text-xs text-destructive">{form.formState.errors.propertyAddress.message}</p>
@@ -429,19 +436,22 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               County *
               {isAutoFilled("county") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Select
-              onValueChange={(v) => form.setValue("county", v)}
-              value={form.watch("county")}
-            >
-              <SelectTrigger id="county" className={autoFillClass("county")}>
-                <SelectValue placeholder="Select county" />
-              </SelectTrigger>
-              <SelectContent>
-                {COUNTY_OPTIONS.map((c) => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={form.control}
+              name="county"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                  <SelectTrigger id="county" className={autoFillClass("county")}>
+                    <SelectValue placeholder="Select county" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {COUNTY_OPTIONS.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -449,11 +459,18 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               Municipality / Town *
               {isAutoFilled("municipality") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Input
-              id="municipality"
-              placeholder="Town of Hempstead"
-              className={autoFillClass("municipality")}
-              {...form.register("municipality")}
+            <Controller
+              control={form.control}
+              name="municipality"
+              render={({ field }) => (
+                <Input
+                  id="municipality"
+                  placeholder="Town of Hempstead"
+                  className={autoFillClass("municipality")}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              )}
             />
           </div>
 
@@ -462,11 +479,18 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               School District
               {isAutoFilled("schoolDistrict") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Input
-              id="schoolDistrict"
-              placeholder="Garden City UFSD"
-              className={autoFillClass("schoolDistrict")}
-              {...form.register("schoolDistrict")}
+            <Controller
+              control={form.control}
+              name="schoolDistrict"
+              render={({ field }) => (
+                <Input
+                  id="schoolDistrict"
+                  placeholder="Garden City UFSD"
+                  className={autoFillClass("schoolDistrict")}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              )}
             />
           </div>
 
@@ -475,11 +499,18 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               Tax Map Number / Parcel ID (SBL)
               {isAutoFilled("parcelId") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Input
-              id="parcelId"
-              placeholder="e.g. 0400-056.00-01.00-001.000"
-              className={autoFillClass("parcelId")}
-              {...form.register("parcelId")}
+            <Controller
+              control={form.control}
+              name="parcelId"
+              render={({ field }) => (
+                <Input
+                  id="parcelId"
+                  placeholder="e.g. 0400-056.00-01.00-001.000"
+                  className={autoFillClass("parcelId")}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              )}
             />
             <p className="text-xs text-muted-foreground">Found on your tax bill under "Section/Block/Lot"</p>
           </div>
@@ -489,19 +520,22 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               Property Classification Code
               {isAutoFilled("propertyClass") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Select
-              onValueChange={(v) => form.setValue("propertyClass", v)}
-              value={form.watch("propertyClass")}
-            >
-              <SelectTrigger id="propertyClass" className={autoFillClass("propertyClass")}>
-                <SelectValue placeholder="Select class" />
-              </SelectTrigger>
-              <SelectContent>
-                {PROPERTY_CLASS_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Controller
+              control={form.control}
+              name="propertyClass"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value ?? ""}>
+                  <SelectTrigger id="propertyClass" className={autoFillClass("propertyClass")}>
+                    <SelectValue placeholder="Select class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PROPERTY_CLASS_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -509,12 +543,20 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               Year Built
               {isAutoFilled("yearBuilt") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Input
-              id="yearBuilt"
-              type="number"
-              placeholder="1978"
-              className={autoFillClass("yearBuilt")}
-              {...form.register("yearBuilt")}
+            <Controller
+              control={form.control}
+              name="yearBuilt"
+              render={({ field }) => (
+                <Input
+                  id="yearBuilt"
+                  type="number"
+                  placeholder="1978"
+                  className={autoFillClass("yearBuilt")}
+                  {...field}
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+                />
+              )}
             />
           </div>
 
@@ -523,12 +565,20 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               Living Area (sq ft)
               {isAutoFilled("livingArea") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Input
-              id="livingArea"
-              type="number"
-              placeholder="1850"
-              className={autoFillClass("livingArea")}
-              {...form.register("livingArea")}
+            <Controller
+              control={form.control}
+              name="livingArea"
+              render={({ field }) => (
+                <Input
+                  id="livingArea"
+                  type="number"
+                  placeholder="1850"
+                  className={autoFillClass("livingArea")}
+                  {...field}
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+                />
+              )}
             />
           </div>
 
@@ -537,11 +587,18 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               Lot Size
               {isAutoFilled("lotSize") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Input
-              id="lotSize"
-              placeholder="0.25 acres / 10,890 sq ft"
-              className={autoFillClass("lotSize")}
-              {...form.register("lotSize")}
+            <Controller
+              control={form.control}
+              name="lotSize"
+              render={({ field }) => (
+                <Input
+                  id="lotSize"
+                  placeholder="0.25 acres / 10,890 sq ft"
+                  className={autoFillClass("lotSize")}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              )}
             />
           </div>
         </div>
@@ -604,12 +661,20 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               Your Est. Market Value ($) *
               {isAutoFilled("estimatedMarketValue") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Input
-              id="estimatedMarketValue"
-              type="number"
-              placeholder="550000"
-              className={autoFillClass("estimatedMarketValue")}
-              {...form.register("estimatedMarketValue")}
+            <Controller
+              control={form.control}
+              name="estimatedMarketValue"
+              render={({ field }) => (
+                <Input
+                  id="estimatedMarketValue"
+                  type="number"
+                  placeholder="550000"
+                  className={autoFillClass("estimatedMarketValue")}
+                  {...field}
+                  value={field.value ?? ""}
+                  onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+                />
+              )}
             />
             <p className="text-xs text-muted-foreground">What you believe your home is worth</p>
             {form.formState.errors.estimatedMarketValue && (
