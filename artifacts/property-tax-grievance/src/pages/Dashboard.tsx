@@ -4,7 +4,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { GrievanceForm } from "@/components/GrievanceForm";
-import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck } from "lucide-react";
+import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSign, AlertTriangle, Award, ChevronRight } from "lucide-react";
 import { useState } from "react";
 import { format } from "date-fns";
 
@@ -98,6 +98,46 @@ export function Dashboard() {
                 {grievances?.filter(g => g.filingDeadline && new Date(g.filingDeadline) > new Date()).length || 0}
               </h3>
             </div>
+          </div>
+        </div>
+
+        {/* Confidence Teaser */}
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-border flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-serif font-bold text-foreground">Why file yourself?</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">The facts that make this a no-brainer</p>
+            </div>
+            <Link href="/how-it-works">
+              <Button variant="outline" size="sm" className="font-medium gap-1.5">
+                Full breakdown <ChevronRight className="w-4 h-4" />
+              </Button>
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border">
+            {[
+              { icon: Award,         value: "~80%",  label: "DIY success rate",         sub: "Nassau County, 2024",            color: "text-emerald-600", bg: "bg-emerald-50" },
+              { icon: DollarSign,    value: "$0",    label: "Cost to file",             sub: "No fee at all",                  color: "text-blue-600",    bg: "bg-blue-50"   },
+              { icon: AlertTriangle, value: "$0",    label: "Risk of filing",           sub: "Taxes cannot go up",             color: "text-amber-600",   bg: "bg-amber-50"  },
+              { icon: TrendingDown,  value: "50%",   label: "Commission saved",         sub: "vs. hiring a firm",              color: "text-violet-600",  bg: "bg-violet-50" },
+            ].map(({ icon: Icon, value, label, sub, color, bg }) => (
+              <div key={label} className="flex flex-col items-center text-center p-5 gap-2 hover:bg-secondary/30 transition-colors">
+                <div className={`p-2 rounded-lg ${bg}`}>
+                  <Icon className={`w-4 h-4 ${color}`} />
+                </div>
+                <div className={`text-2xl font-extrabold font-serif ${color}`}>{value}</div>
+                <div>
+                  <div className="text-sm font-semibold text-foreground leading-tight">{label}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">{sub}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="px-6 py-3 bg-emerald-50 border-t border-emerald-100 flex items-center gap-2 text-sm text-emerald-800">
+            <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <span>
+              <strong>New York law guarantees:</strong> filing a grievance cannot raise your assessment. The worst outcome is no change.
+            </span>
           </div>
         </div>
 
