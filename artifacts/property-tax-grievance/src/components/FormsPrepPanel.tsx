@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Circle, Download, ExternalLink, Mail, MapPin, Phone, Printer, FileText, AlertCircle, Send, ChevronDown, ChevronUp } from "lucide-react";
 import type { Grievance, Comparable } from "@workspace/api-client-react";
 import { getFilingInfo, getGenericFilingInfo } from "@/data/county-filing-instructions";
+import { PrePrintChecklist } from "@/components/PrePrintChecklist";
 
 interface FormsPrepPanelProps {
   grievance: Grievance;
@@ -314,6 +315,9 @@ export function FormsPrepPanel({ grievance, comparables, onPrint }: FormsPrepPan
           )}
         </div>
       </div>
+
+      {/* Pre-print verification checklist */}
+      <PrePrintChecklist grievance={grievance} />
 
       {/* Download & Print Actions */}
       <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
