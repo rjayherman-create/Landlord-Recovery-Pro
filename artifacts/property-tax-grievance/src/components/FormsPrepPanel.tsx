@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Circle, Download, ExternalLink, Mail, MapPin, Phone, Printer, FileText, AlertCircle, Send, ChevronDown, ChevronUp, CheckSquare, Lock } from "lucide-react";
+import { CheckCircle2, Circle, Download, ExternalLink, Mail, MapPin, Phone, Printer, FileText, AlertCircle, Send, ChevronDown, ChevronUp, CheckSquare, Lock, ShieldCheck, XCircle, Footprints, Star } from "lucide-react";
 import type { Grievance, Comparable } from "@workspace/api-client-react";
 import { getFilingInfo, getGenericFilingInfo } from "@/data/county-filing-instructions";
 import { PrePrintChecklist } from "@/components/PrePrintChecklist";
@@ -445,6 +445,67 @@ export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, on
               </div>
             </div>
           )}
+
+          {/* How to Submit — Delivery Method Guide */}
+          <div className="border border-border rounded-xl overflow-hidden">
+            <div className="bg-secondary/40 px-4 py-3 border-b border-border flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-primary" />
+              <p className="font-semibold text-sm">How to Submit — Recommended Method</p>
+            </div>
+            <div className="divide-y divide-border">
+
+              {filingInfo.onlinePortal && (
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center mt-0.5">
+                    <Star className="w-3 h-3 text-emerald-700" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800">Online portal — Best</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {filingInfo.onlinePortal.label} provides an instant timestamp and electronic confirmation. No mail delay, no proof-of-delivery hassle — the system records your filing automatically.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-start gap-3 px-4 py-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center mt-0.5">
+                  <Footprints className="w-3 h-3 text-emerald-700" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">Hand delivery — Highly recommended</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Bring two copies. Ask the clerk to date-stamp your copy and hand it back. That stamped copy is your legal proof of timely filing — keep it.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 px-4 py-3">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center mt-0.5">
+                  <Mail className="w-3 h-3 text-amber-700" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-amber-800">USPS Certified Mail + Return Receipt — Good</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    At the post office, request <strong>Certified Mail</strong> (green USPS Form 3800) <em>and</em> add a <strong>Return Receipt</strong> (PS Form 3811 — the green postcard). The postcard comes back to you signed with the delivery date, which is your proof the form arrived before the deadline. Cost: roughly $8–10 total.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3 px-4 py-3 bg-red-50/50">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 border border-red-300 flex items-center justify-center mt-0.5">
+                  <XCircle className="w-3 h-3 text-red-600" />
+                </span>
+                <div>
+                  <p className="text-sm font-semibold text-red-700">Regular first-class mail — Not recommended</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    No tracking, no proof of timely delivery. If it arrives late or gets lost, you have no recourse. Always use certified mail if mailing.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+          </div>
 
           <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
             <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
