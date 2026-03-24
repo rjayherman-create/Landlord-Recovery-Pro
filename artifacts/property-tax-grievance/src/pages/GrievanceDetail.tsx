@@ -8,6 +8,7 @@ import { GrievanceForm } from "@/components/GrievanceForm";
 import { RP524PrintForm } from "@/components/RP524PrintForm";
 import { FormsPrepPanel } from "@/components/FormsPrepPanel";
 import { ValidationPanel } from "@/components/ValidationPanel";
+import { WhatHappensNext } from "@/components/WhatHappensNext";
 import { CompsResearch } from "@/components/CompsResearch";
 import { useFormValidation } from "@/hooks/use-form-validation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -357,6 +358,28 @@ export function GrievanceDetail() {
           })}
         </div>
       </div>
+
+      {/* ── What happens next — shown after filing ── */}
+      {grievance.status !== "draft" && (
+        <div className="mb-6 bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+          <div className="px-5 py-4 border-b border-border bg-secondary/30 flex items-center justify-between">
+            <div>
+              <h2 className="font-serif font-bold text-base">What happens now</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Your case is <span className="font-semibold capitalize">{grievance.status}</span> — here is exactly what to expect and when.
+              </p>
+            </div>
+          </div>
+          <div className="p-5">
+            <WhatHappensNext
+              county={grievance.county}
+              afterFiling={filingInfo.afterFiling}
+              currentStatus={grievance.status}
+              filedDate={grievance.filingDeadline}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Confidence score + Prior year row ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -842,9 +865,19 @@ export function GrievanceDetail() {
 
                 <div className="pt-2 border-t border-border">
                   <p className="text-xs text-muted-foreground">
-                    After filing, change your case status to <strong>Submitted</strong> to track your progress.
-                    If your grievance is denied, you can appeal to the Small Claims Assessment Review (SCAR) court.
+                    After filing, change your case status to <strong>Submitted</strong> using the dropdown at the top of this page to unlock the step-by-step timeline below.
                   </p>
+                </div>
+
+                {/* After-filing timeline always shown in How to File tab */}
+                <div className="pt-4 border-t border-border">
+                  <h4 className="font-serif font-bold text-base mb-4">After you file — what to expect</h4>
+                  <WhatHappensNext
+                    county={grievance.county}
+                    afterFiling={filingInfo.afterFiling}
+                    currentStatus={grievance.status}
+                    filedDate={grievance.filingDeadline}
+                  />
                 </div>
               </div>
             </TabsContent>
