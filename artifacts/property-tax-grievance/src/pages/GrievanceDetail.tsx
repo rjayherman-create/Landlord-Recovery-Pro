@@ -7,7 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { GrievanceForm } from "@/components/GrievanceForm";
 import { RP524PrintForm } from "@/components/RP524PrintForm";
 import { FormsPrepPanel } from "@/components/FormsPrepPanel";
+import { ValidationPanel } from "@/components/ValidationPanel";
 import { CompsResearch } from "@/components/CompsResearch";
+import { useFormValidation } from "@/hooks/use-form-validation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -125,6 +127,8 @@ export function GrievanceDetail() {
     return localStorage.getItem(`reminder-${id}`) === "true";
   });
 
+  const [activeTab, setActiveTab] = useState("comps");
+
   const compForm = useForm<CompFormValues>({ resolver: zodResolver(compSchema) });
 
   useEffect(() => {
@@ -221,6 +225,19 @@ export function GrievanceDetail() {
     if (!win) return;
     win.document.write(`<!DOCTYPE html><html><head><title>RP-524 — ${grievance?.propertyAddress}</title><style>* { box-sizing: border-box; margin: 0; padding: 0; } body { font-family: Arial, Helvetica, sans-serif; font-size: 10px; color: #000; background: #fff; } @media print { body { margin: 0; } @page { margin: 0.5in; size: letter; } } .border { border-width: 1px; border-style: solid; } .border-gray-400 { border-color: #9ca3af; } .border-gray-800 { border-color: #1f2937; } .border-b { border-bottom-width: 1px; border-bottom-style: solid; } .border-t { border-top-width: 1px; border-top-style: solid; } .bg-gray-800 { background-color: #1f2937; } .bg-gray-100 { background-color: #f3f4f6; } .bg-gray-50 { background-color: #f9fafb; } .text-white { color: #fff; } .text-gray-600 { color: #4b5563; } .text-gray-700 { color: #374151; } .text-gray-900 { color: #111827; } .text-gray-500 { color: #6b7280; } .text-red-700 { color: #b91c1c; } .font-bold { font-weight: 700; } .font-extrabold { font-weight: 800; } .font-mono { font-family: monospace; } .font-medium { font-weight: 500; } .text-center { text-align: center; } .text-right { text-align: right; } .text-left { text-align: left; } .uppercase { text-transform: uppercase; } .tracking-wide { letter-spacing: 0.025em; } .italic { font-style: italic; } .leading-tight { line-height: 1.25; } .leading-relaxed { line-height: 1.625; } .leading-none { line-height: 1; } .grid { display: grid; } .grid-cols-2 { grid-template-columns: repeat(2, 1fr); } .grid-cols-3 { grid-template-columns: repeat(3, 1fr); } .gap-px { gap: 1px; } .gap-4 { gap: 16px; } .gap-6 { gap: 24px; } .gap-8 { gap: 32px; } .gap-1 { gap: 4px; } .gap-1\\.5 { gap: 6px; } .gap-2 { gap: 8px; } .flex { display: flex; } .flex-1 { flex: 1; } .items-start { align-items: flex-start; } .items-center { align-items: center; } .mb-0\\.5 { margin-bottom: 2px; } .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; } .mb-4 { margin-bottom: 16px; } .mt-0\\.5 { margin-top: 2px; } .pt-0\\.5 { padding-top: 2px; } .pt-1 { padding-top: 4px; } .pt-2 { padding-top: 8px; } .px-1 { padding-left: 4px; padding-right: 4px; } .px-2 { padding-left: 8px; padding-right: 8px; } .py-0\\.5 { padding-top: 2px; padding-bottom: 2px; } .py-1 { padding-top: 4px; padding-bottom: 4px; } .p-1 { padding: 4px; } .p-2 { padding: 8px; } .pb-1 { padding-bottom: 4px; } .col-span-2 { grid-column: span 2; } table { width: 100%; border-collapse: collapse; } th, td { border: 1px solid #9ca3af; padding: 2px 4px; } th { background-color: #f3f4f6; font-weight: 700; } .w-3\\.5 { width: 14px; } .h-3\\.5 { height: 14px; } .whitespace-pre-wrap { white-space: pre-wrap; }</style></head><body>${printContent.innerHTML}<script>window.onload = () => { window.print(); }<\/script></body></html>`);
     win.document.close();
+  };
+
+  const validation = useFormValidation(grievance, comparables);
+
+  const handleValidationFix = (issue: { fixAction?: "edit" | "add-comp" | "find-comps" }) => {
+    if (issue.fixAction === "edit") {
+      setIsEditOpen(true);
+    } else if (issue.fixAction === "add-comp") {
+      setActiveTab("comps");
+      setIsAddCompOpen(true);
+    } else if (issue.fixAction === "find-comps") {
+      setActiveTab("suggest");
+    }
   };
 
   if (isLoading) return <AppLayout><div className="animate-pulse h-96 bg-secondary/50 rounded-2xl" /></AppLayout>;
@@ -526,7 +543,7 @@ export function GrievanceDetail() {
 
         {/* Right: tabs */}
         <div className="lg:col-span-2 space-y-6">
-          <Tabs defaultValue="comps">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="mb-4">
               <TabsTrigger value="comps" className="gap-2">
                 <MapPin className="w-4 h-4" />
@@ -550,6 +567,15 @@ export function GrievanceDetail() {
               <TabsTrigger value="print" className="gap-2">
                 <Printer className="w-4 h-4" />
                 Forms &amp; PDF
+                {validation.errors.length > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">{validation.errors.length}</span>
+                )}
+                {validation.errors.length === 0 && validation.warnings.length > 0 && (
+                  <span className="bg-amber-400 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">{validation.warnings.length}</span>
+                )}
+                {validation.isReadyToFile && (
+                  <span className="bg-emerald-500 text-white text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none">✓</span>
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -826,6 +852,14 @@ export function GrievanceDetail() {
             {/* Tab: Print */}
             <TabsContent value="print">
               <div className="space-y-6">
+                <ValidationPanel
+                  errors={validation.errors}
+                  warnings={validation.warnings}
+                  suggestions={validation.suggestions}
+                  isReadyToFile={validation.isReadyToFile}
+                  onFix={handleValidationFix}
+                />
+
                 <FormsPrepPanel
                   grievance={grievance}
                   comparables={comparables}
