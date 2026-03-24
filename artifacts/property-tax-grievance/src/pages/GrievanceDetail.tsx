@@ -29,7 +29,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
-import { getFilingInfo, getGenericFilingInfo } from "@/data/county-filing-instructions";
+import { getFilingInfo, getGenericFilingInfo, getComputedDeadline } from "@/data/county-filing-instructions";
 import type { Grievance } from "@workspace/api-client-react";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -261,8 +261,8 @@ export function GrievanceDetail() {
   // Step-by-step checklist
   const steps = [
     {
-      n: 1, label: "Property info", done: !!(grievance.propertyAddress && grievance.county && grievance.currentAssessment),
-      detail: "Owner, address, assessments, parcel ID",
+      n: 1, label: "Property info", done: !!(grievance.propertyAddress && grievance.county && grievance.currentAssessment && grievance.parcelId),
+      detail: grievance.parcelId ? "Owner, address, assessments, parcel ID" : "⚠ Parcel ID required — edit your case",
     },
     {
       n: 2, label: "Comparable sales", done: comparables.length >= 3,
@@ -337,7 +337,7 @@ export function GrievanceDetail() {
       <DeadlineBanner
         county={grievance.county}
         countyDeadlineText={filingInfo.filingDeadline}
-        specificDate={grievance.filingDeadline}
+        specificDate={grievance.filingDeadline || getComputedDeadline(grievance.county)}
         portalUrl={filingInfo.onlinePortal?.url}
         portalLabel={filingInfo.onlinePortal?.label}
         status={grievance.status}
@@ -465,7 +465,11 @@ export function GrievanceDetail() {
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground py-2">Prior year data not available for this property. Make sure your parcel ID is set.</p>
+            <p className="text-sm text-muted-foreground py-2">
+              {grievance.parcelId
+                ? "No prior year data in our database for this parcel. Check your county assessor's website for historical assessment records."
+                : "Add your Parcel ID (from your tax bill) to enable prior year comparison."}
+            </p>
           )}
         </div>
       </div>

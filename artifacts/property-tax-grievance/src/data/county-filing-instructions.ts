@@ -330,6 +330,29 @@ export function getFilingInfo(county: string): CountyFilingInfo | null {
   return COUNTY_FILING[normalized] ?? null;
 }
 
+function nthTuesdayISO(year: number, month: number, n: number): string {
+  // month is 0-indexed (4 = May, 5 = June)
+  const first = new Date(year, month, 1);
+  const dayOfWeek = first.getDay();
+  const offset = (2 - dayOfWeek + 7) % 7;
+  const day = 1 + offset + (n - 1) * 7;
+  const d = new Date(year, month, day);
+  return d.toISOString().split("T")[0];
+}
+
+export function getComputedDeadline(county: string): string | null {
+  const year = new Date().getFullYear();
+  const normalized = county.trim();
+  if (normalized === "Nassau") return `${year}-03-01`;
+  if (["Kings", "Queens", "New York", "Bronx", "Richmond"].includes(normalized)) return `${year}-03-15`;
+  if (normalized === "Suffolk") return nthTuesdayISO(year, 4, 3);
+  if (normalized === "Westchester") return nthTuesdayISO(year, 5, 3);
+  if (normalized === "Rockland") return nthTuesdayISO(year, 4, 3);
+  if (normalized === "Albany") return nthTuesdayISO(year, 4, 3);
+  if (COUNTY_FILING[normalized]) return nthTuesdayISO(year, 4, 3);
+  return null;
+}
+
 export function getGenericFilingInfo(county: string): CountyFilingInfo {
   return {
     county,

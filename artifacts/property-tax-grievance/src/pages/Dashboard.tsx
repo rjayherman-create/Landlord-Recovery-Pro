@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { GrievanceForm } from "@/components/GrievanceForm";
 import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSign, AlertTriangle, Award, ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, parseISO, isValid, isFuture } from "date-fns";
+import { getComputedDeadline } from "@/data/county-filing-instructions";
 
 const STATUS_COLORS = {
   draft: "bg-slate-100 text-slate-700 border-slate-200",
@@ -22,6 +23,18 @@ export function Dashboard() {
 
   const totalCases = grievances?.length || 0;
   const reducedCases = grievances?.filter(g => g.status === 'reduced').length || 0;
+
+  function resolveDeadline(g: { filingDeadline?: string | null; county: string }): Date | null {
+    const src = g.filingDeadline || getComputedDeadline(g.county);
+    if (!src) return null;
+    try { const d = parseISO(src); return isValid(d) ? d : null; } catch { return null; }
+  }
+
+  const upcomingCount = grievances?.filter(g => {
+    if (["submitted","pending","reduced","denied"].includes(g.status)) return false;
+    const d = resolveDeadline(g);
+    return d ? isFuture(d) : false;
+  }).length || 0;
 
   return (
     <AppLayout>
@@ -41,7 +54,7 @@ export function Dashboard() {
               <ShieldCheck className="w-4 h-4 text-accent" />
               <span>File your own grievance and save 50% commission</span>
             </div>
-            <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4 leading-tight">
+            <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4 leading-tight text-white">
               Take Control of Your <br/><span className="text-accent">Property Taxes</span>
             </h1>
             <p className="text-lg text-primary-foreground/80 mb-8 max-w-xl leading-relaxed">
@@ -94,9 +107,7 @@ export function Dashboard() {
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Upcoming Deadlines</p>
-              <h3 className="text-3xl font-bold font-serif">
-                {grievances?.filter(g => g.filingDeadline && new Date(g.filingDeadline) > new Date()).length || 0}
-              </h3>
+              <h3 className="text-3xl font-bold font-serif">{upcomingCount}</h3>
             </div>
           </div>
         </div>
@@ -117,7 +128,7 @@ export function Dashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border">
             {[
               { icon: Award,         value: "~80%",  label: "DIY success rate",         sub: "Nassau County, 2024",            color: "text-emerald-600", bg: "bg-emerald-50" },
-              { icon: DollarSign,    value: "$0",    label: "Cost to file",             sub: "No fee at all",                  color: "text-blue-600",    bg: "bg-blue-50"   },
+              { icon: DollarSign,    value: "$0",    label: "Cost to file",             sub: "No fee unless you go to SCAR ($30)", color: "text-blue-600",    bg: "bg-blue-50"   },
               { icon: AlertTriangle, value: "$0",    label: "Risk of filing",           sub: "Taxes cannot go up",             color: "text-amber-600",   bg: "bg-amber-50"  },
               { icon: TrendingDown,  value: "50%",   label: "Commission saved",         sub: "vs. hiring a firm",              color: "text-violet-600",  bg: "bg-violet-50" },
             ].map(({ icon: Icon, value, label, sub, color, bg }) => (
@@ -195,7 +206,17 @@ export function Dashboard() {
                     <div className="mt-auto flex items-center justify-between pt-4 border-t border-border/50">
                       <div className="text-sm text-muted-foreground flex items-center gap-1.5">
                         <Clock className="w-4 h-4" />
-                        {g.filingDeadline ? format(new Date(g.filingDeadline), 'MMM d, yyyy') : 'No deadline set'}
+                        {(() => {
+                          const d = resolveDeadline(g);
+                          if (!d) return 'No deadline set';
+                          const isPast = !isFuture(d);
+                          return (
+                            <span className={isPast ? 'text-red-600 font-medium' : ''}>
+                              {isPast ? 'Deadline passed · ' : ''}{format(d, 'MMM d, yyyy')}
+                              {!g.filingDeadline && <span className="ml-1 text-xs opacity-60">(county standard)</span>}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <div className="text-primary font-medium text-sm flex items-center group-hover:translate-x-1 transition-transform">
                         Manage Case <ArrowRight className="w-4 h-4 ml-1" />

@@ -39,16 +39,19 @@ artifacts-monorepo/
 ## Features
 
 - **User Accounts** — Replit Auth login/logout; cases are scoped to the logged-in user
-- **Dashboard** — All grievance cases with statuses, stats, upcoming deadlines
+- **Dashboard** — All grievance cases with statuses, stats, upcoming deadlines; case cards show computed county standard deadline (with passed/upcoming state) when no specific date is set
 - **Create/Edit Grievance** — Form with auto-fill from NYC PLUTO, NYS ORPS (4.7M parcels), GPS, and OCR tax bill scanning
-- **Step-by-step Guided Flow** — 4-step progress tracker on every case (Property info → Comparables → Print → File)
-- **Confidence Score** — AI-calculated case strength (Strong/Moderate/Building) with percentage
+- **Step-by-step Guided Flow** — 4-step progress tracker (Property info → Comparables → Print → File); Step 1 requires parcel ID to be complete
+- **Confidence Score** — Case strength (Strong/Moderate/Building) with percentage; computed from equalization rate + market value estimate
 - **Auto-Comparable Sales** — One-click pull from NYS public sales database (data.ny.gov dataset 5ry4-ks3m) filtered by municipality and square footage
 - **Prior Year Comparison** — Year-over-year assessment delta from NYS ORPS; flags >5% jumps as strong grievance grounds
 - **County-Specific Filing Instructions** — Exact form, address, portal, and deadline for Nassau, Suffolk, all 5 NYC boroughs, Westchester, and all other NY counties
+- **Deadline Banner (auto-computed)** — `getComputedDeadline(county)` in county-filing-instructions.ts returns the current year's deadline date for any county (e.g. Nassau = March 1, Suffolk = 3rd Tuesday of May); banner auto-shows passed/countdown without requiring the user to set a specific date
 - **Filing Deadline Reminders** — Bell toggle per case; reminder stored in localStorage
+- **Pre-Print Checklist** — "Before you print" verification step requiring explicit user confirmation on Parcel ID and Assessed Value against their physical tax bill
 - **RP-524 Pre-filled Print Form** — Pixel-perfect replica of NYS complaint form, auto-populated from case data
 - **County Guide** — Reference for all NY county procedures
+- **Filing Deadlines Calendar** — `/calendar` route (not `/deadlines`); shows countdown to next deadline with .ics export
 - **How It Works** — Educational content on the DIY grievance process
 
 ## API Routes
