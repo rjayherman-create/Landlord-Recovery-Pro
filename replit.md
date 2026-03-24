@@ -16,74 +16,77 @@ NY Property Tax Grievance Assistant — a full-stack web application that helps 
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 - **Frontend**: React + Vite, Tailwind CSS, TanStack Query, react-hook-form, framer-motion
+- **Auth**: Replit Auth (OpenID Connect + PKCE), `openid-client` v6, PostgreSQL session store
 
 ## Structure
 
 ```text
 artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   ├── api-server/         # Express API server
-│   └── property-tax-grievance/  # React + Vite frontend
-├── lib/                    # Shared libraries
-│   ├── api-spec/           # OpenAPI spec + Orval codegen config
-│   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts
+├── artifacts/
+│   ├── api-server/                  # Express API server (port 8080)
+│   └── property-tax-grievance/      # React + Vite frontend (port 19972)
+├── lib/
+│   ├── api-spec/                    # OpenAPI spec + Orval codegen config
+│   ├── api-client-react/            # Generated React Query hooks
+│   ├── api-zod/                     # Generated Zod schemas from OpenAPI
+│   ├── db/                          # Drizzle ORM schema + DB connection
+│   └── replit-auth-web/             # useAuth() hook for browser auth state
 ├── pnpm-workspace.yaml
 ├── tsconfig.base.json
-├── tsconfig.json
-└── package.json
+└── tsconfig.json
 ```
 
 ## Features
 
-- **Dashboard**: View all grievance cases with statuses (draft, submitted, pending, reduced, denied), stats, and upcoming deadlines
-- **Create/Edit Grievance**: Form capturing property info, assessments, county, municipality, filing deadline
-- **Grievance Detail**: Full case detail with comparable sales tracker
-- **County Guide**: County-specific filing info for Nassau (AROW portal), Suffolk towns (RP-524), NYC (Tax Commission), Westchester, and upstate NY
-- **How It Works**: Step-by-step guide explaining the DIY grievance process, BAR hearings, and SCAR
+- **User Accounts** — Replit Auth login/logout; cases are scoped to the logged-in user
+- **Dashboard** — All grievance cases with statuses, stats, upcoming deadlines
+- **Create/Edit Grievance** — Form with auto-fill from NYC PLUTO, NYS ORPS (4.7M parcels), GPS, and OCR tax bill scanning
+- **Step-by-step Guided Flow** — 4-step progress tracker on every case (Property info → Comparables → Print → File)
+- **Confidence Score** — AI-calculated case strength (Strong/Moderate/Building) with percentage
+- **Auto-Comparable Sales** — One-click pull from NYS public sales database (data.ny.gov dataset 5ry4-ks3m) filtered by municipality and square footage
+- **Prior Year Comparison** — Year-over-year assessment delta from NYS ORPS; flags >5% jumps as strong grievance grounds
+- **County-Specific Filing Instructions** — Exact form, address, portal, and deadline for Nassau, Suffolk, all 5 NYC boroughs, Westchester, and all other NY counties
+- **Filing Deadline Reminders** — Bell toggle per case; reminder stored in localStorage
+- **RP-524 Pre-filled Print Form** — Pixel-perfect replica of NYS complaint form, auto-populated from case data
+- **County Guide** — Reference for all NY county procedures
+- **How It Works** — Educational content on the DIY grievance process
 
 ## API Routes
 
-- `GET /api/healthz` — Health check
-- `GET/POST /api/grievances` — List/create grievances
+- `GET /api/healthz`
+- `GET /api/auth/user` — Current auth state
+- `GET /api/login`, `GET /api/callback`, `GET /api/logout` — OIDC auth flow
+- `GET/POST /api/grievances` — List (user-scoped) / create grievances
 - `GET/PUT/DELETE /api/grievances/:id` — Get/update/delete a grievance
 - `GET/POST /api/comparables?grievanceId=N` — List/add comparables
-- `DELETE /api/comparables/:id` — Delete a comparable
-- `GET /api/counties` — List NY counties with filing info (static data)
+- `DELETE /api/comparables/:id`
+- `GET /api/auto-comparables?grievanceId=N` — Pull comparable sales from NYS data
+- `GET /api/prior-year/:grievanceId` — Prior year assessment from NYS ORPS
+- `GET /api/property-lookup?address=` — NYC PLUTO + NYS ORPS auto-fill
+- `GET /api/reverse-geocode?lat=&lng=` — GPS → address
+- `POST /api/ocr-tax-record` — AI OCR of uploaded tax bill image (GPT vision)
+- `GET /api/counties` — NY county filing info
 
 ## DB Schema
 
-- `grievances` table: owner info, property address, county, municipality, tax year, assessments, status, filing deadline
-- `comparables` table: linked to grievance, address, sale price, sale date, sq ft, bedrooms, bathrooms, assessed value
+- `sessions` table — Replit Auth session store (mandatory, do not drop)
+- `users` table — Auth users (id, email, firstName, lastName, profileImageUrl)
+- `grievances` table — owner info, property address, county, municipality, taxYear, assessments, status, filingDeadline, userId (nullable, scopes case to user)
+- `comparables` table — linked to grievance, address, salePrice, saleDate, sqft, beds, baths, assessedValue
+
+## Auth
+
+- Uses Replit Auth OIDC with PKCE (`openid-client` v6)
+- Server: `src/lib/auth.ts` (session CRUD, OIDC config), `src/middlewares/authMiddleware.ts`, `src/routes/auth.ts`
+- Frontend: `@workspace/replit-auth-web` provides `useAuth()` hook
+- Cases are soft user-scoped: if logged in, filter by userId; if anonymous, filter by null userId
 
 ## TypeScript & Composite Projects
 
-Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references.
+Every package extends `tsconfig.base.json` with `composite: true`. Root `tsconfig.json` lists all packages as references including `lib/replit-auth-web`.
 
-## Packages
+## Ports
 
-### `artifacts/api-server` (`@workspace/api-server`)
-
-Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` for request/response validation and `@workspace/db` for persistence.
-
-### `artifacts/property-tax-grievance` (`@workspace/property-tax-grievance`)
-
-React + Vite frontend at `/`. Uses TanStack Query for data fetching, react-hook-form for forms, framer-motion for animations, shadcn/ui components.
-
-### `lib/db` (`@workspace/db`)
-
-Database layer using Drizzle ORM with PostgreSQL. Schema includes `grievancesTable` and `comparablesTable`.
-
-### `lib/api-spec` (`@workspace/api-spec`)
-
-OpenAPI 3.1 spec (`openapi.yaml`) and Orval config. Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec.
+- API server: `PORT` env var (default 8080)
+- Vite dev server: 19972
+- Vite proxies `/api` → `http://localhost:8080`

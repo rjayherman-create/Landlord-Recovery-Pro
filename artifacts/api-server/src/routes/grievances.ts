@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, grievancesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq, or, isNull } from "drizzle-orm";
 import {
   CreateGrievanceBody,
   UpdateGrievanceBody,
@@ -26,7 +26,16 @@ function formatGrievance(g: typeof grievancesTable.$inferSelect) {
 
 router.get("/grievances", async (req, res) => {
   try {
-    const grievances = await db.select().from(grievancesTable).orderBy(grievancesTable.createdAt);
+    const userId = req.isAuthenticated() ? req.user.id : null;
+    const grievances = await db
+      .select()
+      .from(grievancesTable)
+      .where(
+        userId
+          ? eq(grievancesTable.userId, userId)
+          : isNull(grievancesTable.userId)
+      )
+      .orderBy(grievancesTable.createdAt);
     res.json(grievances.map(formatGrievance));
   } catch (err) {
     req.log.error({ err }, "Failed to list grievances");
@@ -37,7 +46,9 @@ router.get("/grievances", async (req, res) => {
 router.post("/grievances", async (req, res) => {
   try {
     const body = CreateGrievanceBody.parse(req.body);
+    const userId = req.isAuthenticated() ? req.user.id : null;
     const [created] = await db.insert(grievancesTable).values({
+      userId,
       ownerName: body.ownerName,
       ownerPhone: body.ownerPhone ?? null,
       ownerEmail: body.ownerEmail ?? null,
@@ -71,7 +82,18 @@ router.post("/grievances", async (req, res) => {
 router.get("/grievances/:id", async (req, res) => {
   try {
     const { id } = GetGrievanceParams.parse({ id: Number(req.params.id) });
-    const [grievance] = await db.select().from(grievancesTable).where(eq(grievancesTable.id, id));
+    const userId = req.isAuthenticated() ? req.user.id : null;
+    const [grievance] = await db
+      .select()
+      .from(grievancesTable)
+      .where(
+        and(
+          eq(grievancesTable.id, id),
+          userId
+            ? eq(grievancesTable.userId, userId)
+            : isNull(grievancesTable.userId)
+        )
+      );
     if (!grievance) {
       return res.status(404).json({ error: "not_found", message: "Grievance not found" });
     }
@@ -86,6 +108,7 @@ router.put("/grievances/:id", async (req, res) => {
   try {
     const { id } = UpdateGrievanceParams.parse({ id: Number(req.params.id) });
     const body = UpdateGrievanceBody.parse(req.body);
+    const userId = req.isAuthenticated() ? req.user.id : null;
 
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (body.ownerName !== undefined) updateData.ownerName = body.ownerName;
@@ -111,7 +134,18 @@ router.put("/grievances/:id", async (req, res) => {
     if (body.filingDeadline !== undefined) updateData.filingDeadline = body.filingDeadline;
     if (body.notes !== undefined) updateData.notes = body.notes;
 
-    const [updated] = await db.update(grievancesTable).set(updateData).where(eq(grievancesTable.id, id)).returning();
+    const [updated] = await db
+      .update(grievancesTable)
+      .set(updateData)
+      .where(
+        and(
+          eq(grievancesTable.id, id),
+          userId
+            ? eq(grievancesTable.userId, userId)
+            : isNull(grievancesTable.userId)
+        )
+      )
+      .returning();
     if (!updated) {
       return res.status(404).json({ error: "not_found", message: "Grievance not found" });
     }
@@ -125,7 +159,17 @@ router.put("/grievances/:id", async (req, res) => {
 router.delete("/grievances/:id", async (req, res) => {
   try {
     const { id } = DeleteGrievanceParams.parse({ id: Number(req.params.id) });
-    await db.delete(grievancesTable).where(eq(grievancesTable.id, id));
+    const userId = req.isAuthenticated() ? req.user.id : null;
+    await db
+      .delete(grievancesTable)
+      .where(
+        and(
+          eq(grievancesTable.id, id),
+          userId
+            ? eq(grievancesTable.userId, userId)
+            : isNull(grievancesTable.userId)
+        )
+      );
     res.status(204).send();
   } catch (err) {
     req.log.error({ err }, "Failed to delete grievance");
