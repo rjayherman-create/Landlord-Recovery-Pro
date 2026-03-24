@@ -14,17 +14,19 @@ import { useRef } from "react";
 import type { Grievance } from "@workspace/api-client-react";
 import { PropertyRecordCard } from "@/components/PropertyRecordCard";
 import type { LookupResult } from "@/components/PropertyRecordCard";
+import { TX_COUNTY_NAMES, TX_BASIS_OPTIONS, TX_PROPERTY_CLASS_OPTIONS } from "@/data/texas-filing-instructions";
 
 /* ─── Schema ────────────────────────────────────────── */
 
 const grievanceSchema = z.object({
+  state: z.string().default("NY"),
   ownerName: z.string().min(2, "Owner name is required"),
   ownerPhone: z.string().optional(),
   ownerEmail: z.string().optional(),
   ownerMailingAddress: z.string().optional(),
   propertyAddress: z.string().min(5, "Property address is required"),
   county: z.string().min(2, "County is required"),
-  municipality: z.string().min(2, "Municipality/Town is required"),
+  municipality: z.string().min(2, "City/Municipality is required"),
   schoolDistrict: z.string().optional(),
   parcelId: z.string().optional(),
   propertyClass: z.string().optional(),
@@ -113,6 +115,7 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
     resolver: zodResolver(grievanceSchema),
     defaultValues: initialData
       ? {
+          state: (initialData as any).state ?? "NY",
           ownerName: initialData.ownerName,
           ownerPhone: initialData.ownerPhone ?? undefined,
           ownerEmail: initialData.ownerEmail ?? undefined,
@@ -136,11 +139,19 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
           notes: initialData.notes ?? undefined,
         }
       : {
+          state: "NY",
           taxYear: new Date().getFullYear(),
           county: "Nassau",
           basisOfComplaint: "overvaluation",
         },
   });
+
+  const selectedState = form.watch("state") ?? "NY";
+  const isTX = selectedState === "TX";
+
+  const currentCountyOptions = isTX ? TX_COUNTY_NAMES : COUNTY_OPTIONS;
+  const currentBasisOptions = isTX ? TX_BASIS_OPTIONS : BASIS_OPTIONS;
+  const currentPropertyClassOptions = isTX ? TX_PROPERTY_CLASS_OPTIONS : PROPERTY_CLASS_OPTIONS;
 
   /* ── Property lookup ── */
   const runLookup = async (addr: string) => {
@@ -506,11 +517,49 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
         )}
       </div>
 
+      {/* ── State Selector ── */}
+      <div className="rounded-xl border border-border p-4 bg-secondary/20">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-semibold text-foreground whitespace-nowrap">Filing State:</span>
+          <div className="flex gap-2">
+            {[
+              { value: "NY", label: "🗽 New York" },
+              { value: "TX", label: "⭐ Texas" },
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => {
+                  form.setValue("state", value);
+                  form.setValue("county", value === "TX" ? "Harris" : "Nassau");
+                  form.setValue("basisOfComplaint", value === "TX" ? "market_value" : "overvaluation");
+                }}
+                className={`px-4 py-1.5 rounded-lg border text-sm font-semibold transition-all ${
+                  selectedState === value
+                    ? "bg-primary text-primary-foreground border-primary shadow"
+                    : "bg-white text-foreground border-border hover:border-primary/40"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {isTX && (
+            <span className="text-xs text-muted-foreground ml-auto">
+              Texas uses Appraisal Review Board (ARB) terminology
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* ---- Part 1A: Owner / Complainant ---- */}
       <div>
         <SectionHeader
           title="Part 1A — Complainant (Owner) Information"
-          subtitle="This information goes directly onto your RP-524 filing."
+          subtitle={isTX
+            ? "This information goes onto your Notice of Protest filing with the County Appraisal District."
+            : "This information goes directly onto your RP-524 filing."
+          }
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -541,7 +590,10 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
       <div>
         <SectionHeader
           title="Part 1B — Property Identification"
-          subtitle="Use the auto-fill above to populate these fields, or enter them manually from your tax bill."
+          subtitle={isTX
+            ? "Use the auto-fill above or enter from your Notice of Appraised Value (appraisal notice)."
+            : "Use the auto-fill above to populate these fields, or enter them manually from your tax bill."
+          }
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1.5 md:col-span-2">
@@ -555,7 +607,7 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               render={({ field }) => (
                 <Input
                   id="propertyAddress"
-                  placeholder="123 Main Street, Town, NY 11000"
+                  placeholder={isTX ? "123 Main St, Houston, TX 77001" : "123 Main Street, Town, NY 11000"}
                   className={autoFillClass("propertyAddress")}
                   {...field}
                   value={field.value ?? ""}
@@ -581,18 +633,19 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
                     <SelectValue placeholder="Select county" />
                   </SelectTrigger>
                   <SelectContent>
-                    {COUNTY_OPTIONS.map((c) => (
+                    {currentCountyOptions.map((c) => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               )}
             />
+            {isTX && <p className="text-xs text-muted-foreground">Select your County Appraisal District (CAD)</p>}
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="municipality">
-              Municipality / Town *
+              {isTX ? "City" : "Municipality / Town"} *
               {isAutoFilled("municipality") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
             <Controller
@@ -601,7 +654,7 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               render={({ field }) => (
                 <Input
                   id="municipality"
-                  placeholder="Town of Hempstead"
+                  placeholder={isTX ? "Houston" : "Town of Hempstead"}
                   className={autoFillClass("municipality")}
                   {...field}
                   value={field.value ?? ""}
@@ -610,29 +663,31 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
             />
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="schoolDistrict">
-              School District
-              {isAutoFilled("schoolDistrict") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
-            </Label>
-            <Controller
-              control={form.control}
-              name="schoolDistrict"
-              render={({ field }) => (
-                <Input
-                  id="schoolDistrict"
-                  placeholder="Garden City UFSD"
-                  className={autoFillClass("schoolDistrict")}
-                  {...field}
-                  value={field.value ?? ""}
-                />
-              )}
-            />
-          </div>
+          {!isTX && (
+            <div className="space-y-1.5">
+              <Label htmlFor="schoolDistrict">
+                School District
+                {isAutoFilled("schoolDistrict") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+              </Label>
+              <Controller
+                control={form.control}
+                name="schoolDistrict"
+                render={({ field }) => (
+                  <Input
+                    id="schoolDistrict"
+                    placeholder="Garden City UFSD"
+                    className={autoFillClass("schoolDistrict")}
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                )}
+              />
+            </div>
+          )}
 
           <div className="space-y-1.5">
             <Label htmlFor="parcelId">
-              Tax Map Number / Parcel ID (SBL)
+              {isTX ? "Appraisal District Account Number" : "Tax Map Number / Parcel ID (SBL)"}
               {isAutoFilled("parcelId") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
             <Controller
@@ -641,19 +696,21 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               render={({ field }) => (
                 <Input
                   id="parcelId"
-                  placeholder="e.g. 0400-056.00-01.00-001.000"
+                  placeholder={isTX ? "e.g. 0651580000001" : "e.g. 0400-056.00-01.00-001.000"}
                   className={autoFillClass("parcelId")}
                   {...field}
                   value={field.value ?? ""}
                 />
               )}
             />
-            <p className="text-xs text-muted-foreground">Found on your tax bill under "Section/Block/Lot"</p>
+            <p className="text-xs text-muted-foreground">
+              {isTX ? "Found on your Notice of Appraised Value or CAD website" : "Found on your tax bill under \"Section/Block/Lot\""}
+            </p>
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="propertyClass">
-              Property Classification Code
+              {isTX ? "Property Type" : "Property Classification Code"}
               {isAutoFilled("propertyClass") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
             <Controller
@@ -665,7 +722,7 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
                     <SelectValue placeholder="Select class" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PROPERTY_CLASS_OPTIONS.map((o) => (
+                    {currentPropertyClassOptions.map((o) => (
                       <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -743,11 +800,14 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
       {/* ---- Part 2: Basis of Complaint ---- */}
       <div>
         <SectionHeader
-          title="Part 2 — Basis of Complaint"
-          subtitle="Select the legal basis for your grievance. Most homeowners use Overvaluation."
+          title={isTX ? "Part 2 — Grounds for Protest" : "Part 2 — Basis of Complaint"}
+          subtitle={isTX
+            ? "Select the ground(s) for your protest. Most homeowners use Incorrect Appraised Value or Unequal Appraisal."
+            : "Select the legal basis for your grievance. Most homeowners use Overvaluation."
+          }
         />
         <div className="space-y-2">
-          {BASIS_OPTIONS.map((opt) => (
+          {currentBasisOptions.map((opt) => (
             <label
               key={opt.value}
               className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${

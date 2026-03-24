@@ -14,6 +14,8 @@ export interface CreateGrievanceRequest {
   propertyAddress: string;
   county: string;
   municipality: string;
+  /** State code: NY or TX */
+  state?: string;
   schoolDistrict?: string | null;
   parcelId?: string | null;
   propertyClass?: string | null;

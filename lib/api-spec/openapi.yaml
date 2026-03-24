@@ -239,6 +239,9 @@ components:
           type: string
         municipality:
           type: string
+        state:
+          type: string
+          description: "State code: NY or TX"
         schoolDistrict:
           type: string
           nullable: true
@@ -290,6 +293,7 @@ components:
         - propertyAddress
         - county
         - municipality
+        - state
         - taxYear
         - currentAssessment
         - estimatedMarketValue
@@ -318,6 +322,9 @@ components:
           type: string
         municipality:
           type: string
+        state:
+          type: string
+          description: "State code: NY or TX"
         schoolDistrict:
           type: string
           nullable: true
@@ -386,6 +393,9 @@ components:
           type: string
         municipality:
           type: string
+        state:
+          type: string
+          description: "State code: NY or TX"
         schoolDistrict:
           type: string
           nullable: true

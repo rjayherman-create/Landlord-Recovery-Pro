@@ -23,6 +23,7 @@ export const grievancesTable = pgTable("grievances", {
   equalizationRate: numeric("equalization_rate", { precision: 8, scale: 4 }),
   estimatedMarketValue: numeric("estimated_market_value", { precision: 12, scale: 2 }).notNull(),
   requestedAssessment: numeric("requested_assessment", { precision: 12, scale: 2 }).notNull(),
+  state: text("state").notNull().default("NY"),
   basisOfComplaint: text("basis_of_complaint"),
   status: text("status").notNull().default("draft"),
   filingDeadline: text("filing_deadline"),
