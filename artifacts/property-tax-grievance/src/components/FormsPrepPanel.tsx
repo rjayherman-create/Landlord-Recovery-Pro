@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { CheckCircle2, Circle, Download, ExternalLink, Mail, MapPin, Phone, Printer, FileText, AlertCircle, Send, ChevronDown, ChevronUp } from "lucide-react";
+import { CheckCircle2, Circle, Download, ExternalLink, Mail, MapPin, Phone, Printer, FileText, AlertCircle, Send, ChevronDown, ChevronUp, CheckSquare, Lock } from "lucide-react";
 import type { Grievance, Comparable } from "@workspace/api-client-react";
 import { getFilingInfo, getGenericFilingInfo } from "@/data/county-filing-instructions";
 import { PrePrintChecklist } from "@/components/PrePrintChecklist";
+import { FilingAttestation } from "@/components/FilingAttestation";
 
 interface FormsPrepPanelProps {
   grievance: Grievance;
   comparables: Comparable[];
   onPrint: () => void;
+  isAttested: boolean;
+  onAttest: () => void;
 }
 
 interface FormField {
@@ -124,7 +127,7 @@ function getFormFields(county: string, grievance: Grievance, comparables: Compar
   return getRp524Fields(grievance, comparables);
 }
 
-export function FormsPrepPanel({ grievance, comparables, onPrint }: FormsPrepPanelProps) {
+export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, onAttest }: FormsPrepPanelProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
 
@@ -319,6 +322,24 @@ export function FormsPrepPanel({ grievance, comparables, onPrint }: FormsPrepPan
       {/* Pre-print verification checklist */}
       <PrePrintChecklist grievance={grievance} />
 
+      {/* Filer Sign-Off Attestation */}
+      {!isAttested ? (
+        <FilingAttestation
+          ownerName={grievance.ownerName}
+          propertyAddress={grievance.propertyAddress}
+          taxYear={grievance.taxYear}
+          onAttest={onAttest}
+        />
+      ) : (
+        <div data-testid="attestation-complete-banner" className="bg-emerald-50 border border-emerald-300 rounded-2xl p-4 flex items-center gap-3">
+          <CheckSquare className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+          <div>
+            <p className="font-semibold text-emerald-900 text-sm">Filer sign-off complete</p>
+            <p className="text-xs text-emerald-700">All accuracy declarations confirmed. Print and download are unlocked.</p>
+          </div>
+        </div>
+      )}
+
       {/* Download & Print Actions */}
       <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
         <h3 className="font-serif font-bold text-lg mb-1">Prepare Your Document</h3>
@@ -326,21 +347,29 @@ export function FormsPrepPanel({ grievance, comparables, onPrint }: FormsPrepPan
           Your form is pre-filled with all case data. Download the PDF to attach to an email, or print for hand delivery.
         </p>
 
-        <div className="flex flex-wrap gap-3">
-          <Button
-            onClick={handleDownloadPdf}
-            disabled={isDownloading}
-            className="gap-2 shadow-sm"
-          >
-            <Download className="w-4 h-4" />
-            {isDownloading ? "Generating PDF…" : "Download PDF"}
-          </Button>
-          <Button variant="outline" onClick={onPrint} className="gap-2">
-            <Printer className="w-4 h-4" /> Print / Save as PDF
-          </Button>
-        </div>
+        {!isAttested ? (
+          <div data-testid="print-locked-message" className="flex items-center gap-3 p-4 bg-secondary/50 border border-dashed border-border rounded-xl text-sm text-muted-foreground">
+            <Lock className="w-4 h-4 flex-shrink-0" />
+            Complete the filer sign-off above to unlock print and download.
+          </div>
+        ) : (
+          <div data-testid="print-unlocked-actions" className="flex flex-wrap gap-3">
+            <Button
+              data-testid="download-pdf-btn"
+              onClick={handleDownloadPdf}
+              disabled={isDownloading}
+              className="gap-2 shadow-sm"
+            >
+              <Download className="w-4 h-4" />
+              {isDownloading ? "Generating PDF…" : "Download PDF"}
+            </Button>
+            <Button variant="outline" onClick={onPrint} className="gap-2">
+              <Printer className="w-4 h-4" /> Print / Save as PDF
+            </Button>
+          </div>
+        )}
 
-        {(isNyc || isNassau) && (
+        {(isNyc || isNassau) && isAttested && (
           <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-start gap-2">
             <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-600" />
             <span>

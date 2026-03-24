@@ -22,7 +22,7 @@ import {
   MapPin, Building, Calendar, DollarSign, Trash2, Edit, AlertCircle, ArrowLeft, ArrowDown,
   Printer, Search, ExternalLink, Plus, Phone, Mail, Home, Hash, TrendingDown, TrendingUp,
   CheckCircle2, Circle, ChevronRight, Sparkles, Bell, BellOff, Loader2, Info,
-  FileText, Minus
+  FileText, Minus, Lock
 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
@@ -130,6 +130,7 @@ export function GrievanceDetail() {
   });
 
   const [activeTab, setActiveTab] = useState("comps");
+  const [isAttested, setIsAttested] = useState(false);
 
   const compForm = useForm<CompFormValues>({ resolver: zodResolver(compSchema) });
 
@@ -229,6 +230,14 @@ export function GrievanceDetail() {
     win.document.close();
   };
 
+  const handlePrintGated = () => {
+    if (isAttested) {
+      handlePrint();
+    } else {
+      setActiveTab("forms");
+    }
+  };
+
   const validation = useFormValidation(grievance, comparables);
 
   const handleValidationFix = (issue: { fixAction?: "edit" | "add-comp" | "find-comps" }) => {
@@ -315,8 +324,9 @@ export function GrievanceDetail() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={handlePrint} className="gap-2">
+            <Button variant="outline" onClick={handlePrintGated} className="gap-2" title={!isAttested ? "Complete the filer sign-off in Forms & PDF to unlock" : undefined}>
               <Printer className="w-4 h-4" /> Print RP-524
+              {!isAttested && <Lock className="w-3 h-3 opacity-50" />}
             </Button>
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
               <DialogTrigger asChild>
@@ -912,6 +922,8 @@ export function GrievanceDetail() {
                   grievance={grievance}
                   comparables={comparables}
                   onPrint={handlePrint}
+                  isAttested={isAttested}
+                  onAttest={() => setIsAttested(true)}
                 />
 
                 {/* Form preview */}
@@ -921,7 +933,10 @@ export function GrievanceDetail() {
                       <h3 className="font-semibold text-base">RP-524 — Pre-filled Form Preview</h3>
                       <p className="text-xs text-muted-foreground mt-0.5">This is exactly what will be in your downloaded PDF.</p>
                     </div>
-                    <Button onClick={handlePrint} variant="outline" className="gap-2"><Printer className="w-4 h-4" /> Print</Button>
+                    <Button onClick={handlePrintGated} variant="outline" className="gap-2">
+                      <Printer className="w-4 h-4" /> Print
+                      {!isAttested && <Lock className="w-3 h-3 opacity-50" />}
+                    </Button>
                   </div>
                   <div className="p-4 overflow-auto bg-gray-100" style={{ minHeight: 400 }}>
                     <div className="bg-white shadow-md rounded" style={{ transform: "scale(0.85)", transformOrigin: "top left", width: "117%" }}>
