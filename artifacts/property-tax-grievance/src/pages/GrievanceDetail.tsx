@@ -9,6 +9,7 @@ import { RP524PrintForm } from "@/components/RP524PrintForm";
 import { FormsPrepPanel } from "@/components/FormsPrepPanel";
 import { ValidationPanel } from "@/components/ValidationPanel";
 import { WhatHappensNext } from "@/components/WhatHappensNext";
+import { DeadlineBanner } from "@/components/DeadlineBanner";
 import { CompsResearch } from "@/components/CompsResearch";
 import { useFormValidation } from "@/hooks/use-form-validation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -331,6 +332,16 @@ export function GrievanceDetail() {
           </div>
         </div>
       </div>
+
+      {/* ── Deadline banner ── */}
+      <DeadlineBanner
+        county={grievance.county}
+        countyDeadlineText={filingInfo.filingDeadline}
+        specificDate={grievance.filingDeadline}
+        portalUrl={filingInfo.onlinePortal?.url}
+        portalLabel={filingInfo.onlinePortal?.label}
+        status={grievance.status}
+      />
 
       {/* ── Step-by-step progress ── */}
       <div className="mb-6 bg-card rounded-2xl border border-border shadow-sm p-5">
