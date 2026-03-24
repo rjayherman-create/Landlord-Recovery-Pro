@@ -455,51 +455,108 @@ export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, on
             <div className="divide-y divide-border">
 
               {filingInfo.onlinePortal && (
-                <div className="flex items-start gap-3 px-4 py-3">
+                <div className="flex items-start gap-3 px-4 py-3 bg-emerald-50/40">
                   <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center mt-0.5">
                     <Star className="w-3 h-3 text-emerald-700" />
                   </span>
-                  <div>
-                    <p className="text-sm font-semibold text-emerald-800">Online portal — Best</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-emerald-800">Option 1 — File online (Best)</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {filingInfo.onlinePortal.label} provides an instant timestamp and electronic confirmation. No mail delay, no proof-of-delivery hassle — the system records your filing automatically.
+                      Go to <strong>{filingInfo.onlinePortal.label}</strong> and submit electronically. The portal timestamps your filing instantly and sends a confirmation — no stamp, no envelope, no guesswork.
+                    </p>
+                    <a
+                      href={filingInfo.onlinePortal.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-emerald-700 hover:underline"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Open {filingInfo.onlinePortal.label}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {filingInfo.mailingAddress && (
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center mt-0.5">
+                    <Footprints className="w-3 h-3 text-emerald-700" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-emerald-800">
+                      Option {filingInfo.onlinePortal ? "2" : "1"} — Walk it in (Highly recommended)
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Bring <strong>two printed copies</strong> in person to:
+                    </p>
+                    <div className="mt-1.5 px-3 py-2 bg-secondary/60 rounded-lg border border-border text-xs">
+                      <p className="font-bold text-foreground">{filingInfo.filingBody}</p>
+                      <p className="text-muted-foreground mt-0.5">{filingInfo.mailingAddress}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      Ask the clerk to <strong>date-stamp your second copy</strong> and return it to you. That stamped copy is your legal proof of timely filing — keep it in a safe place.
+                    </p>
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(filingInfo.mailingAddress)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-primary hover:underline"
+                    >
+                      <MapPin className="w-3 h-3" /> Get directions
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {filingInfo.mailingAddress && (
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center mt-0.5">
+                    <Mail className="w-3 h-3 text-amber-700" />
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-amber-800">
+                      Option {filingInfo.onlinePortal ? "3" : "2"} — Certified Mail + Return Receipt (Good)
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Mail your form to:
+                    </p>
+                    <div className="mt-1.5 px-3 py-2 bg-secondary/60 rounded-lg border border-border text-xs">
+                      <p className="font-bold text-foreground">{filingInfo.filingBody}</p>
+                      <p className="text-muted-foreground mt-0.5">{filingInfo.mailingAddress}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      At the post office ask for <strong>Certified Mail</strong> (USPS Form 3800) <em>and</em> a <strong>Return Receipt</strong> (PS Form 3811 — the green postcard). The signed postcard mails back to you and proves the office received your form before the deadline. Cost: roughly $8–10.
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="flex items-start gap-3 px-4 py-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center mt-0.5">
-                  <Footprints className="w-3 h-3 text-emerald-700" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-emerald-800">Hand delivery — Highly recommended</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Bring two copies. Ask the clerk to date-stamp your copy and hand it back. That stamped copy is your legal proof of timely filing — keep it.
-                  </p>
+              {!filingInfo.mailingAddress && !filingInfo.onlinePortal && (
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center mt-0.5">
+                    <Footprints className="w-3 h-3 text-emerald-700" />
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800">Contact {filingInfo.filingBody} for address</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Your county's filing address isn't in our database yet. Call or visit the {filingInfo.filingBody} website to get the correct address, then hand-deliver or send via certified mail with return receipt.
+                    </p>
+                    {filingInfo.phone && (
+                      <a href={`tel:${filingInfo.phone}`} className="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-primary hover:underline">
+                        <Phone className="w-3 h-3" /> Call {filingInfo.phone}
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-
-              <div className="flex items-start gap-3 px-4 py-3">
-                <span className="flex-shrink-0 w-6 h-6 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center mt-0.5">
-                  <Mail className="w-3 h-3 text-amber-700" />
-                </span>
-                <div>
-                  <p className="text-sm font-semibold text-amber-800">USPS Certified Mail + Return Receipt — Good</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    At the post office, request <strong>Certified Mail</strong> (green USPS Form 3800) <em>and</em> add a <strong>Return Receipt</strong> (PS Form 3811 — the green postcard). The postcard comes back to you signed with the delivery date, which is your proof the form arrived before the deadline. Cost: roughly $8–10 total.
-                  </p>
-                </div>
-              </div>
+              )}
 
               <div className="flex items-start gap-3 px-4 py-3 bg-red-50/50">
                 <span className="flex-shrink-0 w-6 h-6 rounded-full bg-red-100 border border-red-300 flex items-center justify-center mt-0.5">
                   <XCircle className="w-3 h-3 text-red-600" />
                 </span>
                 <div>
-                  <p className="text-sm font-semibold text-red-700">Regular first-class mail — Not recommended</p>
+                  <p className="text-sm font-semibold text-red-700">Do not use regular first-class mail</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    No tracking, no proof of timely delivery. If it arrives late or gets lost, you have no recourse. Always use certified mail if mailing.
+                    No tracking, no proof of delivery. If it arrives a day late or gets lost in the mail, your grievance is dismissed and you have no recourse. Always use certified mail if you're mailing.
                   </p>
                 </div>
               </div>
