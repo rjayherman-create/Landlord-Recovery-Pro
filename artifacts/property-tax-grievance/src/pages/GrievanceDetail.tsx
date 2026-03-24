@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { GrievanceForm } from "@/components/GrievanceForm";
 import { RP524PrintForm } from "@/components/RP524PrintForm";
+import { FormsPrepPanel } from "@/components/FormsPrepPanel";
 import { CompsResearch } from "@/components/CompsResearch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -548,7 +549,7 @@ export function GrievanceDetail() {
               </TabsTrigger>
               <TabsTrigger value="print" className="gap-2">
                 <Printer className="w-4 h-4" />
-                Print Form
+                Forms &amp; PDF
               </TabsTrigger>
             </TabsList>
 
@@ -824,28 +825,26 @@ export function GrievanceDetail() {
 
             {/* Tab: Print */}
             <TabsContent value="print">
-              <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/30">
-                  <div>
-                    <h3 className="font-semibold text-base">RP-524 — Pre-filled Legal Complaint Form</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Review your form below, then click Print to send to your printer or save as PDF.</p>
+              <div className="space-y-6">
+                <FormsPrepPanel
+                  grievance={grievance}
+                  comparables={comparables}
+                  onPrint={handlePrint}
+                />
+
+                {/* Form preview */}
+                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                  <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/30">
+                    <div>
+                      <h3 className="font-semibold text-base">RP-524 — Pre-filled Form Preview</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">This is exactly what will be in your downloaded PDF.</p>
+                    </div>
+                    <Button onClick={handlePrint} variant="outline" className="gap-2"><Printer className="w-4 h-4" /> Print</Button>
                   </div>
-                  <Button onClick={handlePrint} className="gap-2 shadow-md"><Printer className="w-4 h-4" /> Print / Save PDF</Button>
-                </div>
-                {["Nassau","Kings","Queens","New York","Bronx","Richmond"].includes(grievance.county) && (
-                  <div className="mx-4 mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800 flex items-start gap-2">
-                    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                    <span>
-                      <strong>{grievance.county === "Nassau" ? "Nassau County:" : "NYC:"}</strong>{" "}
-                      {grievance.county === "Nassau"
-                        ? <>Use the <a href="https://www.nassaucountyny.gov/agencies/Assessor/ARBReview.html" target="_blank" rel="noopener noreferrer" className="underline">AROW portal</a> with AR-1 form instead. See "How to File" tab.</>
-                        : <>File using the <a href="https://www.nyc.gov/site/taxcommission/index.page" target="_blank" rel="noopener noreferrer" className="underline">NYC Tax Commission</a> TC101/TC201 form. See "How to File" tab.</>}
-                    </span>
-                  </div>
-                )}
-                <div className="p-4 overflow-auto bg-gray-100" style={{ minHeight: 400 }}>
-                  <div className="bg-white shadow-md rounded" style={{ transform: "scale(0.85)", transformOrigin: "top left", width: "117%" }}>
-                    <RP524PrintForm grievance={grievance} comparables={comparables} />
+                  <div className="p-4 overflow-auto bg-gray-100" style={{ minHeight: 400 }}>
+                    <div className="bg-white shadow-md rounded" style={{ transform: "scale(0.85)", transformOrigin: "top left", width: "117%" }}>
+                      <RP524PrintForm grievance={grievance} comparables={comparables} />
+                    </div>
                   </div>
                 </div>
               </div>
