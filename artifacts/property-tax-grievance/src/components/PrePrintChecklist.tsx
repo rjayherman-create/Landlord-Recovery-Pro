@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckSquare2, Square, AlertTriangle, ShieldCheck, FileSearch, KeyRound, XCircle } from "lucide-react";
+import { CheckSquare2, Square, AlertTriangle, ShieldCheck, FileSearch, KeyRound, XCircle, Check, Pencil } from "lucide-react";
 import type { Grievance } from "@workspace/api-client-react";
 
 interface PrePrintChecklistProps {
@@ -24,47 +24,42 @@ function normalizeAssessment(s: string): string {
   return s.replace(/[\$,\s]/g, "").trim();
 }
 
-function assessmentMatches(formValue: number, typed: string): boolean {
-  const norm = normalizeAssessment(typed);
+function assessmentMatches(formValue: number, input: string): boolean {
+  const norm = normalizeAssessment(input);
   if (!norm) return false;
   const num = parseFloat(norm);
   if (isNaN(num)) return false;
   return Math.abs(num - formValue) < 1;
 }
 
-function parcelMatches(formValue: string, typed: string): boolean {
-  if (!typed.trim()) return false;
-  return normalizeParcel(formValue) === normalizeParcel(typed);
+function parcelMatches(formValue: string, input: string): boolean {
+  if (!input.trim()) return false;
+  return normalizeParcel(formValue) === normalizeParcel(input);
 }
 
-type TypedState = "empty" | "match" | "mismatch";
-
 export function PrePrintChecklist({ grievance, onAllConfirmed }: PrePrintChecklistProps) {
-  const [clicked, setClicked] = useState<Record<string, boolean>>({});
-  const [parcelInput, setParcelInput] = useState("");
-  const [assessmentInput, setAssessmentInput] = useState("");
-
   const parcelFormValue = grievance.parcelId ?? "";
-  const assessmentFormValue = grievance.currentAssessment;
+  const assessmentFormRaw = grievance.currentAssessment;
+  const assessmentFormDisplay = isMissingValue(assessmentFormRaw)
+    ? ""
+    : `$${Number(assessmentFormRaw).toLocaleString()}`;
 
   const parcelMissing = isMissingValue(grievance.parcelId);
-  const assessmentMissing = isMissingValue(grievance.currentAssessment);
+  const assessmentMissing = isMissingValue(assessmentFormRaw);
 
-  const parcelState: TypedState = parcelMissing
-    ? "empty"
-    : !parcelInput.trim()
-    ? "empty"
-    : parcelMatches(parcelFormValue, parcelInput)
-    ? "match"
-    : "mismatch";
+  // Each typed field has: input value, confirmed flag, editing flag
+  const [parcelInput, setParcelInput] = useState(parcelFormValue);
+  const [parcelConfirmed, setParcelConfirmed] = useState(false);
 
-  const assessmentState: TypedState = assessmentMissing
-    ? "empty"
-    : !assessmentInput.trim()
-    ? "empty"
-    : assessmentMatches(assessmentFormValue, assessmentInput)
-    ? "match"
-    : "mismatch";
+  const [assessmentInput, setAssessmentInput] = useState(assessmentFormDisplay);
+  const [assessmentConfirmed, setAssessmentConfirmed] = useState(false);
+
+  const [clicked, setClicked] = useState<Record<string, boolean>>({});
+
+  const parcelMismatch = !parcelMissing && !parcelConfirmed && !!parcelInput.trim() && !parcelMatches(parcelFormValue, parcelInput);
+  const assessmentMismatch = !assessmentMissing && !assessmentConfirmed && !!assessmentInput.trim() && !assessmentMatches(assessmentFormRaw, assessmentInput);
+
+  const hasMismatch = parcelMismatch || assessmentMismatch;
 
   const clickItems = [
     {
@@ -72,53 +67,64 @@ export function PrePrintChecklist({ grievance, onAllConfirmed }: PrePrintCheckli
       label: "Owner / complainant name",
       value: displayValue(grievance.ownerName),
       missing: isMissingValue(grievance.ownerName),
-      hint: "Must match the name on your deed and property tax bill exactly",
+      hint: "Must match the name on your deed and tax bill exactly",
     },
     {
       id: "address",
       label: "Property address",
       value: displayValue(grievance.propertyAddress),
       missing: isMissingValue(grievance.propertyAddress),
-      hint: "Must match your tax bill exactly — including any unit numbers",
+      hint: "Must match your tax bill exactly — including unit numbers",
     },
     {
       id: "taxyear",
       label: "Tax year being grieved",
       value: displayValue(grievance.taxYear),
       missing: isMissingValue(grievance.taxYear),
-      hint: "Confirm this is the tax year shown on your bill",
+      hint: "Confirm this is the tax year on your bill",
     },
   ];
+
+  function computeAllConfirmed(
+    cl: Record<string, boolean>,
+    pc: boolean,
+    ac: boolean
+  ): boolean {
+    const clicksDone = clickItems.every((i) => i.missing || cl[i.id]);
+    const parcelDone = parcelMissing || pc;
+    const assessmentDone = assessmentMissing || ac;
+    return clicksDone && parcelDone && assessmentDone;
+  }
 
   const toggleClick = (id: string) => {
     const next = { ...clicked, [id]: !clicked[id] };
     setClicked(next);
-    const allDone = isAllConfirmed(next, parcelState, assessmentState);
-    onAllConfirmed?.(allDone);
+    onAllConfirmed?.(computeAllConfirmed(next, parcelConfirmed, assessmentConfirmed));
   };
 
-  function isAllConfirmed(
-    cl: Record<string, boolean>,
-    ps: TypedState,
-    as: TypedState
-  ): boolean {
-    const clicksDone = clickItems.every((item) => item.missing || cl[item.id]);
-    const parcelDone = parcelMissing || ps === "match";
-    const assessmentDone = assessmentMissing || as === "match";
-    return clicksDone && parcelDone && assessmentDone;
-  }
+  const confirmParcel = () => {
+    if (parcelMatches(parcelFormValue, parcelInput)) {
+      setParcelConfirmed(true);
+      onAllConfirmed?.(computeAllConfirmed(clicked, true, assessmentConfirmed));
+    }
+  };
+
+  const confirmAssessment = () => {
+    if (assessmentMatches(assessmentFormRaw, assessmentInput)) {
+      setAssessmentConfirmed(true);
+      onAllConfirmed?.(computeAllConfirmed(clicked, parcelConfirmed, true));
+    }
+  };
 
   const confirmedCount = (() => {
-    let n = 0;
-    clickItems.forEach((item) => { if (!item.missing && clicked[item.id]) n++; });
-    if (!parcelMissing && parcelState === "match") n++;
-    if (!assessmentMissing && assessmentState === "match") n++;
+    let n = clickItems.filter((i) => !i.missing && clicked[i.id]).length;
+    if (!parcelMissing && parcelConfirmed) n++;
+    if (!assessmentMissing && assessmentConfirmed) n++;
     return n;
   })();
 
   const totalCount = (() => {
-    let n = 0;
-    clickItems.forEach((item) => { if (!item.missing) n++; });
+    let n = clickItems.filter((i) => !i.missing).length;
     if (!parcelMissing) n++;
     if (!assessmentMissing) n++;
     return n;
@@ -126,7 +132,6 @@ export function PrePrintChecklist({ grievance, onAllConfirmed }: PrePrintCheckli
 
   const allConfirmed = confirmedCount === totalCount && totalCount > 0;
   const anyMissing = clickItems.some((i) => i.missing) || parcelMissing || assessmentMissing;
-  const hasMismatch = parcelState === "mismatch" || assessmentState === "mismatch";
 
   return (
     <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
@@ -138,8 +143,8 @@ export function PrePrintChecklist({ grievance, onAllConfirmed }: PrePrintCheckli
           <div className="flex-1">
             <h3 className="font-serif font-bold text-base">Before you print — verify against your tax bill</h3>
             <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-              A mismatch with your tax bill is the most common reason a grievance is rejected before it reaches a reviewer.
-              The two most important fields require you to type in the value from your bill as a double-check.
+              Critical fields are pre-filled from your case. Compare each one against your actual tax bill and confirm before printing.
+              Mismatches are a leading cause of grievance rejection at intake.
             </p>
           </div>
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full flex-shrink-0 whitespace-nowrap ${
@@ -159,8 +164,8 @@ export function PrePrintChecklist({ grievance, onAllConfirmed }: PrePrintCheckli
         <div className="mx-6 mt-4 flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-800">
           <XCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-red-500" />
           <span>
-            <strong>Mismatch detected.</strong> The value you typed from your tax bill doesn't match what's on your form.
-            Click <strong>Edit</strong> on this case to correct the form value before printing.
+            <strong>Mismatch detected.</strong> The value in the field below doesn't match your form.
+            If your tax bill shows a different number, click <strong>Edit</strong> on this case to correct the form before printing.
           </span>
         </div>
       )}
@@ -168,36 +173,44 @@ export function PrePrintChecklist({ grievance, onAllConfirmed }: PrePrintCheckli
       {anyMissing && !hasMismatch && (
         <div className="mx-6 mt-4 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800">
           <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-amber-500" />
-          <span>One or more fields are empty. Click <strong>Edit</strong> to fill them in before printing.</span>
+          <span>One or more fields are empty. Click <strong>Edit</strong> on this case to fill them in before printing.</span>
         </div>
       )}
 
       <div className="p-6 space-y-3">
 
-        {/* ── Typed double-check: Parcel ID ── */}
+        {/* ── Double-check: Parcel ID ── */}
         <DoubleCheckField
           id="parcel"
           label="Parcel ID / Tax Map Number (SBL)"
-          formValue={parcelMissing ? null : parcelFormValue}
+          formDisplayValue={parcelMissing ? null : parcelFormValue}
           inputValue={parcelInput}
-          state={parcelState}
+          confirmed={parcelConfirmed}
           missing={parcelMissing}
-          hint="Find the Parcel ID (also called SBL or Tax Map Number) on your tax bill. Type it here exactly as it appears."
-          placeholder="e.g. 2089-123-456-789 or 09-A-0012"
-          onInput={setParcelInput}
+          mismatch={parcelMismatch}
+          matchesForm={!parcelMissing && parcelMatches(parcelFormValue, parcelInput)}
+          hint="Find the Parcel ID (also called SBL or Tax Map Number) on your tax bill. It should match the value shown. If it does, click Confirm."
+          placeholder={parcelFormValue || "e.g. 2089-123-456-789"}
+          onInput={(val) => { setParcelInput(val); setParcelConfirmed(false); }}
+          onConfirm={confirmParcel}
+          onEdit={() => setParcelConfirmed(false)}
         />
 
-        {/* ── Typed double-check: Assessed Value ── */}
+        {/* ── Double-check: Assessed Value ── */}
         <DoubleCheckField
           id="assessment"
           label="Current assessed value"
-          formValue={assessmentMissing ? null : `$${Number(assessmentFormValue).toLocaleString()}`}
+          formDisplayValue={assessmentMissing ? null : assessmentFormDisplay}
           inputValue={assessmentInput}
-          state={assessmentState}
+          confirmed={assessmentConfirmed}
           missing={assessmentMissing}
-          hint="Find the 'Total Assessed Value' on your tax bill — not the market value, not the land value alone. Type it here."
-          placeholder="e.g. 450000 or $450,000"
-          onInput={setAssessmentInput}
+          mismatch={assessmentMismatch}
+          matchesForm={!assessmentMissing && assessmentMatches(assessmentFormRaw, assessmentInput)}
+          hint="Find 'Total Assessed Value' on your tax bill — not the market value, not the land-only value. Compare it to the value shown, then click Confirm."
+          placeholder={assessmentFormDisplay || "e.g. $450,000"}
+          onInput={(val) => { setAssessmentInput(val); setAssessmentConfirmed(false); }}
+          onConfirm={confirmAssessment}
+          onEdit={() => setAssessmentConfirmed(false)}
         />
 
         {/* Divider */}
@@ -256,54 +269,58 @@ export function PrePrintChecklist({ grievance, onAllConfirmed }: PrePrintCheckli
       {allConfirmed && (
         <div className="mx-6 mb-6 flex items-center gap-2 p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800">
           <ShieldCheck className="w-4 h-4 flex-shrink-0 text-emerald-600" />
-          <span className="font-medium">All critical fields verified. Your form matches your tax bill — ready to print.</span>
+          <span className="font-medium">All critical fields verified against your tax bill. Your form is ready to print.</span>
         </div>
       )}
     </div>
   );
 }
 
-/* ── Sub-component: typed double-check field ── */
+/* ── Sub-component: double-check field with pre-fill + confirm button ── */
 
 interface DoubleCheckFieldProps {
   id: string;
   label: string;
-  formValue: string | null;
+  formDisplayValue: string | null;
   inputValue: string;
-  state: TypedState;
+  confirmed: boolean;
   missing: boolean;
+  mismatch: boolean;
+  matchesForm: boolean;
   hint: string;
   placeholder: string;
   onInput: (val: string) => void;
+  onConfirm: () => void;
+  onEdit: () => void;
 }
 
-function DoubleCheckField({ id, label, formValue, inputValue, state, missing, hint, placeholder, onInput }: DoubleCheckFieldProps) {
-  const borderColor =
-    missing || state === "empty"
-      ? "border-border"
-      : state === "match"
-      ? "border-emerald-300"
-      : "border-red-300";
+function DoubleCheckField({
+  id, label, formDisplayValue, inputValue, confirmed, missing, mismatch, matchesForm, hint, placeholder, onInput, onConfirm, onEdit,
+}: DoubleCheckFieldProps) {
+  const borderColor = missing
+    ? "border-red-200"
+    : confirmed
+    ? "border-emerald-300"
+    : mismatch
+    ? "border-red-300"
+    : "border-primary/30";
 
-  const bgColor =
-    missing
-      ? "bg-red-50"
-      : state === "match"
-      ? "bg-emerald-50"
-      : state === "mismatch"
-      ? "bg-red-50"
-      : "bg-card";
+  const bgColor = missing
+    ? "bg-red-50"
+    : confirmed
+    ? "bg-emerald-50"
+    : mismatch
+    ? "bg-red-50/50"
+    : "bg-primary/[0.02]";
 
   return (
     <div className={`rounded-xl border-2 p-4 transition-all ${bgColor} ${borderColor}`} data-testid={`preprint-typed-${id}`}>
-      <div className="flex items-start justify-between gap-3 mb-2">
+
+      {/* Label row */}
+      <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <KeyRound className={`w-4 h-4 flex-shrink-0 ${
-            state === "match" ? "text-emerald-600" : state === "mismatch" ? "text-red-500" : "text-primary"
-          }`} />
-          <span className={`text-sm font-bold ${
-            state === "match" ? "text-emerald-800" : state === "mismatch" ? "text-red-700" : "text-foreground"
-          }`}>
+          <KeyRound className={`w-4 h-4 flex-shrink-0 ${confirmed ? "text-emerald-600" : mismatch ? "text-red-500" : "text-primary"}`} />
+          <span className={`text-sm font-bold ${confirmed ? "text-emerald-800" : mismatch ? "text-red-700" : "text-foreground"}`}>
             {label}
           </span>
           <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-primary/10 text-primary">
@@ -311,54 +328,75 @@ function DoubleCheckField({ id, label, formValue, inputValue, state, missing, hi
           </span>
         </div>
         <div className="flex-shrink-0">
-          {state === "match" && <CheckSquare2 className="w-5 h-5 text-emerald-600" />}
-          {state === "mismatch" && <XCircle className="w-5 h-5 text-red-500" />}
-          {state === "empty" && !missing && <Square className="w-5 h-5 text-muted-foreground/30" />}
-          {missing && <AlertTriangle className="w-5 h-5 text-red-400" />}
+          {confirmed && <CheckSquare2 className="w-5 h-5 text-emerald-600" />}
+          {mismatch && <XCircle className="w-5 h-5 text-red-500" />}
+          {!confirmed && !mismatch && missing && <AlertTriangle className="w-5 h-5 text-red-400" />}
         </div>
       </div>
 
-      {/* On-form value */}
-      <div className="flex items-center gap-2 mb-3">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">On your form:</span>
-        <span className={`text-sm font-mono font-bold ${missing ? "text-red-500 italic font-sans font-normal" : "text-foreground"}`}>
-          {missing ? "Not filled in — click Edit" : formValue}
-        </span>
-      </div>
+      {missing ? (
+        <p className="text-xs text-red-700 font-medium">Not filled in — click Edit on this case to add it before printing.</p>
+      ) : confirmed ? (
+        /* ── Confirmed state ── */
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold text-emerald-700 flex items-center gap-1">
+              <Check className="w-3.5 h-3.5" /> Confirmed by you — matches your tax bill.
+            </p>
+            <p className="text-xs text-emerald-600 font-mono mt-0.5">{inputValue}</p>
+          </div>
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Pencil className="w-3 h-3" /> Edit
+          </button>
+        </div>
+      ) : (
+        /* ── Verification state ── */
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground leading-relaxed">{hint}</p>
 
-      {/* Input */}
-      {!missing && (
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground" htmlFor={`typed-${id}`}>
-            Type the value from your tax bill:
-          </label>
-          <input
-            id={`typed-${id}`}
-            data-testid={`preprint-input-${id}`}
-            type="text"
-            value={inputValue}
-            onChange={(e) => onInput(e.target.value)}
-            placeholder={placeholder}
-            className={`w-full text-sm font-mono px-3 py-2 rounded-lg border bg-white transition-all outline-none focus:ring-2 ${
-              state === "match"
-                ? "border-emerald-300 focus:ring-emerald-200 text-emerald-800"
-                : state === "mismatch"
-                ? "border-red-300 focus:ring-red-200 text-red-800"
-                : "border-border focus:ring-primary/20 text-foreground"
-            }`}
-          />
-          {state === "match" && (
-            <p className="text-xs font-medium text-emerald-700 flex items-center gap-1">
-              <CheckSquare2 className="w-3 h-3" /> Confirmed — matches your form.
+          <div className="flex gap-2">
+            <input
+              id={`typed-${id}`}
+              data-testid={`preprint-input-${id}`}
+              type="text"
+              value={inputValue}
+              onChange={(e) => onInput(e.target.value)}
+              placeholder={placeholder}
+              className={`flex-1 text-sm font-mono px-3 py-2 rounded-lg border bg-white transition-all outline-none focus:ring-2 ${
+                mismatch
+                  ? "border-red-300 focus:ring-red-200 text-red-800"
+                  : matchesForm
+                  ? "border-emerald-300 focus:ring-emerald-200 text-emerald-800"
+                  : "border-border focus:ring-primary/20 text-foreground"
+              }`}
+            />
+            <button
+              data-testid={`preprint-confirm-${id}`}
+              onClick={onConfirm}
+              disabled={!matchesForm}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                matchesForm
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                  : "bg-secondary text-muted-foreground cursor-not-allowed opacity-60"
+              }`}
+            >
+              <Check className="w-4 h-4" /> Confirm
+            </button>
+          </div>
+
+          {mismatch && (
+            <p className="text-xs text-red-700 font-medium flex items-center gap-1">
+              <XCircle className="w-3 h-3" />
+              Doesn't match your form ({formDisplayValue}). If your tax bill shows a different value, click <strong>Edit</strong> to correct the form.
             </p>
           )}
-          {state === "mismatch" && (
-            <p className="text-xs font-medium text-red-700 flex items-center gap-1">
-              <XCircle className="w-3 h-3" /> Doesn't match. Your form shows <span className="font-mono font-bold">{formValue}</span>. Click Edit to correct it.
+          {matchesForm && !mismatch && (
+            <p className="text-xs text-emerald-700 font-medium flex items-center gap-1">
+              <Check className="w-3 h-3" /> Matches your form — click <strong>Confirm</strong> to verify.
             </p>
-          )}
-          {state === "empty" && (
-            <p className="text-xs text-muted-foreground">{hint}</p>
           )}
         </div>
       )}
