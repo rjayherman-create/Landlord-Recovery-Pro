@@ -9,6 +9,9 @@ import { GrievanceDetail } from "@/pages/GrievanceDetail";
 import { CountyGuide } from "@/pages/CountyGuide";
 import { HowItWorks } from "@/pages/HowItWorks";
 import { FilingCalendar } from "@/pages/FilingCalendar";
+import { Pricing } from "@/pages/Pricing";
+import { CheckoutSuccess } from "@/pages/CheckoutSuccess";
+import { CheckoutCancel } from "@/pages/CheckoutCancel";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,6 +30,9 @@ function Router() {
       <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/calendar" component={FilingCalendar} />
       <Route path="/grievances/:id" component={GrievanceDetail} />
+      <Route path="/pricing" component={Pricing} />
+      <Route path="/checkout/success" component={CheckoutSuccess} />
+      <Route path="/checkout/cancel" component={CheckoutCancel} />
       <Route component={NotFound} />
     </Switch>
   );

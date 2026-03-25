@@ -9,6 +9,7 @@ import reverseGeocodeRouter from "./reverse-geocode";
 import ocrTaxRecordRouter from "./ocr-tax-record";
 import autoComparablesRouter from "./auto-comparables";
 import priorYearRouter from "./prior-year";
+import stripeRouter from "./stripe";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(reverseGeocodeRouter);
 router.use(ocrTaxRecordRouter);
 router.use(autoComparablesRouter);
 router.use(priorYearRouter);
+router.use(stripeRouter);
 
 export default router;

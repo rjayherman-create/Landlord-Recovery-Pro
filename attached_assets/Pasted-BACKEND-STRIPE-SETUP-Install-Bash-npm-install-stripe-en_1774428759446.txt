@@ -1,0 +1,106 @@
+BACKEND (STRIPE SETUP)
+Install
+Bash
+npm install stripe
+.env.local
+Environment
+STRIPE_SECRET_KEY=sk_test_xxx
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_xxx
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+API Route (Checkout Session)
+📁 app/api/checkout/route.ts
+TypeScript
+import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-06-20",
+});
+
+export async function POST(req: NextRequest) {
+  const { plan } = await req.json();
+
+  const priceMap: Record<string, number> = {
+    basic: 9999,      // $99.99
+    guided: 19900,    // $199
+    concierge: 29900, // $299
+  };
+
+  const amount = priceMap[plan];
+
+  if (!amount) {
+    return NextResponse.json({ error: "Invalid plan" }, { status: 400 });
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+    mode: "payment",
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Property Tax Grievance Filing",
+          },
+          unit_amount: amount,
+        },
+        quantity: 1,
+      },
+    ],
+    success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/success`,
+    cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/cancel`,
+  });
+
+  return NextResponse.json({ url: session.url });
+}
+🖥️ FRONTEND (PAY BUTTON)
+📁 components/CheckoutButton.tsx
+TypeScript
+"use client";
+
+export default function CheckoutButton({ plan }: { plan: string }) {
+  const handleCheckout = async () => {
+    const res = await fetch("/api/checkout", {
+      method: "POST",
+      body: JSON.stringify({ plan }),
+    });
+
+    const data = await res.json();
+    window.location.href = data.url;
+  };
+
+  return (
+    <button
+      onClick={handleCheckout}
+      className="bg-black text-white px-6 py-3 rounded-xl"
+    >
+      Get Started for $99.99
+    </button>
+  );
+}
+🧾 RESULTS PAGE (WHERE MONEY IS MADE)
+📁 app/results/page.tsx
+TypeScript
+import CheckoutButton from "@/components/CheckoutButton";
+
+export default function ResultsPage() {
+  return (
+    <div className="max-w-2xl mx-auto p-6 space-y-6">
+      <h1 className="text-2xl font-bold">You're Overpaying Taxes</h1>
+
+      <div className="p-4 border rounded-xl">
+        <p>Estimated savings: $2,450/year</p>
+      </div>
+
+      {/* MAIN CTA */}
+      <CheckoutButton plan="basic" />
+
+      {/* UPSELL */}
+      <div className="border p-4 rounded-xl">
+        <h2 className="font-semibold">Want better results?</h2>
+        <p>Upgrade to expert-reviewed filing</p>
+        <CheckoutButton plan="guided" />
+      </div>
+    </div>
+  );
+}
