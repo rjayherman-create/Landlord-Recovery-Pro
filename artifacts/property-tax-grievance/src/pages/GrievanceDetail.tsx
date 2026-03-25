@@ -320,7 +320,7 @@ export function GrievanceDetail() {
   return (
     <AppLayout>
       <div className="hidden" id="rp524-print">
-        <RP524PrintForm grievance={grievance} comparables={comparables} />
+        <RP524PrintForm grievance={grievance} comparables={comparables} state={grievanceState} />
       </div>
       <div className="hidden" id="comps-report-print">
         <CompsReportPrintForm grievance={grievance} comparables={comparables} />
@@ -429,6 +429,7 @@ export function GrievanceDetail() {
           <div className="p-5">
             <WhatHappensNext
               county={grievance.county}
+              state={grievanceState}
               afterFiling={filingInfo.afterFiling}
               currentStatus={grievance.status}
               filedDate={grievance.filingDeadline}
@@ -543,7 +544,7 @@ export function GrievanceDetail() {
             </h3>
             <dl className="space-y-2.5 text-sm">
               {grievance.schoolDistrict && <div><dt className="text-muted-foreground text-xs mb-0.5">School District</dt><dd className="font-medium">{grievance.schoolDistrict}</dd></div>}
-              {grievance.parcelId && <div><dt className="text-muted-foreground text-xs mb-0.5">Parcel ID (SBL)</dt><dd className="font-mono text-xs bg-secondary/50 px-2 py-1 rounded">{grievance.parcelId}</dd></div>}
+              {grievance.parcelId && <div><dt className="text-muted-foreground text-xs mb-0.5">{parcelLabel}</dt><dd className="font-mono text-xs bg-secondary/50 px-2 py-1 rounded">{grievance.parcelId}</dd></div>}
               {grievance.propertyClass && <div><dt className="text-muted-foreground text-xs mb-0.5">Property Class</dt><dd className="font-medium">{grievance.propertyClass}</dd></div>}
               <div className="flex gap-4">
                 {grievance.yearBuilt && <div><dt className="text-muted-foreground text-xs mb-0.5">Year Built</dt><dd className="font-medium">{grievance.yearBuilt}</dd></div>}
@@ -559,12 +560,16 @@ export function GrievanceDetail() {
               <DollarSign className="w-4 h-4 text-primary" /> Assessment Figures
             </h3>
             <dl className="space-y-3 text-sm">
-              <div><dt className="text-muted-foreground text-xs mb-0.5">Current Assessment</dt><dd className="font-bold text-lg">${grievance.currentAssessment.toLocaleString()}</dd></div>
-              <div><dt className="text-muted-foreground text-xs mb-0.5">Equalization Rate</dt><dd className="font-medium">{grievance.equalizationRate != null ? `${grievance.equalizationRate}%` : "N/A"}</dd></div>
-              <div><dt className="text-muted-foreground text-xs mb-0.5">Implied Full Market Value</dt><dd className="font-medium">${impliedFullValue.toLocaleString()}</dd></div>
-              <div><dt className="text-muted-foreground text-xs mb-0.5">Your Est. Market Value</dt><dd className="font-bold text-base">${grievance.estimatedMarketValue.toLocaleString()}</dd></div>
+              <div><dt className="text-muted-foreground text-xs mb-0.5">{assessmentLabel}</dt><dd className="font-bold text-lg">${grievance.currentAssessment.toLocaleString()}</dd></div>
+              {!isTX && !isFL && (
+                <div><dt className="text-muted-foreground text-xs mb-0.5">Equalization Rate</dt><dd className="font-medium">{grievance.equalizationRate != null ? `${grievance.equalizationRate}%` : "N/A"}</dd></div>
+              )}
+              {!isTX && !isFL && (
+                <div><dt className="text-muted-foreground text-xs mb-0.5">Implied Full Market Value</dt><dd className="font-medium">${impliedFullValue.toLocaleString()}</dd></div>
+              )}
+              <div><dt className="text-muted-foreground text-xs mb-0.5">{isTX ? "Your Est. Market Value" : isFL ? "Your Est. Just Value" : "Your Est. Market Value"}</dt><dd className="font-bold text-base">${grievance.estimatedMarketValue.toLocaleString()}</dd></div>
               <div className="bg-emerald-50 -mx-5 px-5 py-3 border-y border-emerald-100">
-                <dt className="text-emerald-700 font-medium text-xs mb-0.5">Requested Assessment</dt>
+                <dt className="text-emerald-700 font-medium text-xs mb-0.5">{isTX ? "Requested Appraised Value" : isFL ? "Requested Just Value" : "Requested Assessment"}</dt>
                 <dd className="font-extrabold text-emerald-800 text-xl">${grievance.requestedAssessment.toLocaleString()}</dd>
                 <div className="text-xs text-emerald-600 flex items-center gap-1 mt-1">
                   <ArrowDown className="w-3 h-3" />

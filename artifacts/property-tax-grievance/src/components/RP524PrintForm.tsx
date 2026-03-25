@@ -3,6 +3,7 @@ import type { Grievance, Comparable } from "@workspace/api-client-react";
 interface RP524PrintFormProps {
   grievance: Grievance;
   comparables: Comparable[];
+  state?: string;
 }
 
 const BASIS_LABELS: Record<string, string> = {
@@ -35,7 +36,10 @@ function CheckBox({ checked, label }: { checked: boolean; label: string }) {
   );
 }
 
-export function RP524PrintForm({ grievance, comparables }: RP524PrintFormProps) {
+export function RP524PrintForm({ grievance, comparables, state = "NY" }: RP524PrintFormProps) {
+  const isTX = state === "TX";
+  const isNJ = state === "NJ";
+  const isFL = state === "FL";
   const equalizationRate = grievance.equalizationRate ?? 1;
   const impliedFullValue = equalizationRate > 0
     ? Math.round(grievance.currentAssessment / (equalizationRate / 100))
@@ -62,9 +66,31 @@ export function RP524PrintForm({ grievance, comparables }: RP524PrintFormProps) 
     >
       {/* Header */}
       <div className="text-center mb-3">
-        <div className="text-[9px] text-gray-600 mb-0.5">New York State Department of Taxation and Finance — Office of Real Property Tax Services</div>
-        <div className="text-[18px] font-extrabold tracking-tight">RP-524 — Complaint on Real Property Assessment</div>
-        <div className="text-[10px] mt-0.5 text-gray-700">For use in filing complaints with the Board of Assessment Review (BAR)</div>
+        {isTX ? (
+          <>
+            <div className="text-[9px] text-gray-600 mb-0.5">Texas — County Appraisal District</div>
+            <div className="text-[18px] font-extrabold tracking-tight">Notice of Protest — Texas Property Tax</div>
+            <div className="text-[10px] mt-0.5 text-gray-700">For use in filing protests with the County Appraisal Review Board (ARB) · Tax Code §41.41</div>
+          </>
+        ) : isNJ ? (
+          <>
+            <div className="text-[9px] text-gray-600 mb-0.5">New Jersey — County Board of Taxation</div>
+            <div className="text-[18px] font-extrabold tracking-tight">Form A-1 — Petition of Appeal</div>
+            <div className="text-[10px] mt-0.5 text-gray-700">For use in filing appeals with the County Board of Taxation · N.J.S.A. 54:3-21</div>
+          </>
+        ) : isFL ? (
+          <>
+            <div className="text-[9px] text-gray-600 mb-0.5">Florida — County Value Adjustment Board</div>
+            <div className="text-[18px] font-extrabold tracking-tight">DR-486 — Petition to Value Adjustment Board</div>
+            <div className="text-[10px] mt-0.5 text-gray-700">For use in petitioning the Value Adjustment Board (VAB) · Florida Statutes §194.011</div>
+          </>
+        ) : (
+          <>
+            <div className="text-[9px] text-gray-600 mb-0.5">New York State Department of Taxation and Finance — Office of Real Property Tax Services</div>
+            <div className="text-[18px] font-extrabold tracking-tight">RP-524 — Complaint on Real Property Assessment</div>
+            <div className="text-[10px] mt-0.5 text-gray-700">For use in filing complaints with the Board of Assessment Review (BAR)</div>
+          </>
+        )}
       </div>
 
       <div className="flex gap-2 mb-1">

@@ -9,6 +9,7 @@ import { useState } from "react";
 import { format, parseISO, isValid, isFuture } from "date-fns";
 import { getComputedDeadline } from "@/data/county-filing-instructions";
 import { usePreferredState, STATE_META, type AppState } from "@/hooks/use-preferred-state";
+import { useAuth } from "@workspace/replit-auth-web";
 
 const STATUS_COLORS = {
   draft: "bg-slate-100 text-slate-700 border-slate-200",
@@ -22,6 +23,7 @@ export function Dashboard() {
   const { data: grievances, isLoading } = useGrievances();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const { preferredState, setPreferredState, meta } = usePreferredState();
+  const { isAuthenticated, login } = useAuth();
 
   const totalCases = grievances?.length || 0;
   const reducedCases = grievances?.filter(g => g.status === 'reduced').length || 0;
@@ -77,7 +79,26 @@ export function Dashboard() {
                     Select your state, then enter your property details to build your {meta.verb} case using {meta.form}.
                   </DialogDescription>
                 </DialogHeader>
-                <GrievanceForm onSuccess={() => setIsDialogOpen(false)} initialState={preferredState} />
+                {isAuthenticated ? (
+                  <GrievanceForm onSuccess={() => setIsDialogOpen(false)} initialState={preferredState} />
+                ) : (
+                  <div className="py-8 text-center space-y-4">
+                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                      <ShieldCheck className="w-7 h-7 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-serif font-bold text-lg text-foreground">Sign in to create a case</h3>
+                      <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+                        Your cases, comparables, and forms are saved to your account so you can access them anytime.
+                        Sign in with your Replit account — it's free.
+                      </p>
+                    </div>
+                    <Button onClick={login} size="lg" className="gap-2 px-8">
+                      <Plus className="w-4 h-4" /> Sign in and Start Free
+                    </Button>
+                    <p className="text-xs text-muted-foreground">No credit card required</p>
+                  </div>
+                )}
               </DialogContent>
             </Dialog>
           </div>

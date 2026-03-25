@@ -3,6 +3,7 @@ import type { AfterFilingInfo } from "@/data/county-filing-instructions";
 
 interface WhatHappensNextProps {
   county: string;
+  state?: string;
   afterFiling: AfterFilingInfo;
   currentStatus: string;
   filedDate?: string | null;
@@ -26,11 +27,47 @@ function stepIsCurrent(stepIndex: number, currentStepIndex: number, status: stri
   return stepIndex === currentStepIndex;
 }
 
-export function WhatHappensNext({ county, afterFiling, currentStatus, filedDate }: WhatHappensNextProps) {
+const STATE_GUARANTEE: Record<string, { heading: string; body: string }> = {
+  NY: {
+    heading: "Filing cannot increase your taxes — it's NY law",
+    body: "Under New York Real Property Tax Law §525, the Board of Assessment Review may only grant or deny your request. They cannot raise your assessment as a result of your grievance. The worst possible outcome is that nothing changes.",
+  },
+  NJ: {
+    heading: "Filing cannot increase your taxes — it's NJ law",
+    body: "Under New Jersey law, the County Board of Taxation may only grant or deny your appeal. Filing an appeal cannot result in a higher assessment. The worst possible outcome is that your assessment stays the same.",
+  },
+  TX: {
+    heading: "Filing cannot increase your taxes — it's Texas law",
+    body: "Under Texas Tax Code §41.41, the Appraisal Review Board may only grant or deny your protest. They cannot raise your appraised value as a result of filing. The worst possible outcome is no change.",
+  },
+  FL: {
+    heading: "Filing cannot increase your taxes — it's Florida law",
+    body: "Under Florida law §194.011, the Value Adjustment Board may only grant or deny your petition. They cannot raise your Just Value as a result of filing. The worst possible outcome is that nothing changes. The $15 filing fee is non-refundable.",
+  },
+};
+
+export function WhatHappensNext({ county, state = "NY", afterFiling, currentStatus, filedDate }: WhatHappensNextProps) {
   const currentStepIndex = STATUS_STEP_MAP[currentStatus] ?? 0;
   const isResolved = currentStatus === "reduced" || currentStatus === "denied";
   const isGranted = currentStatus === "reduced";
   const isDenied = currentStatus === "denied";
+
+  const guarantee = STATE_GUARANTEE[state] ?? STATE_GUARANTEE.NY;
+  const isTX = state === "TX";
+  const isNJ = state === "NJ";
+  const isFL = state === "FL";
+
+  const deniedByBody = isTX
+    ? "Appraisal Review Board"
+    : isNJ
+    ? "County Board of Taxation"
+    : isFL
+    ? "Special Magistrate / VAB"
+    : county === "Nassau"
+    ? "ARC"
+    : county === "Kings" || county === "Queens" || county === "New York" || county === "Bronx" || county === "Richmond"
+    ? "Tax Commission"
+    : "BAR";
 
   return (
     <div className="space-y-5">
@@ -39,10 +76,8 @@ export function WhatHappensNext({ county, afterFiling, currentStatus, filedDate 
       <div className="flex items-start gap-3 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
         <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
         <div>
-          <p className="font-semibold text-emerald-900 text-sm">Filing cannot increase your taxes — it's NY law</p>
-          <p className="text-xs text-emerald-800 mt-1 leading-relaxed">
-            Under New York Real Property Tax Law §525, the Board of Assessment Review may only grant or deny your request. They cannot raise your assessment as a result of your grievance. The worst possible outcome is that nothing changes.
-          </p>
+          <p className="font-semibold text-emerald-900 text-sm">{guarantee.heading}</p>
+          <p className="text-xs text-emerald-800 mt-1 leading-relaxed">{guarantee.body}</p>
         </div>
       </div>
 
@@ -74,7 +109,7 @@ export function WhatHappensNext({ county, afterFiling, currentStatus, filedDate 
           <div>
             <p className="font-semibold text-amber-900 text-sm">Denied — but you still have options</p>
             <p className="text-xs text-amber-800 mt-1 leading-relaxed">
-              A denial from the {county === "Nassau" ? "ARC" : county === "Kings" || county === "Queens" || county === "New York" || county === "Bronx" || county === "Richmond" ? "Tax Commission" : "BAR"} is not final. You can appeal to {afterFiling.ifDenied.appealName} within {afterFiling.ifDenied.deadline}.
+              A denial from the {deniedByBody} is not final. You can appeal to {afterFiling.ifDenied.appealName} within {afterFiling.ifDenied.deadline}.
             </p>
           </div>
         </div>
