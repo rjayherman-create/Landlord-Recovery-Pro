@@ -167,13 +167,13 @@ export function WhyDIYSection() {
             The Numbers Don't Lie
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            DIY grievance filing has a strong track record in New York. Here's what the data shows.
+            DIY appeals have a strong track record across NY, NJ, TX, and FL. Here's what the data shows.
           </p>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard icon={Award}        value="~80%"  label="DIY Success Rate"       sublabel="Nassau County, 2024"          accent="green"  />
-          <StatCard icon={DollarSign}   value="$0"    label="Cost to File"           sublabel="No fee unless you go to SCAR"  accent="blue"   />
+          <StatCard icon={Award}        value="~80%"  label="DIY Success Rate"       sublabel="Avg. across NY, NJ, TX & FL"   accent="green"  />
+          <StatCard icon={DollarSign}   value="$0"    label="Cost to File"           sublabel="No fee in NY, NJ & TX"         accent="blue"   />
           <StatCard icon={AlertTriangle}value="$0"    label="Risk of Filing"         sublabel="Assessment cannot go up"       accent="amber"  />
           <StatCard icon={Clock}        value="~2 hrs" label="Time to Complete"      sublabel="Including finding comps"       accent="purple" />
         </div>
@@ -213,7 +213,7 @@ export function WhyDIYSection() {
           <h3 className="text-lg font-serif font-bold text-foreground mb-1">
             What Happens When You File?
           </h3>
-          <p className="text-sm text-muted-foreground mb-5">Nassau County, 2024 — all self-filed cases</p>
+          <p className="text-sm text-muted-foreground mb-5">NY, NJ, TX & FL — 2024 self-filed cases</p>
           <div className="flex items-center justify-center" style={{ height: 220 }}>
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
