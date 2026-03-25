@@ -345,6 +345,7 @@ export function getComputedDeadline(county: string, state?: string): string | nu
   const normalized = county.trim();
   if (state === "TX") return `${year}-05-15`;
   if (state === "NJ") return `${year}-04-01`;
+  if (state === "FL") return `${year}-09-18`;
   if (normalized === "Nassau") return `${year}-03-01`;
   if (["Kings", "Queens", "New York", "Bronx", "Richmond"].includes(normalized)) return `${year}-03-15`;
   if (normalized === "Suffolk") return nthTuesdayISO(year, 4, 3);

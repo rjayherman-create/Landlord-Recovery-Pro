@@ -5,8 +5,9 @@ import { Map, ExternalLink, CalendarDays, FileCheck, Phone, Building2 } from "lu
 import { Button } from "@/components/ui/button";
 import { TX_COUNTY_FILING } from "@/data/texas-filing-instructions";
 import { NJ_COUNTY_FILING } from "@/data/nj-filing-instructions";
+import { FL_COUNTY_FILING } from "@/data/florida-filing-instructions";
 
-type StateTab = "NY" | "NJ" | "TX";
+type StateTab = "NY" | "NJ" | "TX" | "FL";
 
 const STATE_META: Record<StateTab, { label: string; flag: string; headline: string; subhead: string; form: string; body: string; deadline: string; next: string }> = {
   NY: {
@@ -39,6 +40,16 @@ const STATE_META: Record<StateTab, { label: string; flag: string; headline: stri
     deadline: "May 15 (or 30 days after appraisal notice, whichever is later)",
     next: "Binding Arbitration or State District Court",
   },
+  FL: {
+    label: "Florida",
+    flag: "🌴",
+    headline: "Florida County Guide",
+    subhead: "File Form DR-486 (Petition to Value Adjustment Board) with your County VAB by September 18. A $15 filing fee applies. The VAB is independent from the Property Appraiser.",
+    form: "DR-486 — Petition to Value Adjustment Board",
+    body: "County Value Adjustment Board (VAB)",
+    deadline: "September 18 (or 25 days after TRIM notice mailing)",
+    next: "Florida Circuit Court (within 60 days of VAB Final Decision)",
+  },
 };
 
 export function CountyGuide() {
@@ -49,6 +60,7 @@ export function CountyGuide() {
 
   const txCounties = Object.values(TX_COUNTY_FILING).filter(c => c.county !== "Other");
   const njCounties = Object.values(NJ_COUNTY_FILING).filter(c => c.county !== "Other");
+  const flCounties = Object.values(FL_COUNTY_FILING).filter(c => c.county !== "Other");
 
   return (
     <AppLayout>
@@ -59,8 +71,8 @@ export function CountyGuide() {
         </div>
 
         {/* State Tabs */}
-        <div className="flex justify-center gap-3 mb-8">
-          {(["NY", "NJ", "TX"] as StateTab[]).map((s) => (
+        <div className="flex justify-center gap-3 mb-8 flex-wrap">
+          {(["NY", "NJ", "TX", "FL"] as StateTab[]).map((s) => (
             <button
               key={s}
               onClick={() => setActiveState(s)}
@@ -275,6 +287,67 @@ export function CountyGuide() {
                     <p className="text-xs text-center text-muted-foreground italic">
                       File in person at the appraisal district office.
                     </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {/* FL Counties */}
+        {activeState === "FL" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {flCounties.map((info) => (
+              <div key={info.county} className="bg-card rounded-2xl border border-border shadow-sm hover:shadow-md transition-shadow p-6 flex flex-col h-full">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h2 className="text-2xl font-serif font-bold text-primary">{info.county}</h2>
+                    <span className="inline-block px-2 py-1 bg-green-50 text-green-700 text-xs font-medium rounded mt-1 border border-green-200">
+                      {info.vabName}
+                    </span>
+                  </div>
+                  <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center text-primary">
+                    <Map className="w-6 h-6" />
+                  </div>
+                </div>
+                <div className="space-y-3 flex-grow my-3">
+                  <div className="flex items-start gap-2">
+                    <FileCheck className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <p className="text-sm text-muted-foreground">{info.formName}</p>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <CalendarDays className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <p className="text-sm text-muted-foreground">{info.filingDeadline}</p>
+                  </div>
+                  {info.phone && (
+                    <div className="flex items-start gap-2">
+                      <Phone className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                      <p className="text-sm text-muted-foreground">{info.phone}</p>
+                    </div>
+                  )}
+                  {info.notes && (
+                    <div className="bg-secondary/30 p-3 rounded-lg text-sm text-foreground/80 border border-border/50">
+                      {info.notes}
+                    </div>
+                  )}
+                </div>
+                <div className="pt-4 border-t border-border mt-auto">
+                  {info.onlinePortal ? (
+                    <a href={info.onlinePortal.url} target="_blank" rel="noreferrer" className="w-full block">
+                      <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
+                        {info.onlinePortal.label} <ExternalLink className="w-4 h-4 ml-2" />
+                      </Button>
+                    </a>
+                  ) : (
+                    <a
+                      href="https://floridarevenue.com/property/Pages/Taxpayers_Petition.aspx"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full block"
+                    >
+                      <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
+                        FL DR-486 Instructions <ExternalLink className="w-4 h-4 ml-2" />
+                      </Button>
+                    </a>
                   )}
                 </div>
               </div>

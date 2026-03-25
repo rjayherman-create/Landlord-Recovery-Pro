@@ -16,6 +16,7 @@ import { PropertyRecordCard } from "@/components/PropertyRecordCard";
 import type { LookupResult } from "@/components/PropertyRecordCard";
 import { TX_COUNTY_NAMES, TX_BASIS_OPTIONS, TX_PROPERTY_CLASS_OPTIONS } from "@/data/texas-filing-instructions";
 import { NJ_COUNTY_NAMES, NJ_BASIS_OPTIONS, NJ_PROPERTY_CLASS_OPTIONS } from "@/data/nj-filing-instructions";
+import { FL_COUNTY_NAMES, FL_BASIS_OPTIONS, FL_PROPERTY_CLASS_OPTIONS } from "@/data/florida-filing-instructions";
 
 /* ─── Schema ────────────────────────────────────────── */
 
@@ -150,10 +151,11 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
   const selectedState = form.watch("state") ?? "NY";
   const isTX = selectedState === "TX";
   const isNJ = selectedState === "NJ";
+  const isFL = selectedState === "FL";
 
-  const currentCountyOptions = isTX ? TX_COUNTY_NAMES : isNJ ? NJ_COUNTY_NAMES : COUNTY_OPTIONS;
-  const currentBasisOptions = isTX ? TX_BASIS_OPTIONS : isNJ ? NJ_BASIS_OPTIONS : BASIS_OPTIONS;
-  const currentPropertyClassOptions = isTX ? TX_PROPERTY_CLASS_OPTIONS : isNJ ? NJ_PROPERTY_CLASS_OPTIONS : PROPERTY_CLASS_OPTIONS;
+  const currentCountyOptions = isTX ? TX_COUNTY_NAMES : isNJ ? NJ_COUNTY_NAMES : isFL ? FL_COUNTY_NAMES : COUNTY_OPTIONS;
+  const currentBasisOptions = isTX ? TX_BASIS_OPTIONS : isNJ ? NJ_BASIS_OPTIONS : isFL ? FL_BASIS_OPTIONS : BASIS_OPTIONS;
+  const currentPropertyClassOptions = isTX ? TX_PROPERTY_CLASS_OPTIONS : isNJ ? NJ_PROPERTY_CLASS_OPTIONS : isFL ? FL_PROPERTY_CLASS_OPTIONS : PROPERTY_CLASS_OPTIONS;
 
   /* ── Property lookup ── */
   const runLookup = async (addr: string) => {
@@ -528,13 +530,14 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
               { value: "NY", label: "🗽 New York" },
               { value: "NJ", label: "🔵 New Jersey" },
               { value: "TX", label: "⭐ Texas" },
+              { value: "FL", label: "🌴 Florida" },
             ].map(({ value, label }) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => {
                   form.setValue("state", value);
-                  const defaultCounty = value === "TX" ? "Harris" : value === "NJ" ? "Bergen" : "Nassau";
+                  const defaultCounty = value === "TX" ? "Harris" : value === "NJ" ? "Bergen" : value === "FL" ? "Miami-Dade" : "Nassau";
                   const defaultBasis = value === "TX" ? "market_value" : "overvaluation";
                   form.setValue("county", defaultCounty);
                   form.setValue("basisOfComplaint", defaultBasis);
@@ -557,6 +560,11 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
           {isNJ && (
             <span className="text-xs text-muted-foreground ml-auto">
               New Jersey: County Board of Taxation, Form A-1
+            </span>
+          )}
+          {isFL && (
+            <span className="text-xs text-muted-foreground ml-auto">
+              Florida: Value Adjustment Board (VAB), Form DR-486
             </span>
           )}
         </div>

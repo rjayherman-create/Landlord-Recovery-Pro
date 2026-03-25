@@ -32,6 +32,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getFilingInfo, getGenericFilingInfo, getComputedDeadline } from "@/data/county-filing-instructions";
 import { getTxFilingInfo } from "@/data/texas-filing-instructions";
 import { getNjFilingInfo } from "@/data/nj-filing-instructions";
+import { getFlFilingInfo } from "@/data/florida-filing-instructions";
 import type { Grievance } from "@workspace/api-client-react";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -259,6 +260,7 @@ export function GrievanceDetail() {
   const grievanceState: string = (grievance as any).state ?? "NY";
   const isTX = grievanceState === "TX";
   const isNJ = grievanceState === "NJ";
+  const isFL = grievanceState === "FL";
 
   const equalizationRate = grievance.equalizationRate ?? 100;
   const impliedFullValue = Number(equalizationRate) > 0
@@ -275,12 +277,14 @@ export function GrievanceDetail() {
     ? getTxFilingInfo(grievance.county) as any
     : isNJ
     ? getNjFilingInfo(grievance.county) as any
+    : isFL
+    ? getFlFilingInfo(grievance.county) as any
     : (getFilingInfo(grievance.county) ?? getGenericFilingInfo(grievance.county));
 
-  const formName = isTX ? "Notice of Protest" : isNJ ? "A-1 Petition" : "RP-524";
-  const assessmentLabel = isTX ? "Appraised Value" : "Assessment";
-  const filingBodyLabel = isTX ? "County Appraisal District (CAD)" : isNJ ? "County Board of Taxation" : filingInfo.filingBody;
-  const parcelLabel = isTX ? "CAD Account Number" : isNJ ? "Block/Lot Number" : "Parcel ID";
+  const formName = isTX ? "Notice of Protest" : isNJ ? "A-1 Petition" : isFL ? "DR-486 Petition" : "RP-524";
+  const assessmentLabel = isTX ? "Appraised Value" : isFL ? "Just Value" : "Assessment";
+  const filingBodyLabel = isTX ? "County Appraisal District (CAD)" : isNJ ? "County Board of Taxation" : isFL ? "Value Adjustment Board (VAB)" : filingInfo.filingBody;
+  const parcelLabel = isTX ? "CAD Account Number" : isNJ ? "Block/Lot Number" : isFL ? "Parcel ID / RE Number" : "Parcel ID";
 
   // Step-by-step checklist
   const steps = [
@@ -294,10 +298,10 @@ export function GrievanceDetail() {
     },
     {
       n: 3, label: "Review & print form", done: grievance.status !== "draft",
-      detail: grievance.status === "draft" ? `Print your ${formName} or county form` : `Status: ${grievance.status}`,
+      detail: grievance.status === "draft" ? `Prepare your ${formName}` : `Status: ${grievance.status}`,
     },
     {
-      n: 4, label: isTX ? "File with CAD" : isNJ ? "File with County Board" : "File with county", done: ["submitted","pending","reduced","denied"].includes(grievance.status),
+      n: 4, label: isTX ? "File with CAD" : isNJ ? "File with County Board" : isFL ? "File with VAB" : "File with county", done: ["submitted","pending","reduced","denied"].includes(grievance.status),
       detail: `File with ${filingBodyLabel}`,
     },
   ];

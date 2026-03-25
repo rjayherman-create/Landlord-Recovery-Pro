@@ -76,15 +76,17 @@ function downloadICS(title: string, date: Date, description: string) {
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const monthActivities: Record<number, { label: string; color: string; type: "action" | "deadline" | "info" }[]> = {
-  0: [{ label: "Assessment rolls published (Nassau & NYC)", color: "blue", type: "info" }, { label: "TX: Appraisal notices begin mailing", color: "amber", type: "info" }],
+  0: [{ label: "NY: Assessment rolls published (Nassau & NYC)", color: "blue", type: "info" }, { label: "TX: Appraisal notices begin mailing", color: "amber", type: "info" }],
   1: [{ label: "Nassau AROW portal opens", color: "blue", type: "action" }, { label: "Start gathering comparable sales", color: "green", type: "action" }],
-  2: [{ label: "Nassau deadline: March 1", color: "red", type: "deadline" }, { label: "NYC deadline: March 15", color: "red", type: "deadline" }, { label: "NJ deadline: April 1", color: "red", type: "deadline" }],
-  3: [{ label: "NJ: Appeal deadline April 1", color: "red", type: "deadline" }, { label: "Assessment rolls published (upstate & Long Island towns)", color: "blue", type: "info" }, { label: "Review your tentative assessment notice", color: "green", type: "action" }],
+  2: [{ label: "Nassau deadline: March 1", color: "red", type: "deadline" }, { label: "NYC deadline: March 15", color: "red", type: "deadline" }],
+  3: [{ label: "NJ: Appeal deadline April 1", color: "red", type: "deadline" }, { label: "Assessment rolls published (upstate & Long Island towns)", color: "blue", type: "info" }],
   4: [{ label: "TX: Protest deadline May 15", color: "red", type: "deadline" }, { label: "Suffolk Grievance Day: 3rd Tuesday", color: "red", type: "deadline" }, { label: "Westchester / Rockland / Upstate: 4th Tuesday", color: "red", type: "deadline" }],
   5: [{ label: "NY: BAR decisions typically mailed", color: "blue", type: "info" }, { label: "NJ: Board hearings begin (June–October)", color: "blue", type: "info" }],
-  6: [{ label: "NY: SCAR petition window (30 days after BAR decision)", color: "amber", type: "action" }, { label: "TX: ARB hearing scheduled within 45 days", color: "amber", type: "info" }],
-  7: [{ label: "NY: SCAR hearings typically scheduled", color: "blue", type: "info" }, { label: "TX: ARB decisions issued", color: "blue", type: "info" }],
-  9: [{ label: "NJ: Board hearings typically completed", color: "blue", type: "info" }],
+  6: [{ label: "NY: SCAR petition window (30 days after BAR decision)", color: "amber", type: "action" }, { label: "TX: ARB hearing scheduled within 45 days", color: "amber", type: "info" }, { label: "FL: Gather comparable sales — TRIM notices mailing soon", color: "green", type: "action" }],
+  7: [{ label: "NY: SCAR hearings typically scheduled", color: "blue", type: "info" }, { label: "TX: ARB decisions issued", color: "blue", type: "info" }, { label: "FL: TRIM notices mailed by Aug 24", color: "green", type: "info" }],
+  8: [{ label: "FL: Petition deadline September 18", color: "red", type: "deadline" }, { label: "FL: File DR-486 with County VAB by Sept 18", color: "red", type: "deadline" }],
+  9: [{ label: "NJ: Board hearings typically completed", color: "blue", type: "info" }, { label: "FL: VAB hearings begin (Oct–Feb)", color: "green", type: "info" }],
+  10: [{ label: "FL: VAB hearings ongoing", color: "green", type: "info" }],
 };
 
 /* ─── Component ─────────────────────────────────────────────── */
@@ -163,6 +165,16 @@ export function FilingCalendar() {
         color: "amber",
         note: "Most municipalities. Some cities may differ — confirm with your local assessor.",
       },
+      {
+        id: "fl",
+        county: "All Florida Counties",
+        deadline: new Date(year, 8, 18),   // September 18
+        form: "DR-486 — Petition to VAB",
+        portal: "https://floridarevenue.com/property/Pages/Taxpayers_Petition.aspx",
+        region: "Florida",
+        color: "green",
+        note: "File with your County Value Adjustment Board (VAB) by September 18, or 25 days after your TRIM notice mailing. $15 filing fee required.",
+      },
     ];
   }, [year]);
 
@@ -209,6 +221,9 @@ export function FilingCalendar() {
     { month: "June–July (NY)", icon: "📬", action: "NY BAR decisions mailed. If denied or insufficient, consider SCAR (30-day window, $30 fee)." },
     { month: "June–October (NJ)", icon: "📬", action: "NJ County Board hearings. Attend your hearing and present comparable sales evidence." },
     { month: "Within 45 days (TX)", icon: "⚖️", action: "TX ARB hearing scheduled. Present your comparable sales evidence. If denied, consider binding arbitration or district court." },
+    { month: "August 24 (FL)", icon: "📬", action: "FL: TRIM (Truth in Millage) notices mailed by your county Property Appraiser. Review your Just Value carefully." },
+    { month: "September 18 (FL — Statewide)", icon: "🚨", action: "Florida VAB petition deadline. File Form DR-486 with your County Value Adjustment Board. $15 filing fee required." },
+    { month: "October–February (FL)", icon: "⚖️", action: "FL: VAB hearing scheduled before an independent special magistrate. Present comparable sales and condition evidence." },
   ];
 
   return (
@@ -225,7 +240,7 @@ export function FilingCalendar() {
             Property Tax Filing Calendar
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Deadlines vary by state and county. Miss yours and you wait another full year. NY, NJ, and TX deadlines are all tracked here.
+            Deadlines vary by state and county. Miss yours and you wait another full year. NY, NJ, TX, and FL deadlines are all tracked here.
           </p>
         </div>
 

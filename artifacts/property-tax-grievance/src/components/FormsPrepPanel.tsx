@@ -5,6 +5,7 @@ import type { Grievance, Comparable } from "@workspace/api-client-react";
 import { getFilingInfo, getGenericFilingInfo } from "@/data/county-filing-instructions";
 import { getTxFilingInfo } from "@/data/texas-filing-instructions";
 import { getNjFilingInfo } from "@/data/nj-filing-instructions";
+import { getFlFilingInfo } from "@/data/florida-filing-instructions";
 import { PrePrintChecklist } from "@/components/PrePrintChecklist";
 import { FilingAttestation } from "@/components/FilingAttestation";
 
@@ -37,6 +38,16 @@ function getFormsRequired(county: string, state?: string): { name: string; descr
         name: txInfo.formName,
         description: `File with ${txInfo.cadName} by ${txInfo.filingDeadline}. Online filing via the CAD portal is strongly recommended for a clear record.`,
         url: txInfo.onlinePortal?.url,
+      },
+    ];
+  }
+  if (state === "FL") {
+    const flInfo = getFlFilingInfo(county);
+    return [
+      {
+        name: "DR-486 — Petition to Value Adjustment Board",
+        description: `File with the ${flInfo.filingBody} by ${flInfo.filingDeadline}. A $15 filing fee is required per petition. File online via AXIA if your county supports it.`,
+        url: "https://floridarevenue.com/property/Pages/Taxpayers_Petition.aspx",
       },
     ];
   }
@@ -188,9 +199,30 @@ function getNjFields(grievance: Grievance, comparables: Comparable[]): FormField
   ];
 }
 
+function getFlFields(grievance: Grievance, comparables: Comparable[]): FormField[] {
+  return [
+    { label: "Tax Year", value: grievance.taxYear, required: true },
+    { label: "County", value: grievance.county, required: true },
+    { label: "Property Address", value: grievance.propertyAddress, required: true },
+    { label: "Parcel ID / RE Number", value: grievance.parcelId, required: true, hint: "From your TRIM notice or property tax bill" },
+    { label: "Property Type", value: grievance.propertyClass, required: false, hint: "e.g. Single-Family, Condo" },
+    { label: "Owner / Petitioner Name", value: grievance.ownerName, required: true },
+    { label: "Owner Phone", value: grievance.ownerPhone, required: false },
+    { label: "Owner Email", value: grievance.ownerEmail, required: false },
+    { label: "Mailing Address", value: grievance.ownerMailingAddress ?? grievance.propertyAddress, required: true },
+    { label: "Current Just Value (Property Appraiser)", value: grievance.currentAssessment, required: true },
+    { label: "Your Estimated Just Value", value: grievance.estimatedMarketValue, required: true },
+    { label: "Requested Just Value", value: grievance.requestedAssessment, required: true },
+    { label: "Ground(s) for Petition", value: grievance.basisOfComplaint, required: true },
+    { label: "$15 Filing Fee", value: "Required — pay when filing", required: true, hint: "Credit card, check, or money order" },
+    { label: "Comparable Sales Evidence", value: comparables.length > 0 ? `${comparables.length} comparable${comparables.length !== 1 ? "s" : ""} added` : null, required: false, hint: "3–6 comps strongly recommended" },
+  ];
+}
+
 function getFormFields(county: string, grievance: Grievance, comparables: Comparable[], state?: string): FormField[] {
   if (state === "TX") return getTxFields(grievance, comparables);
   if (state === "NJ") return getNjFields(grievance, comparables);
+  if (state === "FL") return getFlFields(grievance, comparables);
   if (county === "Nassau") return getNassauFields(grievance, comparables);
   if (NYC_COUNTIES.includes(county)) return getNycFields(grievance, comparables);
   return getRp524Fields(grievance, comparables);
@@ -203,11 +235,14 @@ export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, on
   const grievanceState: string = (grievance as any).state ?? "NY";
   const isTX = grievanceState === "TX";
   const isNJ = grievanceState === "NJ";
+  const isFL = grievanceState === "FL";
 
   const filingInfo = isTX
     ? getTxFilingInfo(grievance.county) as any
     : isNJ
     ? getNjFilingInfo(grievance.county) as any
+    : isFL
+    ? getFlFilingInfo(grievance.county) as any
     : (getFilingInfo(grievance.county) ?? getGenericFilingInfo(grievance.county));
 
   const formsRequired = getFormsRequired(grievance.county, grievanceState);
@@ -280,9 +315,9 @@ export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, on
     }
   };
 
-  const formDisplayName = isTX ? "Notice of Protest" : isNJ ? "A-1 Petition of Appeal" : "RP-524";
-  const assessmentLabel = isTX ? "Appraised Value" : "Assessment";
-  const mailtoSubject = encodeURIComponent(`Property Tax ${isTX ? "Protest" : "Grievance"} — ${grievance.propertyAddress} — Tax Year ${grievance.taxYear}`);
+  const formDisplayName = isTX ? "Notice of Protest" : isNJ ? "A-1 Petition of Appeal" : isFL ? "DR-486 Petition to Value Adjustment Board" : "RP-524";
+  const assessmentLabel = isTX ? "Appraised Value" : isFL ? "Just Value" : "Assessment";
+  const mailtoSubject = encodeURIComponent(`Property Tax ${isTX ? "Protest" : isFL ? "VAB Petition" : "Grievance"} — ${grievance.propertyAddress} — Tax Year ${grievance.taxYear}`);
   const mailtoBody = encodeURIComponent(
     `Dear ${filingInfo.filingBody},\n\nPlease find attached my completed ${formDisplayName} for:\n\nProperty: ${grievance.propertyAddress}\nOwner: ${grievance.ownerName}\nTax Year: ${grievance.taxYear}\nCurrent ${assessmentLabel}: $${grievance.currentAssessment.toLocaleString()}\nRequested ${assessmentLabel}: $${grievance.requestedAssessment.toLocaleString()}\n\nThank you,\n${grievance.ownerName}`
   );
@@ -293,13 +328,15 @@ export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, on
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="bg-secondary/40 px-6 py-4 border-b border-border">
           <h3 className="font-serif font-bold text-lg flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" /> Forms Required — {grievance.county} County{isTX ? " (Texas)" : isNJ ? " (New Jersey)" : ""}
+            <FileText className="w-5 h-5 text-primary" /> Forms Required — {grievance.county} County{isTX ? " (Texas)" : isNJ ? " (New Jersey)" : isFL ? " (Florida)" : ""}
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
             {isTX
               ? "File your Notice of Protest with the County Appraisal District (CAD) by May 15."
               : isNJ
               ? "File Form A-1 with your County Board of Taxation by April 1."
+              : isFL
+              ? "File DR-486 Petition with your County Value Adjustment Board (VAB) by September 18. A $15 fee applies."
               : "Based on your county, here are the exact forms you need to complete and file."
             }
           </p>

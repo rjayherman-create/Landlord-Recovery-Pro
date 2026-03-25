@@ -191,8 +191,12 @@ export function Dashboard() {
                         {(() => {
                           const s = (g as any).state;
                           if (!s || s === "NY") return null;
+                          const badgeClass =
+                            s === "TX" ? "bg-amber-100 text-amber-700 border border-amber-200" :
+                            s === "FL" ? "bg-green-100 text-green-700 border border-green-200" :
+                            "bg-cyan-100 text-cyan-700 border border-cyan-200";
                           return (
-                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${s === "TX" ? "bg-amber-100 text-amber-700 border border-amber-200" : "bg-cyan-100 text-cyan-700 border border-cyan-200"}`}>
+                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${badgeClass}`}>
                               {s}
                             </span>
                           );
