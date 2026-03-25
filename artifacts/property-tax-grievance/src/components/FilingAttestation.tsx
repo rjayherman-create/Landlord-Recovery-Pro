@@ -20,7 +20,7 @@ const DECLARATIONS = [
   },
   {
     id: "responsibility",
-    text: "I understand that NY Property Tax Grievance Assistant provides self-help guidance only and does not constitute legal advice. I am solely responsible for the accuracy, completeness, and timeliness of my own filing.",
+    text: "I understand that Property Tax Appeal DIY provides self-help guidance only and does not constitute legal advice. I am solely responsible for the accuracy, completeness, and timeliness of my own filing.",
   },
   {
     id: "consequences",

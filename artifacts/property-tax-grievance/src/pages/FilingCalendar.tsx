@@ -39,7 +39,7 @@ function generateICS(title: string, date: Date, description: string): string {
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//NY Tax Grievance//FilingCalendar//EN",
+    "PRODID:-//TaxAppeal DIY//FilingCalendar//EN",
     "BEGIN:VEVENT",
     `DTSTART;VALUE=DATE:${stamp}`,
     `DTEND;VALUE=DATE:${stamp}`,

@@ -124,7 +124,7 @@ function printRecord(result: LookupResult) {
 </head>
 <body>
   <div class="header">
-    <div class="title">NY Property Tax Grievance Assistant</div>
+    <div class="title">Property Tax Appeal DIY</div>
     <div class="subtitle">Public Property Record — Printed for Verification Purposes</div>
   </div>
 
@@ -199,7 +199,7 @@ function printRecord(result: LookupResult) {
 
   <div class="watermark">
     This record was retrieved from public data sources for informational purposes only.<br/>
-    Confirm all details against your official tax bill before filing a grievance. &nbsp;|&nbsp; NY Property Tax Grievance Assistant &nbsp;|&nbsp; Not legal advice.
+    Confirm all details against your official tax bill before filing. &nbsp;|&nbsp; Property Tax Appeal DIY &nbsp;|&nbsp; Not legal advice.
   </div>
 
   <script>window.onload = () => window.print();</script>

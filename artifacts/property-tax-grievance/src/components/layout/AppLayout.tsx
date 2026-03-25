@@ -40,10 +40,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </div>
             <div>
               <h1 className="font-serif font-bold text-lg leading-tight text-foreground">
-                NY Tax Grievance
+                TaxAppeal DIY
               </h1>
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">
-                DIY Assistant
+                NY · NJ · TX · FL
               </p>
             </div>
           </Link>
@@ -78,7 +78,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
             >
               <FileText className="w-3 h-3" />
-              <span className="hidden sm:inline">Official NYS Forms</span>
+              <span className="hidden sm:inline">Official State Forms</span>
             </a>
 
             {isLoading ? (
@@ -138,7 +138,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-border/50 bg-white/50 mt-auto">
         <div className="container mx-auto px-4 py-8 text-center text-sm text-muted-foreground">
           <p className="font-serif italic mb-2">Empowering homeowners to advocate for fair assessments.</p>
-          <p>© {new Date().getFullYear()} NY Property Tax Grievance Assistant. Not legal advice.</p>
+          <p>© {new Date().getFullYear()} Property Tax Appeal DIY. Not legal advice.</p>
         </div>
       </footer>
     </div>
