@@ -2,7 +2,7 @@
 
 ## Overview
 
-NY Property Tax Grievance Assistant — a full-stack web application that helps New York homeowners file their own property tax grievance without paying a professional firm's 50% commission.
+TaxAppeal DIY (formerly NY Property Tax Grievance Assistant) — a full-stack web application that helps homeowners in NY, NJ, TX, and FL file their own property tax appeals without paying a professional firm's 50% commission.
 
 ## Stack
 

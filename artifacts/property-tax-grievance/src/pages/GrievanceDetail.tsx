@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { GrievanceForm } from "@/components/GrievanceForm";
 import { RP524PrintForm } from "@/components/RP524PrintForm";
+import { CompsReportPrintForm, COMPS_REPORT_PRINT_CSS } from "@/components/CompsReportPrintForm";
 import { FormsPrepPanel } from "@/components/FormsPrepPanel";
 import { ValidationPanel } from "@/components/ValidationPanel";
 import { WhatHappensNext } from "@/components/WhatHappensNext";
@@ -307,10 +308,22 @@ export function GrievanceDetail() {
   ];
   const currentStep = steps.findIndex((s) => !s.done);
 
+  const handlePrintCompsReport = () => {
+    const printContent = document.getElementById("comps-report-print");
+    if (!printContent) return;
+    const win = window.open("", "_blank", "width=960,height=750");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><title>Comparable Sales Analysis — ${grievance?.propertyAddress}</title><style>${COMPS_REPORT_PRINT_CSS}</style></head><body>${printContent.innerHTML}<script>window.onload = () => { window.print(); }<\/script></body></html>`);
+    win.document.close();
+  };
+
   return (
     <AppLayout>
       <div className="hidden" id="rp524-print">
         <RP524PrintForm grievance={grievance} comparables={comparables} />
+      </div>
+      <div className="hidden" id="comps-report-print">
+        <CompsReportPrintForm grievance={grievance} comparables={comparables} />
       </div>
 
       {/* Back */}
@@ -343,6 +356,9 @@ export function GrievanceDetail() {
                 ))}
               </SelectContent>
             </Select>
+            <Button variant="outline" onClick={handlePrintCompsReport} className="gap-2" disabled={comparables.length === 0} title={comparables.length === 0 ? "Add comparable sales first" : "Print Comparable Sales Analysis PDF"}>
+              <FileText className="w-4 h-4" /> Print Comps Report
+            </Button>
             <Button variant="outline" onClick={handlePrintGated} className="gap-2" title={!isAttested ? "Complete the filer sign-off in Forms & PDF to unlock" : undefined}>
               <Printer className="w-4 h-4" /> Print {formName}
               {!isAttested && <Lock className="w-3 h-3 opacity-50" />}
@@ -941,6 +957,7 @@ export function GrievanceDetail() {
                   grievance={grievance}
                   comparables={comparables}
                   onPrint={handlePrint}
+                  onPrintComps={handlePrintCompsReport}
                   isAttested={isAttested}
                   onAttest={() => setIsAttested(true)}
                 />

@@ -13,6 +13,7 @@ interface FormsPrepPanelProps {
   grievance: Grievance;
   comparables: Comparable[];
   onPrint: () => void;
+  onPrintComps?: () => void;
   isAttested: boolean;
   onAttest: () => void;
 }
@@ -228,7 +229,7 @@ function getFormFields(county: string, grievance: Grievance, comparables: Compar
   return getRp524Fields(grievance, comparables);
 }
 
-export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, onAttest }: FormsPrepPanelProps) {
+export function FormsPrepPanel({ grievance, comparables, onPrint, onPrintComps, isAttested, onAttest }: FormsPrepPanelProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
 
@@ -501,6 +502,58 @@ export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, on
             </span>
           </div>
         )}
+      </div>
+
+      {/* Comparable Sales Report */}
+      <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+        <div className="bg-secondary/40 px-6 py-4 border-b border-border">
+          <h3 className="font-serif font-bold text-lg flex items-center gap-2">
+            <Star className="w-5 h-5 text-primary" /> Comparable Sales Analysis Report
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            A formal PDF attachment showing your comparable sales evidence — required by all four states.
+            Attach this to your {isTX ? "Notice of Protest" : isNJ ? "Form A-1" : isFL ? "DR-486" : "RP-524"} when filing.
+          </p>
+        </div>
+        <div className="p-6 space-y-4">
+          {comparables.length === 0 ? (
+            <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-800">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5 text-amber-600" />
+              <div>
+                <p className="font-semibold">No comparable sales added yet</p>
+                <p className="text-xs mt-0.5">Add 3–6 comparable sales from the Comps tab to generate your report. The report includes a full analysis table, price-per-square-foot comparison, analyst narrative, and certification signature block.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-3 bg-secondary/40 rounded-xl text-center">
+                  <div className="text-2xl font-bold text-primary">{comparables.length}</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Comp{comparables.length !== 1 ? "s" : ""} included</div>
+                </div>
+                <div className="p-3 bg-secondary/40 rounded-xl text-center">
+                  <div className="text-lg font-bold text-primary">
+                    ${Math.round(comparables.reduce((s, c) => s + c.salePrice, 0) / comparables.length).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Avg sale price</div>
+                </div>
+                <div className="p-3 bg-secondary/40 rounded-xl text-center">
+                  <div className="text-lg font-bold text-emerald-600">
+                    ${(grievance.currentAssessment - Math.round(comparables.reduce((s, c) => s + c.salePrice, 0) / comparables.length)).toLocaleString()}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-0.5">Over-assessment</div>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground bg-secondary/30 p-3 rounded-lg">
+                The report includes: property summary, valuation analysis, full comp table with price-per-sq-ft, 
+                analyst narrative, and a certification block for your signature.
+              </div>
+              <Button onClick={onPrintComps} className="gap-2 w-full" variant="outline">
+                <Printer className="w-4 h-4" /> Print / Save Comparable Sales Report as PDF
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Where to Send */}
