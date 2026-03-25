@@ -8,6 +8,7 @@ import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSig
 import { useState } from "react";
 import { format, parseISO, isValid, isFuture } from "date-fns";
 import { getComputedDeadline } from "@/data/county-filing-instructions";
+import { usePreferredState, STATE_META, type AppState } from "@/hooks/use-preferred-state";
 
 const STATUS_COLORS = {
   draft: "bg-slate-100 text-slate-700 border-slate-200",
@@ -20,6 +21,7 @@ const STATUS_COLORS = {
 export function Dashboard() {
   const { data: grievances, isLoading } = useGrievances();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const { preferredState, setPreferredState, meta } = usePreferredState();
 
   const totalCases = grievances?.length || 0;
   const reducedCases = grievances?.filter(g => g.status === 'reduced').length || 0;
@@ -40,7 +42,7 @@ export function Dashboard() {
     <AppLayout>
       <div className="space-y-8">
         {/* Hero Section */}
-        <div className="relative overflow-hidden rounded-3xl bg-primary text-primary-foreground p-8 md:p-12 shadow-xl shadow-primary/10">
+        <div className="relative overflow-hidden rounded-3xl bg-primary text-primary-foreground shadow-xl shadow-primary/10">
           <div className="absolute top-0 right-0 w-1/2 h-full opacity-10 pointer-events-none">
             <img 
               src={`${import.meta.env.BASE_URL}images/hero-bg.png`} 
@@ -48,36 +50,61 @@ export function Dashboard() {
               className="w-full h-full object-cover"
             />
           </div>
-          
-          <div className="relative z-10 max-w-2xl">
+
+          <div className="relative z-10 p-8 md:p-12 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm font-medium mb-6 backdrop-blur-sm">
               <ShieldCheck className="w-4 h-4 text-accent" />
-              <span>File your own grievance and save 50% commission</span>
+              <span>File your own {meta.verb} and save 50% commission</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4 leading-tight text-white">
               Take Control of Your <br/><span className="text-accent">Property Taxes</span>
             </h1>
             <p className="text-lg text-primary-foreground/80 mb-8 max-w-xl leading-relaxed">
-              Filing a grievance is your legal right and cannot increase your taxes. Build your case, track comparables, and submit with confidence.
+              Filing a {meta.verb} is your legal right and cannot increase your taxes. Build your case, track comparables, and submit with confidence.
             </p>
-            
+
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold px-8 shadow-lg shadow-black/20 hover:-translate-y-0.5 transition-transform">
                   <Plus className="w-5 h-5 mr-2" />
-                  Start New Case
+                  Start New {preferredState} Case
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="font-serif text-2xl">Create New Grievance Case</DialogTitle>
+                  <DialogTitle className="font-serif text-2xl">New {meta.name} Tax Appeal</DialogTitle>
                   <DialogDescription>
-                    Enter the basic details from your Notice of Tentative Assessment.
+                    Select your state, then enter your property details to build your {meta.verb} case using {meta.form}.
                   </DialogDescription>
                 </DialogHeader>
-                <GrievanceForm onSuccess={() => setIsDialogOpen(false)} />
+                <GrievanceForm onSuccess={() => setIsDialogOpen(false)} initialState={preferredState} />
               </DialogContent>
             </Dialog>
+          </div>
+
+          {/* State selector strip */}
+          <div className="relative z-10 border-t border-white/10 bg-black/20 backdrop-blur-sm px-8 py-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-xs font-semibold text-white/60 uppercase tracking-wider mr-1">Your state:</span>
+              {(Object.entries(STATE_META) as [AppState, typeof STATE_META[AppState]][]).map(([code, s]) => (
+                <button
+                  key={code}
+                  type="button"
+                  onClick={() => setPreferredState(code)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    preferredState === code
+                      ? "bg-accent text-accent-foreground shadow-sm scale-105"
+                      : "bg-white/10 text-white/80 hover:bg-white/20 hover:text-white border border-white/10"
+                  }`}
+                >
+                  <span>{s.flag}</span>
+                  <span>{code}</span>
+                </button>
+              ))}
+              <span className="text-white/40 text-xs ml-2 hidden sm:inline">
+                {meta.flag} {meta.name} · {meta.form} · {meta.body}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -127,10 +154,10 @@ export function Dashboard() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border">
             {[
-              { icon: Award,         value: "~80%",  label: "DIY success rate",         sub: "Nassau County, 2024",            color: "text-emerald-600", bg: "bg-emerald-50" },
-              { icon: DollarSign,    value: "$0",    label: "Cost to file",             sub: "No fee unless you go to SCAR ($30)", color: "text-blue-600",    bg: "bg-blue-50"   },
-              { icon: AlertTriangle, value: "$0",    label: "Risk of filing",           sub: "Taxes cannot go up",             color: "text-amber-600",   bg: "bg-amber-50"  },
-              { icon: TrendingDown,  value: "50%",   label: "Commission saved",         sub: "vs. hiring a firm",              color: "text-violet-600",  bg: "bg-violet-50" },
+              { icon: Award,         value: "~80%",  label: "DIY success rate",  sub: "Homeowners who file and follow up",  color: "text-emerald-600", bg: "bg-emerald-50" },
+              { icon: DollarSign,    value: "$0",    label: "Cost to file",      sub: "Free in NY, NJ, TX · $15 in FL",    color: "text-blue-600",    bg: "bg-blue-50"   },
+              { icon: AlertTriangle, value: "$0",    label: "Risk of filing",    sub: "Taxes cannot go up in any state",   color: "text-amber-600",   bg: "bg-amber-50"  },
+              { icon: TrendingDown,  value: "50%",   label: "Commission saved",  sub: "vs. hiring a professional firm",    color: "text-violet-600",  bg: "bg-violet-50" },
             ].map(({ icon: Icon, value, label, sub, color, bg }) => (
               <div key={label} className="flex flex-col items-center text-center p-5 gap-2 hover:bg-secondary/30 transition-colors">
                 <div className={`p-2 rounded-lg ${bg}`}>
@@ -147,7 +174,7 @@ export function Dashboard() {
           <div className="px-6 py-3 bg-emerald-50 border-t border-emerald-100 flex items-center gap-2 text-sm text-emerald-800">
             <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0" />
             <span>
-              <strong>New York law guarantees:</strong> filing a grievance cannot raise your assessment. The worst outcome is no change.
+              <strong>All 4 states guarantee:</strong> filing an appeal cannot raise your assessment. The worst outcome is no change.
             </span>
           </div>
         </div>

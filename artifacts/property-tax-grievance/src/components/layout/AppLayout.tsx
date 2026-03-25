@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Scale, Home, Map, FileText, Info, Calendar, LogIn, LogOut, User, Loader2 } from "lucide-react";
+import { Scale, Home, Map, Info, Calendar, LogIn, LogOut, User, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
@@ -71,16 +71,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-3">
-            <a
-              href="https://www.tax.ny.gov/pit/property/contest/contestasmt.htm"
-              target="_blank"
-              rel="noreferrer"
-              className="text-xs font-medium text-muted-foreground hover:text-primary transition-colors flex items-center gap-1"
-            >
-              <FileText className="w-3 h-3" />
-              <span className="hidden sm:inline">Official State Forms</span>
-            </a>
-
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             ) : isAuthenticated && user ? (
@@ -138,7 +128,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <footer className="border-t border-border/50 bg-white/50 mt-auto">
         <div className="container mx-auto px-4 py-8 text-center text-sm text-muted-foreground">
           <p className="font-serif italic mb-2">Empowering homeowners to advocate for fair assessments.</p>
-          <p>© {new Date().getFullYear()} Property Tax Appeal DIY. Not legal advice.</p>
+          <p>© {new Date().getFullYear()} TaxAppeal DIY · NY · NJ · TX · FL. Not legal advice.</p>
         </div>
       </footer>
     </div>

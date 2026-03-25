@@ -88,11 +88,12 @@ const FIELD_LABELS: Record<string, string> = {
 interface GrievanceFormProps {
   initialData?: Grievance;
   onSuccess?: () => void;
+  initialState?: string;
 }
 
 /* ─── Component ─────────────────────────────────────── */
 
-export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
+export function GrievanceForm({ initialData, onSuccess, initialState = "NY" }: GrievanceFormProps) {
   const { toast } = useToast();
   const createMutation = useCreateGrievance();
   const updateMutation = useUpdateGrievance();
@@ -141,10 +142,10 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
           notes: initialData.notes ?? undefined,
         }
       : {
-          state: "NY",
+          state: initialState,
           taxYear: new Date().getFullYear(),
-          county: "Nassau",
-          basisOfComplaint: "overvaluation",
+          county: initialState === "TX" ? "Harris" : initialState === "NJ" ? "Bergen" : initialState === "FL" ? "Miami-Dade" : "Nassau",
+          basisOfComplaint: initialState === "TX" ? "market_value" : "overvaluation",
         },
   });
 
@@ -348,8 +349,57 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
     </div>
   );
 
+  const STATE_TILES = [
+    { value: "NY", flag: "🗽", name: "New York",   form: "RP-524",           body: "Board of Assessment Review" },
+    { value: "NJ", flag: "🔵", name: "New Jersey", form: "Form A-1",         body: "County Board of Taxation" },
+    { value: "TX", flag: "⭐", name: "Texas",      form: "Notice of Protest", body: "Appraisal Review Board" },
+    { value: "FL", flag: "🌴", name: "Florida",    form: "DR-486 Petition",   body: "Value Adjustment Board" },
+  ];
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 py-2">
+
+      {/* ── State Selector — always first ── */}
+      {!isEditing && (
+        <div>
+          <p className="text-sm font-semibold text-foreground mb-3">Which state is your property in?</p>
+          <div className="grid grid-cols-2 gap-3">
+            {STATE_TILES.map(({ value, flag, name, form: formName, body }) => {
+              const active = selectedState === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => {
+                    form.setValue("state", value);
+                    const defaultCounty = value === "TX" ? "Harris" : value === "NJ" ? "Bergen" : value === "FL" ? "Miami-Dade" : "Nassau";
+                    const defaultBasis = value === "TX" ? "market_value" : "overvaluation";
+                    form.setValue("county", defaultCounty);
+                    form.setValue("basisOfComplaint", defaultBasis);
+                  }}
+                  className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200 ${
+                    active
+                      ? "border-primary bg-primary/5 shadow-sm"
+                      : "border-border bg-white hover:border-primary/40 hover:bg-secondary/30"
+                  }`}
+                >
+                  <span className="text-2xl leading-none mt-0.5">{flag}</span>
+                  <div>
+                    <div className={`font-bold text-sm leading-tight ${active ? "text-primary" : "text-foreground"}`}>{name}</div>
+                    <div className="text-xs text-muted-foreground mt-0.5">{formName}</div>
+                    <div className="text-xs text-muted-foreground">{body}</div>
+                  </div>
+                  {active && (
+                    <div className="ml-auto w-5 h-5 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
+                      <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* ── Auto-fill lookup panel ── */}
       <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 space-y-3">
@@ -519,55 +569,6 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
             <PropertyRecordCard result={lookupResult} />
           </div>
         )}
-      </div>
-
-      {/* ── State Selector ── */}
-      <div className="rounded-xl border border-border p-4 bg-secondary/20">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold text-foreground whitespace-nowrap">Filing State:</span>
-          <div className="flex gap-2 flex-wrap">
-            {[
-              { value: "NY", label: "🗽 New York" },
-              { value: "NJ", label: "🔵 New Jersey" },
-              { value: "TX", label: "⭐ Texas" },
-              { value: "FL", label: "🌴 Florida" },
-            ].map(({ value, label }) => (
-              <button
-                key={value}
-                type="button"
-                onClick={() => {
-                  form.setValue("state", value);
-                  const defaultCounty = value === "TX" ? "Harris" : value === "NJ" ? "Bergen" : value === "FL" ? "Miami-Dade" : "Nassau";
-                  const defaultBasis = value === "TX" ? "market_value" : "overvaluation";
-                  form.setValue("county", defaultCounty);
-                  form.setValue("basisOfComplaint", defaultBasis);
-                }}
-                className={`px-4 py-1.5 rounded-lg border text-sm font-semibold transition-all ${
-                  selectedState === value
-                    ? "bg-primary text-primary-foreground border-primary shadow"
-                    : "bg-white text-foreground border-border hover:border-primary/40"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          {isTX && (
-            <span className="text-xs text-muted-foreground ml-auto">
-              Texas: Appraisal Review Board (ARB) process
-            </span>
-          )}
-          {isNJ && (
-            <span className="text-xs text-muted-foreground ml-auto">
-              New Jersey: County Board of Taxation, Form A-1
-            </span>
-          )}
-          {isFL && (
-            <span className="text-xs text-muted-foreground ml-auto">
-              Florida: Value Adjustment Board (VAB), Form DR-486
-            </span>
-          )}
-        </div>
       </div>
 
       {/* ---- Part 1A: Owner / Complainant ---- */}
