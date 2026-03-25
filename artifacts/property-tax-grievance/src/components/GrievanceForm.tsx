@@ -15,6 +15,7 @@ import type { Grievance } from "@workspace/api-client-react";
 import { PropertyRecordCard } from "@/components/PropertyRecordCard";
 import type { LookupResult } from "@/components/PropertyRecordCard";
 import { TX_COUNTY_NAMES, TX_BASIS_OPTIONS, TX_PROPERTY_CLASS_OPTIONS } from "@/data/texas-filing-instructions";
+import { NJ_COUNTY_NAMES, NJ_BASIS_OPTIONS, NJ_PROPERTY_CLASS_OPTIONS } from "@/data/nj-filing-instructions";
 
 /* ─── Schema ────────────────────────────────────────── */
 
@@ -148,10 +149,11 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
 
   const selectedState = form.watch("state") ?? "NY";
   const isTX = selectedState === "TX";
+  const isNJ = selectedState === "NJ";
 
-  const currentCountyOptions = isTX ? TX_COUNTY_NAMES : COUNTY_OPTIONS;
-  const currentBasisOptions = isTX ? TX_BASIS_OPTIONS : BASIS_OPTIONS;
-  const currentPropertyClassOptions = isTX ? TX_PROPERTY_CLASS_OPTIONS : PROPERTY_CLASS_OPTIONS;
+  const currentCountyOptions = isTX ? TX_COUNTY_NAMES : isNJ ? NJ_COUNTY_NAMES : COUNTY_OPTIONS;
+  const currentBasisOptions = isTX ? TX_BASIS_OPTIONS : isNJ ? NJ_BASIS_OPTIONS : BASIS_OPTIONS;
+  const currentPropertyClassOptions = isTX ? TX_PROPERTY_CLASS_OPTIONS : isNJ ? NJ_PROPERTY_CLASS_OPTIONS : PROPERTY_CLASS_OPTIONS;
 
   /* ── Property lookup ── */
   const runLookup = async (addr: string) => {
@@ -521,9 +523,10 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
       <div className="rounded-xl border border-border p-4 bg-secondary/20">
         <div className="flex items-center gap-3">
           <span className="text-sm font-semibold text-foreground whitespace-nowrap">Filing State:</span>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {[
               { value: "NY", label: "🗽 New York" },
+              { value: "NJ", label: "🔵 New Jersey" },
               { value: "TX", label: "⭐ Texas" },
             ].map(({ value, label }) => (
               <button
@@ -531,8 +534,10 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
                 type="button"
                 onClick={() => {
                   form.setValue("state", value);
-                  form.setValue("county", value === "TX" ? "Harris" : "Nassau");
-                  form.setValue("basisOfComplaint", value === "TX" ? "market_value" : "overvaluation");
+                  const defaultCounty = value === "TX" ? "Harris" : value === "NJ" ? "Bergen" : "Nassau";
+                  const defaultBasis = value === "TX" ? "market_value" : "overvaluation";
+                  form.setValue("county", defaultCounty);
+                  form.setValue("basisOfComplaint", defaultBasis);
                 }}
                 className={`px-4 py-1.5 rounded-lg border text-sm font-semibold transition-all ${
                   selectedState === value
@@ -546,7 +551,12 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
           </div>
           {isTX && (
             <span className="text-xs text-muted-foreground ml-auto">
-              Texas uses Appraisal Review Board (ARB) terminology
+              Texas: Appraisal Review Board (ARB) process
+            </span>
+          )}
+          {isNJ && (
+            <span className="text-xs text-muted-foreground ml-auto">
+              New Jersey: County Board of Taxation, Form A-1
             </span>
           )}
         </div>
@@ -832,7 +842,12 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
       <div>
         <SectionHeader
           title="Part 3 — Statement of Value"
-          subtitle="Enter figures from your tax bill and your estimate of fair market value."
+          subtitle={isTX
+            ? "Enter figures from your Notice of Appraised Value and your opinion of true market value."
+            : isNJ
+            ? "Enter figures from your property tax card / assessment notice and your estimate of true value."
+            : "Enter figures from your tax bill and your estimate of fair market value."
+          }
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="space-y-1.5">
@@ -840,21 +855,39 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
             <Input id="taxYear" type="number" {...form.register("taxYear")} />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="currentAssessment">Current Assessment ($) *</Label>
-            <Input id="currentAssessment" type="number" placeholder="12500" {...form.register("currentAssessment")} />
-            <p className="text-xs text-muted-foreground">From your tax bill (assessed value)</p>
+            <Label htmlFor="currentAssessment">
+              {isTX ? "Current Appraised Value ($) *" : "Current Assessment ($) *"}
+            </Label>
+            <Input id="currentAssessment" type="number" placeholder={isTX ? "425000" : "12500"} {...form.register("currentAssessment")} />
+            <p className="text-xs text-muted-foreground">
+              {isTX
+                ? "From your Notice of Appraised Value (the CAD's number)"
+                : isNJ
+                ? "From your assessment notice or tax bill (assessed value)"
+                : "From your tax bill (assessed value)"
+              }
+            </p>
             {form.formState.errors.currentAssessment && (
               <p className="text-xs text-destructive">{form.formState.errors.currentAssessment.message}</p>
             )}
           </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="equalizationRate">Equalization Rate (%)</Label>
-            <Input id="equalizationRate" type="number" step="0.01" placeholder="1.0" {...form.register("equalizationRate")} />
-            <p className="text-xs text-muted-foreground">Found on your tax bill or NYS Dept. of Tax</p>
-          </div>
+          {!isTX && (
+            <div className="space-y-1.5">
+              <Label htmlFor="equalizationRate">
+                {isNJ ? "Equalization Ratio (Chapter 123) (%)" : "Equalization Rate (%)"}
+              </Label>
+              <Input id="equalizationRate" type="number" step="0.01" placeholder={isNJ ? "84.5" : "1.0"} {...form.register("equalizationRate")} />
+              <p className="text-xs text-muted-foreground">
+                {isNJ
+                  ? "Set annually by NJ Division of Taxation for your municipality"
+                  : "Found on your tax bill or NYS Dept. of Tax"
+                }
+              </p>
+            </div>
+          )}
           <div className="space-y-1.5">
             <Label htmlFor="estimatedMarketValue">
-              Your Est. Market Value ($) *
+              {isTX ? "Your Opinion of Market Value ($) *" : "Your Est. Market Value ($) *"}
               {isAutoFilled("estimatedMarketValue") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
             <Controller
@@ -872,16 +905,25 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
                 />
               )}
             />
-            <p className="text-xs text-muted-foreground">What you believe your home is worth</p>
+            <p className="text-xs text-muted-foreground">
+              {isTX ? "What you believe the property is truly worth (market value)" : "What you believe your home is worth"}
+            </p>
             {form.formState.errors.estimatedMarketValue && (
               <p className="text-xs text-destructive">{form.formState.errors.estimatedMarketValue.message}</p>
             )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="requestedAssessment">Requested Assessment ($) *</Label>
-            <Input id="requestedAssessment" type="number" placeholder="11000" {...form.register("requestedAssessment")} />
+            <Label htmlFor="requestedAssessment">
+              {isTX ? "Requested Appraised Value ($) *" : "Requested Assessment ($) *"}
+            </Label>
+            <Input id="requestedAssessment" type="number" placeholder={isTX ? "380000" : "11000"} {...form.register("requestedAssessment")} />
             <p className="text-xs text-muted-foreground">
-              Typically: Est. Market Value × (Eq. Rate ÷ 100)
+              {isTX
+                ? "Your requested value — typically your opinion of market value"
+                : isNJ
+                ? "Typically: Est. Market Value × (Equalization Ratio ÷ 100)"
+                : "Typically: Est. Market Value × (Eq. Rate ÷ 100)"
+              }
             </p>
             {form.formState.errors.requestedAssessment && (
               <p className="text-xs text-destructive">{form.formState.errors.requestedAssessment.message}</p>
@@ -903,7 +945,14 @@ export function GrievanceForm({ initialData, onSuccess }: GrievanceFormProps) {
           className="min-h-20"
           {...form.register("notes")}
         />
-        <p className="text-xs text-muted-foreground">These notes will appear on the printed RP-524 under "Other Information".</p>
+        <p className="text-xs text-muted-foreground">
+          {isTX
+            ? "These notes support your protest grounds on the Notice of Protest."
+            : isNJ
+            ? "These notes will support your A-1 petition and can be presented at the County Board hearing."
+            : "These notes will appear on the printed RP-524 under \"Other Information\"."
+          }
+        </p>
       </div>
 
       <div className="flex justify-end gap-3 pt-4 border-t border-border">

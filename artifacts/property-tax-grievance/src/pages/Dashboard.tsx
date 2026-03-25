@@ -24,8 +24,8 @@ export function Dashboard() {
   const totalCases = grievances?.length || 0;
   const reducedCases = grievances?.filter(g => g.status === 'reduced').length || 0;
 
-  function resolveDeadline(g: { filingDeadline?: string | null; county: string }): Date | null {
-    const src = g.filingDeadline || getComputedDeadline(g.county);
+  function resolveDeadline(g: { filingDeadline?: string | null; county: string; state?: string | null }): Date | null {
+    const src = g.filingDeadline || getComputedDeadline(g.county, g.state ?? undefined);
     if (!src) return null;
     try { const d = parseISO(src); return isValid(d) ? d : null; } catch { return null; }
   }
@@ -187,9 +187,20 @@ export function Dashboard() {
                         </h3>
                         <p className="text-sm text-muted-foreground">{g.municipality}, {g.county} County</p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold border uppercase tracking-wider ${STATUS_COLORS[g.status as keyof typeof STATUS_COLORS]}`}>
-                        {g.status}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const s = (g as any).state;
+                          if (!s || s === "NY") return null;
+                          return (
+                            <span className={`px-2 py-1 rounded text-xs font-bold uppercase ${s === "TX" ? "bg-amber-100 text-amber-700 border border-amber-200" : "bg-cyan-100 text-cyan-700 border border-cyan-200"}`}>
+                              {s}
+                            </span>
+                          );
+                        })()}
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold border uppercase tracking-wider ${STATUS_COLORS[g.status as keyof typeof STATUS_COLORS]}`}>
+                          {g.status}
+                        </span>
+                      </div>
                     </div>
                     
                     <div className="grid grid-cols-2 gap-4 my-4 bg-secondary/30 p-4 rounded-xl">

@@ -76,14 +76,15 @@ function downloadICS(title: string, date: Date, description: string) {
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 const monthActivities: Record<number, { label: string; color: string; type: "action" | "deadline" | "info" }[]> = {
-  0: [{ label: "Assessment rolls published (Nassau & NYC)", color: "blue", type: "info" }],
+  0: [{ label: "Assessment rolls published (Nassau & NYC)", color: "blue", type: "info" }, { label: "TX: Appraisal notices begin mailing", color: "amber", type: "info" }],
   1: [{ label: "Nassau AROW portal opens", color: "blue", type: "action" }, { label: "Start gathering comparable sales", color: "green", type: "action" }],
-  2: [{ label: "Nassau deadline: March 1", color: "red", type: "deadline" }, { label: "NYC deadline: March 15", color: "red", type: "deadline" }],
-  3: [{ label: "Assessment rolls published (upstate & Long Island towns)", color: "blue", type: "info" }, { label: "Review your tentative assessment notice", color: "green", type: "action" }],
-  4: [{ label: "Suffolk Grievance Day: 3rd Tuesday", color: "red", type: "deadline" }, { label: "Westchester / Rockland / Upstate: 4th Tuesday", color: "red", type: "deadline" }],
-  5: [{ label: "BAR decisions typically mailed", color: "blue", type: "info" }],
-  6: [{ label: "SCAR petition window (30 days after BAR decision)", color: "amber", type: "action" }],
-  7: [{ label: "SCAR hearings typically scheduled", color: "blue", type: "info" }],
+  2: [{ label: "Nassau deadline: March 1", color: "red", type: "deadline" }, { label: "NYC deadline: March 15", color: "red", type: "deadline" }, { label: "NJ deadline: April 1", color: "red", type: "deadline" }],
+  3: [{ label: "NJ: Appeal deadline April 1", color: "red", type: "deadline" }, { label: "Assessment rolls published (upstate & Long Island towns)", color: "blue", type: "info" }, { label: "Review your tentative assessment notice", color: "green", type: "action" }],
+  4: [{ label: "TX: Protest deadline May 15", color: "red", type: "deadline" }, { label: "Suffolk Grievance Day: 3rd Tuesday", color: "red", type: "deadline" }, { label: "Westchester / Rockland / Upstate: 4th Tuesday", color: "red", type: "deadline" }],
+  5: [{ label: "NY: BAR decisions typically mailed", color: "blue", type: "info" }, { label: "NJ: Board hearings begin (June–October)", color: "blue", type: "info" }],
+  6: [{ label: "NY: SCAR petition window (30 days after BAR decision)", color: "amber", type: "action" }, { label: "TX: ARB hearing scheduled within 45 days", color: "amber", type: "info" }],
+  7: [{ label: "NY: SCAR hearings typically scheduled", color: "blue", type: "info" }, { label: "TX: ARB decisions issued", color: "blue", type: "info" }],
+  9: [{ label: "NJ: Board hearings typically completed", color: "blue", type: "info" }],
 };
 
 /* ─── Component ─────────────────────────────────────────────── */
@@ -94,6 +95,8 @@ export function FilingCalendar() {
   const deadlines = useMemo(() => {
     const nassau = new Date(year, 2, 1);          // March 1
     const nyc    = new Date(year, 2, 15);          // March 15
+    const nj     = new Date(year, 3, 1);           // April 1
+    const tx     = new Date(year, 4, 15);          // May 15
     const suffolk  = getNthTuesdayOfMonth(year, 4, 3); // 3rd Tue May
     const westchester = getNthTuesdayOfMonth(year, 4, 4); // 4th Tue May
     const scapWindow = new Date(suffolk);
@@ -102,33 +105,53 @@ export function FilingCalendar() {
     return [
       {
         id: "nassau",
-        county: "Nassau County",
+        county: "Nassau County (NY)",
         deadline: nassau,
         form: "AR-1 (AROW portal)",
         portal: "https://www.nassaucountyny.gov/agencies/Assessor/ARBReview.html",
-        region: "Long Island",
+        region: "NY — Long Island",
         color: "blue",
         note: "File online via the AROW portal. No paper form needed.",
       },
       {
         id: "nyc",
-        county: "New York City",
+        county: "New York City (NY)",
         deadline: nyc,
         form: "TC101 / TC201",
         portal: "https://www.nyc.gov/site/taxcommission/index.page",
-        region: "NYC",
+        region: "NY — NYC",
         color: "purple",
         note: "Class 1 residential properties. File via NYC Tax Commission portal.",
       },
       {
+        id: "nj",
+        county: "All NJ Counties",
+        deadline: nj,
+        form: "A-1 Petition of Appeal",
+        portal: "https://www.nj.gov/treasury/taxation/lpt/tax_board_directory.shtml",
+        region: "New Jersey",
+        color: "cyan",
+        note: "File with your County Board of Taxation by April 1. Properties ≥$1M may file directly with NJ Tax Court (Form A-3).",
+      },
+      {
         id: "suffolk",
-        county: "Suffolk County Towns",
+        county: "Suffolk County Towns (NY)",
         deadline: suffolk,
         form: "RP-524",
         portal: null,
-        region: "Long Island",
+        region: "NY — Long Island",
         color: "green",
         note: "Islip, Huntington, Brookhaven, Smithtown. File with your Town Assessor.",
+      },
+      {
+        id: "tx",
+        county: "All Texas Counties",
+        deadline: tx,
+        form: "Notice of Protest (Form 50-132)",
+        portal: "https://comptroller.texas.gov/taxes/property-tax/",
+        region: "Texas",
+        color: "orange",
+        note: "File Notice of Protest with your County Appraisal District (CAD) by May 15 or within 30 days of your appraisal notice, whichever is later.",
       },
       {
         id: "westchester",
@@ -136,7 +159,7 @@ export function FilingCalendar() {
         deadline: westchester,
         form: "RP-524",
         portal: "https://www.tax.ny.gov/pit/property/grievance/",
-        region: "Westchester / Upstate",
+        region: "NY — Westchester / Upstate",
         color: "amber",
         note: "Most municipalities. Some cities may differ — confirm with your local assessor.",
       },
@@ -153,6 +176,8 @@ export function FilingCalendar() {
     green:  "border-emerald-200 bg-emerald-50 text-emerald-700",
     amber:  "border-amber-200 bg-amber-50 text-amber-700",
     red:    "border-red-200 bg-red-50 text-red-700",
+    cyan:   "border-cyan-200 bg-cyan-50 text-cyan-700",
+    orange: "border-orange-200 bg-orange-50 text-orange-700",
   };
 
   const accentMap: Record<string, string> = {
@@ -160,6 +185,8 @@ export function FilingCalendar() {
     purple: "bg-violet-600",
     green:  "bg-emerald-600",
     amber:  "bg-amber-500",
+    cyan:   "bg-cyan-500",
+    orange: "bg-orange-500",
   };
 
   const timelineTypeColor: Record<string, string> = {
@@ -170,15 +197,18 @@ export function FilingCalendar() {
 
   /* Monthly action checklist */
   const monthlyActions = [
-    { month: "January–February", icon: "📋", action: "Receive tentative assessment notice. Compare to what you think your home is worth." },
-    { month: "February (Nassau)", icon: "💻", action: "Nassau AROW portal opens. Log in and start searching comparable sales using the built-in Sales Locator." },
-    { month: "March 1 (Nassau)", icon: "🚨", action: "Nassau filing deadline. Submit your AR-1 online via AROW before midnight." },
-    { month: "March 15 (NYC)", icon: "🚨", action: "NYC Tax Commission deadline. File TC101 (1-3 family) or TC201 (4+ units) via the NYC portal." },
-    { month: "April–Early May", icon: "🔍", action: "Suffolk / Westchester / Upstate filers: find your 3–6 comparable sales now. Use the Find Comps tool in each case." },
-    { month: "3rd Tuesday May", icon: "📝", action: "Suffolk County Grievance Day. Submit RP-524 + comparable sales evidence to your Town Assessor." },
-    { month: "4th Tuesday May", icon: "📝", action: "Westchester / Rockland / Upstate Grievance Day. File RP-524 with your local Town Assessor." },
-    { month: "June–July", icon: "📬", action: "BAR decisions mailed. If reduced — great! If denied or insufficient, consider SCAR." },
-    { month: "Within 30 days of BAR", icon: "⚖️", action: "File SCAR petition ($30) if you want to escalate. Bring the same comparable sales evidence to the hearing." },
+    { month: "January–February", icon: "📋", action: "NY: Receive tentative assessment notice. TX: Appraisal notices begin arriving. Compare to your estimate of market value." },
+    { month: "February (NY — Nassau)", icon: "💻", action: "Nassau AROW portal opens. Log in and search comparable sales using the built-in Sales Locator." },
+    { month: "March 1 (NY — Nassau)", icon: "🚨", action: "Nassau filing deadline. Submit your AR-1 online via AROW before midnight." },
+    { month: "March 15 (NY — NYC)", icon: "🚨", action: "NYC Tax Commission deadline. File TC101 (1-3 family) or TC201 (4+ units) via the NYC portal." },
+    { month: "April 1 (NJ — Statewide)", icon: "🚨", action: "NJ filing deadline. Submit Form A-1 to your County Board of Taxation. Properties ≥$1M may file A-3 directly with NJ Tax Court." },
+    { month: "April–Early May", icon: "🔍", action: "NY Suffolk / Westchester / Upstate: gather your 3–6 comparable sales. TX filers: gather appraisal evidence and protest grounds." },
+    { month: "May 15 (TX — Statewide)", icon: "🚨", action: "Texas protest deadline. File Notice of Protest (Form 50-132) with your County Appraisal District online or in person." },
+    { month: "3rd Tuesday May (NY — Suffolk)", icon: "📝", action: "Suffolk County Grievance Day. Submit RP-524 + comparable sales evidence to your Town Assessor." },
+    { month: "4th Tuesday May (NY — Upstate)", icon: "📝", action: "Westchester / Rockland / Upstate Grievance Day. File RP-524 with your local Town Assessor." },
+    { month: "June–July (NY)", icon: "📬", action: "NY BAR decisions mailed. If denied or insufficient, consider SCAR (30-day window, $30 fee)." },
+    { month: "June–October (NJ)", icon: "📬", action: "NJ County Board hearings. Attend your hearing and present comparable sales evidence." },
+    { month: "Within 45 days (TX)", icon: "⚖️", action: "TX ARB hearing scheduled. Present your comparable sales evidence. If denied, consider binding arbitration or district court." },
   ];
 
   return (
@@ -192,10 +222,10 @@ export function FilingCalendar() {
             {year} Filing Season
           </div>
           <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
-            NY Property Tax Filing Calendar
+            Property Tax Filing Calendar
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Every county has a different deadline. Miss it and you wait another full year. Know your date, mark your calendar, and file on time.
+            Deadlines vary by state and county. Miss yours and you wait another full year. NY, NJ, and TX deadlines are all tracked here.
           </p>
         </div>
 

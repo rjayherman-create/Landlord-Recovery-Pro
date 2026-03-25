@@ -340,9 +340,11 @@ function nthTuesdayISO(year: number, month: number, n: number): string {
   return d.toISOString().split("T")[0];
 }
 
-export function getComputedDeadline(county: string): string | null {
+export function getComputedDeadline(county: string, state?: string): string | null {
   const year = new Date().getFullYear();
   const normalized = county.trim();
+  if (state === "TX") return `${year}-05-15`;
+  if (state === "NJ") return `${year}-04-01`;
   if (normalized === "Nassau") return `${year}-03-01`;
   if (["Kings", "Queens", "New York", "Bronx", "Richmond"].includes(normalized)) return `${year}-03-15`;
   if (normalized === "Suffolk") return nthTuesdayISO(year, 4, 3);

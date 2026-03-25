@@ -30,6 +30,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { getFilingInfo, getGenericFilingInfo, getComputedDeadline } from "@/data/county-filing-instructions";
+import { getTxFilingInfo } from "@/data/texas-filing-instructions";
+import { getNjFilingInfo } from "@/data/nj-filing-instructions";
 import type { Grievance } from "@workspace/api-client-react";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -254,6 +256,10 @@ export function GrievanceDetail() {
   if (isLoading) return <AppLayout><div className="animate-pulse h-96 bg-secondary/50 rounded-2xl" /></AppLayout>;
   if (!grievance) return <AppLayout><div className="text-center py-20">Case not found</div></AppLayout>;
 
+  const grievanceState: string = (grievance as any).state ?? "NY";
+  const isTX = grievanceState === "TX";
+  const isNJ = grievanceState === "NJ";
+
   const equalizationRate = grievance.equalizationRate ?? 100;
   const impliedFullValue = Number(equalizationRate) > 0
     ? Math.round(grievance.currentAssessment / (Number(equalizationRate) / 100))
@@ -265,13 +271,22 @@ export function GrievanceDetail() {
 
   const confidence = calcConfidence(grievance, comparables.length);
 
-  const filingInfo = getFilingInfo(grievance.county) ?? getGenericFilingInfo(grievance.county);
+  const filingInfo = isTX
+    ? getTxFilingInfo(grievance.county) as any
+    : isNJ
+    ? getNjFilingInfo(grievance.county) as any
+    : (getFilingInfo(grievance.county) ?? getGenericFilingInfo(grievance.county));
+
+  const formName = isTX ? "Notice of Protest" : isNJ ? "A-1 Petition" : "RP-524";
+  const assessmentLabel = isTX ? "Appraised Value" : "Assessment";
+  const filingBodyLabel = isTX ? "County Appraisal District (CAD)" : isNJ ? "County Board of Taxation" : filingInfo.filingBody;
+  const parcelLabel = isTX ? "CAD Account Number" : isNJ ? "Block/Lot Number" : "Parcel ID";
 
   // Step-by-step checklist
   const steps = [
     {
       n: 1, label: "Property info", done: !!(grievance.propertyAddress && grievance.county && grievance.currentAssessment && grievance.parcelId),
-      detail: grievance.parcelId ? "Owner, address, assessments, parcel ID" : "⚠ Parcel ID required — edit your case",
+      detail: grievance.parcelId ? `Owner, address, ${assessmentLabel.toLowerCase()}, ${parcelLabel}` : `⚠ ${parcelLabel} required — edit your case`,
     },
     {
       n: 2, label: "Comparable sales", done: comparables.length >= 3,
@@ -279,11 +294,11 @@ export function GrievanceDetail() {
     },
     {
       n: 3, label: "Review & print form", done: grievance.status !== "draft",
-      detail: grievance.status === "draft" ? "Print your RP-524 or county form" : `Status: ${grievance.status}`,
+      detail: grievance.status === "draft" ? `Print your ${formName} or county form` : `Status: ${grievance.status}`,
     },
     {
-      n: 4, label: "File with county", done: ["submitted","pending","reduced","denied"].includes(grievance.status),
-      detail: `File with ${filingInfo.filingBody}`,
+      n: 4, label: isTX ? "File with CAD" : isNJ ? "File with County Board" : "File with county", done: ["submitted","pending","reduced","denied"].includes(grievance.status),
+      detail: `File with ${filingBodyLabel}`,
     },
   ];
   const currentStep = steps.findIndex((s) => !s.done);
@@ -325,7 +340,7 @@ export function GrievanceDetail() {
               </SelectContent>
             </Select>
             <Button variant="outline" onClick={handlePrintGated} className="gap-2" title={!isAttested ? "Complete the filer sign-off in Forms & PDF to unlock" : undefined}>
-              <Printer className="w-4 h-4" /> Print RP-524
+              <Printer className="w-4 h-4" /> Print {formName}
               {!isAttested && <Lock className="w-3 h-3 opacity-50" />}
             </Button>
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>

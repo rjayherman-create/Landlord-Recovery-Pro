@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Circle, Download, ExternalLink, Mail, MapPin, Phone, Printer, FileText, AlertCircle, Send, ChevronDown, ChevronUp, CheckSquare, Lock, ShieldCheck, XCircle, Footprints, Star } from "lucide-react";
 import type { Grievance, Comparable } from "@workspace/api-client-react";
 import { getFilingInfo, getGenericFilingInfo } from "@/data/county-filing-instructions";
+import { getTxFilingInfo } from "@/data/texas-filing-instructions";
+import { getNjFilingInfo } from "@/data/nj-filing-instructions";
 import { PrePrintChecklist } from "@/components/PrePrintChecklist";
 import { FilingAttestation } from "@/components/FilingAttestation";
 
@@ -27,7 +29,33 @@ function fieldFilled(v: string | number | null | undefined): boolean {
 
 const NYC_COUNTIES = ["Kings", "Queens", "New York", "Bronx", "Richmond"];
 
-function getFormsRequired(county: string): { name: string; description: string; url?: string; isAlternate?: boolean }[] {
+function getFormsRequired(county: string, state?: string): { name: string; description: string; url?: string; isAlternate?: boolean }[] {
+  if (state === "TX") {
+    const txInfo = getTxFilingInfo(county);
+    return [
+      {
+        name: txInfo.formName,
+        description: `File with ${txInfo.cadName} by ${txInfo.filingDeadline}. Online filing via the CAD portal is strongly recommended for a clear record.`,
+        url: txInfo.onlinePortal?.url,
+      },
+    ];
+  }
+  if (state === "NJ") {
+    const njInfo = getNjFilingInfo(county);
+    return [
+      {
+        name: "A-1 — County Board of Taxation Petition of Appeal",
+        description: `File with the ${njInfo.filingBody} by ${njInfo.filingDeadline}. For properties assessed at $1M+, you may also file directly with the NJ Tax Court (Form A-3).`,
+        url: "https://www.nj.gov/treasury/taxation/lpt/tax_board_directory.shtml",
+      },
+      {
+        name: "A-3 — NJ Tax Court Direct Filing (Properties ≥ $1M)",
+        description: "If your assessed value is $1 million or more, you can bypass the County Board and file directly with the NJ Tax Court.",
+        url: "https://www.njcourts.gov/courts/tax/index.html",
+        isAlternate: true,
+      },
+    ];
+  }
   if (county === "Nassau") {
     return [
       {
@@ -121,7 +149,48 @@ function getNassauFields(grievance: Grievance, comparables: Comparable[]): FormF
   ];
 }
 
-function getFormFields(county: string, grievance: Grievance, comparables: Comparable[]): FormField[] {
+function getTxFields(grievance: Grievance, comparables: Comparable[]): FormField[] {
+  return [
+    { label: "Tax Year", value: grievance.taxYear, required: true },
+    { label: "County (Appraisal District)", value: grievance.county, required: true },
+    { label: "Property Address", value: grievance.propertyAddress, required: true },
+    { label: "Appraisal District Account Number", value: grievance.parcelId, required: true, hint: "From your Notice of Appraised Value" },
+    { label: "Property Type", value: grievance.propertyClass, required: false },
+    { label: "Owner / Complainant Name", value: grievance.ownerName, required: true },
+    { label: "Owner Phone", value: grievance.ownerPhone, required: false },
+    { label: "Owner Email", value: grievance.ownerEmail, required: false },
+    { label: "Mailing Address", value: grievance.ownerMailingAddress ?? grievance.propertyAddress, required: true },
+    { label: "CAD Appraised Value", value: grievance.currentAssessment, required: true },
+    { label: "Your Opinion of Market Value", value: grievance.estimatedMarketValue, required: true },
+    { label: "Requested Appraised Value", value: grievance.requestedAssessment, required: true },
+    { label: "Ground(s) for Protest", value: grievance.basisOfComplaint, required: true },
+    { label: "Comparable Sales Evidence", value: comparables.length > 0 ? `${comparables.length} comparable${comparables.length !== 1 ? "s" : ""} added` : null, required: false, hint: "3–6 comps strongly recommended" },
+  ];
+}
+
+function getNjFields(grievance: Grievance, comparables: Comparable[]): FormField[] {
+  return [
+    { label: "Tax Year", value: grievance.taxYear, required: true },
+    { label: "County", value: grievance.county, required: true },
+    { label: "Municipality (City/Township)", value: grievance.municipality, required: true },
+    { label: "Property Address", value: grievance.propertyAddress, required: true },
+    { label: "Block / Lot Number", value: grievance.parcelId, required: true, hint: "From your tax bill or assessment notice" },
+    { label: "Property Class", value: grievance.propertyClass, required: false, hint: "e.g. Class 2 for residential" },
+    { label: "Owner / Complainant Name", value: grievance.ownerName, required: true },
+    { label: "Owner Phone", value: grievance.ownerPhone, required: false },
+    { label: "Mailing Address", value: grievance.ownerMailingAddress ?? grievance.propertyAddress, required: true },
+    { label: "Current Assessed Value", value: grievance.currentAssessment, required: true },
+    { label: "Equalization Ratio (Chapter 123)", value: grievance.equalizationRate, required: false, hint: "Set by NJ Division of Taxation" },
+    { label: "Your Estimated True Value", value: grievance.estimatedMarketValue, required: true },
+    { label: "Requested Assessment", value: grievance.requestedAssessment, required: true },
+    { label: "Basis of Appeal", value: grievance.basisOfComplaint, required: true },
+    { label: "Comparable Sales Evidence", value: comparables.length > 0 ? `${comparables.length} comparable${comparables.length !== 1 ? "s" : ""} added` : null, required: false, hint: "3–6 comps strongly recommended" },
+  ];
+}
+
+function getFormFields(county: string, grievance: Grievance, comparables: Comparable[], state?: string): FormField[] {
+  if (state === "TX") return getTxFields(grievance, comparables);
+  if (state === "NJ") return getNjFields(grievance, comparables);
   if (county === "Nassau") return getNassauFields(grievance, comparables);
   if (NYC_COUNTIES.includes(county)) return getNycFields(grievance, comparables);
   return getRp524Fields(grievance, comparables);
@@ -131,9 +200,18 @@ export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, on
   const [isDownloading, setIsDownloading] = useState(false);
   const [showAllFields, setShowAllFields] = useState(false);
 
-  const filingInfo = getFilingInfo(grievance.county) ?? getGenericFilingInfo(grievance.county);
-  const formsRequired = getFormsRequired(grievance.county);
-  const formFields = getFormFields(grievance.county, grievance, comparables);
+  const grievanceState: string = (grievance as any).state ?? "NY";
+  const isTX = grievanceState === "TX";
+  const isNJ = grievanceState === "NJ";
+
+  const filingInfo = isTX
+    ? getTxFilingInfo(grievance.county) as any
+    : isNJ
+    ? getNjFilingInfo(grievance.county) as any
+    : (getFilingInfo(grievance.county) ?? getGenericFilingInfo(grievance.county));
+
+  const formsRequired = getFormsRequired(grievance.county, grievanceState);
+  const formFields = getFormFields(grievance.county, grievance, comparables, grievanceState);
 
   const requiredFields = formFields.filter((f) => f.required);
   const optionalFields = formFields.filter((f) => !f.required);
@@ -202,9 +280,11 @@ export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, on
     }
   };
 
-  const mailtoSubject = encodeURIComponent(`Property Tax Grievance — ${grievance.propertyAddress} — Tax Year ${grievance.taxYear}`);
+  const formDisplayName = isTX ? "Notice of Protest" : isNJ ? "A-1 Petition of Appeal" : "RP-524";
+  const assessmentLabel = isTX ? "Appraised Value" : "Assessment";
+  const mailtoSubject = encodeURIComponent(`Property Tax ${isTX ? "Protest" : "Grievance"} — ${grievance.propertyAddress} — Tax Year ${grievance.taxYear}`);
   const mailtoBody = encodeURIComponent(
-    `Dear ${filingInfo.filingBody},\n\nPlease find attached my completed RP-524 Complaint on Real Property Assessment for:\n\nProperty: ${grievance.propertyAddress}\nOwner: ${grievance.ownerName}\nTax Year: ${grievance.taxYear}\nCurrent Assessment: $${grievance.currentAssessment.toLocaleString()}\nRequested Assessment: $${grievance.requestedAssessment.toLocaleString()}\n\nThank you,\n${grievance.ownerName}`
+    `Dear ${filingInfo.filingBody},\n\nPlease find attached my completed ${formDisplayName} for:\n\nProperty: ${grievance.propertyAddress}\nOwner: ${grievance.ownerName}\nTax Year: ${grievance.taxYear}\nCurrent ${assessmentLabel}: $${grievance.currentAssessment.toLocaleString()}\nRequested ${assessmentLabel}: $${grievance.requestedAssessment.toLocaleString()}\n\nThank you,\n${grievance.ownerName}`
   );
 
   return (
@@ -213,10 +293,15 @@ export function FormsPrepPanel({ grievance, comparables, onPrint, isAttested, on
       <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
         <div className="bg-secondary/40 px-6 py-4 border-b border-border">
           <h3 className="font-serif font-bold text-lg flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" /> Forms Required for {grievance.county} County
+            <FileText className="w-5 h-5 text-primary" /> Forms Required — {grievance.county} County{isTX ? " (Texas)" : isNJ ? " (New Jersey)" : ""}
           </h3>
           <p className="text-xs text-muted-foreground mt-1">
-            Based on your county, here are the exact forms you need to complete and file.
+            {isTX
+              ? "File your Notice of Protest with the County Appraisal District (CAD) by May 15."
+              : isNJ
+              ? "File Form A-1 with your County Board of Taxation by April 1."
+              : "Based on your county, here are the exact forms you need to complete and file."
+            }
           </p>
         </div>
 
