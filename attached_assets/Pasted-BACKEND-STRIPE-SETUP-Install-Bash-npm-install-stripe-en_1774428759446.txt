@@ -1,7 +1,6 @@
 BACKEND (STRIPE SETUP)
 Install
 Bash
-
 npm install stripe
 .env.local
 Environment
