@@ -16,107 +16,105 @@ export function Terms() {
           <Scale className="w-6 h-6 text-primary" />
           <h1 className="font-serif font-bold text-3xl">Terms of Service</h1>
         </div>
-        <p className="text-muted-foreground text-sm mb-8">Last updated: March 2026</p>
+        <p className="text-muted-foreground text-sm mb-8">Last Updated: March 2026</p>
 
-        <div className="prose prose-sm max-w-none space-y-6 text-foreground">
+        <div className="space-y-7 text-foreground">
+          <p className="text-muted-foreground leading-relaxed">
+            Welcome to TaxAppeal DIY. By accessing or using this service, you agree to the following terms.
+          </p>
 
-          <section className="space-y-3">
-            <h2 className="font-serif font-bold text-xl">1. Service Description</h2>
+          <section className="space-y-2">
+            <h2 className="font-serif font-bold text-xl">1. Nature of Service</h2>
             <p className="text-muted-foreground leading-relaxed">
-              TaxAppeal DIY is a document preparation and data assistance platform that helps property owners organize
-              information and prepare forms related to property tax appeals. We do not provide legal advice,
-              legal representation, or attorney services of any kind.
+              TaxAppeal DIY provides a software platform that assists users in preparing property tax appeal
+              documents using user-provided information and publicly available data.
+            </p>
+            <p className="text-muted-foreground leading-relaxed">
+              We are not a law firm and do not provide legal advice, legal representation, or professional services.
             </p>
           </section>
 
-          <section className="space-y-3">
-            <h2 className="font-serif font-bold text-xl">2. Not Legal Advice</h2>
+          <section className="space-y-2">
+            <h2 className="font-serif font-bold text-xl">2. No Attorney-Client Relationship</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Nothing on this platform constitutes legal advice. TaxAppeal DIY is not a law firm and cannot
-              represent you before any board, tribunal, or government body. The forms, data, and guidance
-              provided are for informational and document preparation purposes only.
-            </p>
-            <p className="text-muted-foreground leading-relaxed">
-              If you require legal advice or representation, you should consult a licensed attorney in your
-              jurisdiction.
+              Use of this service does not create an attorney-client relationship. Nothing on this platform
+              should be interpreted as legal advice.
             </p>
           </section>
 
-          <section className="space-y-3">
-            <h2 className="font-serif font-bold text-xl">3. No Guarantee of Outcome</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              We do not guarantee any specific result from filing a property tax appeal. Appeal outcomes depend
-              on local assessment practices, board decisions, evidence presented, market conditions, and many
-              other factors outside our control. Use of this service does not guarantee a reduction in your
-              property tax assessment or tax bill.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="font-serif font-bold text-xl">4. User Responsibility</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              You are solely responsible for:
-            </p>
+          <section className="space-y-2">
+            <h2 className="font-serif font-bold text-xl">3. User Responsibility</h2>
+            <p className="text-muted-foreground leading-relaxed">You are responsible for:</p>
             <ul className="list-disc list-inside text-muted-foreground space-y-1 pl-2">
-              <li>Reviewing all documents before submission</li>
-              <li>Verifying the accuracy of all property information entered</li>
-              <li>Meeting your local filing deadlines</li>
-              <li>Submitting your appeal to the correct authority</li>
-              <li>Complying with all applicable local rules and requirements</li>
+              <li>Providing accurate and complete information</li>
+              <li>Reviewing all generated documents before submission</li>
+              <li>Submitting your appeal to the appropriate authority</li>
+            </ul>
+            <p className="text-muted-foreground leading-relaxed">
+              We are not responsible for errors resulting from incorrect or incomplete information provided by users.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="font-serif font-bold text-xl">4. No Guarantee of Results</h2>
+            <p className="text-muted-foreground leading-relaxed">We do not guarantee:</p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1 pl-2">
+              <li>Approval of any tax appeal</li>
+              <li>Reduction in property taxes</li>
+              <li>Accuracy of third-party data</li>
+            </ul>
+            <p className="text-muted-foreground leading-relaxed">
+              Results vary based on local jurisdictions, assessors, and market conditions.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="font-serif font-bold text-xl">5. Payments</h2>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1 pl-2">
+              <li>All payments are one-time fees unless otherwise stated.</li>
+              <li>By purchasing, you agree to the pricing displayed at checkout.</li>
+              <li>Refunds are only provided in accordance with our stated refund policy.</li>
             </ul>
           </section>
 
-          <section className="space-y-3">
-            <h2 className="font-serif font-bold text-xl">5. Payment and Refund Policy</h2>
+          <section className="space-y-2">
+            <h2 className="font-serif font-bold text-xl">6. Intellectual Property</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Payment of $99 grants you a one-time license to generate and download your appeal documents for
-              one property case. This is a one-time charge — there are no subscriptions or recurring fees.
-            </p>
-            <p className="text-muted-foreground leading-relaxed">
-              If you purchase the service but do not file your appeal, contact us at support@taxappealdiy.com
-              within 30 days of purchase and we will issue a refund.
+              All content, software, and materials provided through this service are owned by TaxAppeal DIY
+              and may not be copied, redistributed, or resold.
             </p>
           </section>
 
-          <section className="space-y-3">
-            <h2 className="font-serif font-bold text-xl">6. Data and Privacy</h2>
-            <p className="text-muted-foreground leading-relaxed">
-              The information you enter is used solely to prepare your appeal documents. We do not sell your
-              personal information to third parties. Property lookup data is sourced from publicly available
-              government databases (NYC Open Data, NYS Assessment Roll, etc.).
-            </p>
-            <p className="text-muted-foreground leading-relaxed">
-              See our <Link href="/privacy" className="text-primary underline">Privacy Policy</Link> for full details.
-            </p>
-          </section>
-
-          <section className="space-y-3">
+          <section className="space-y-2">
             <h2 className="font-serif font-bold text-xl">7. Limitation of Liability</h2>
             <p className="text-muted-foreground leading-relaxed">
-              To the maximum extent permitted by law, TaxAppeal DIY shall not be liable for any indirect,
-              incidental, special, or consequential damages arising from your use of this service. Our total
-              liability to you shall not exceed the amount you paid for the service.
+              To the fullest extent permitted by law, TaxAppeal DIY shall not be liable for:
             </p>
+            <ul className="list-disc list-inside text-muted-foreground space-y-1 pl-2">
+              <li>Any financial loss</li>
+              <li>Missed filing deadlines</li>
+              <li>Denied appeals</li>
+              <li>Indirect or consequential damages</li>
+            </ul>
           </section>
 
-          <section className="space-y-3">
+          <section className="space-y-2">
             <h2 className="font-serif font-bold text-xl">8. Changes to Terms</h2>
             <p className="text-muted-foreground leading-relaxed">
-              We may update these Terms from time to time. Continued use of the service after changes
-              constitutes acceptance of the updated Terms.
+              We may update these Terms at any time. Continued use of the service constitutes acceptance
+              of updated terms.
             </p>
           </section>
 
-          <section className="space-y-3">
+          <section className="space-y-2">
             <h2 className="font-serif font-bold text-xl">9. Contact</h2>
             <p className="text-muted-foreground leading-relaxed">
-              Questions about these Terms? Contact us at{" "}
+              For questions, contact:{" "}
               <a href="mailto:support@taxappealdiy.com" className="text-primary underline">
                 support@taxappealdiy.com
-              </a>.
+              </a>
             </p>
           </section>
-
         </div>
 
         <div className="mt-10 pt-6 border-t border-border flex gap-4">

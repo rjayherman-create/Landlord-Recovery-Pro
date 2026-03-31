@@ -130,6 +130,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto px-4 py-8 text-center text-sm text-muted-foreground">
           <p className="font-serif italic mb-2">Empowering homeowners to advocate for fair assessments.</p>
           <p>© {new Date().getFullYear()} TaxAppeal DIY · NY · NJ · TX · FL. Not legal advice.</p>
+          <div className="text-xs text-gray-400 mt-3 flex items-center justify-center gap-1">
+            <Link href="/terms" className="hover:text-gray-600 underline-offset-2 hover:underline">Terms</Link>
+            <span>•</span>
+            <Link href="/disclaimer" className="hover:text-gray-600 underline-offset-2 hover:underline">Disclaimer</Link>
+            <span>•</span>
+            <Link href="/privacy" className="hover:text-gray-600 underline-offset-2 hover:underline">Privacy</Link>
+          </div>
         </div>
       </footer>
     </div>
