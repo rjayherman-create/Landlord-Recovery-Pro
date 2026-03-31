@@ -11,6 +11,7 @@ import autoComparablesRouter from "./auto-comparables";
 import priorYearRouter from "./prior-year";
 import stripeRouter from "./stripe";
 import linksRouter from "./links";
+import downloadRouter from "./download";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(autoComparablesRouter);
 router.use(priorYearRouter);
 router.use(stripeRouter);
 router.use("/links", linksRouter);
+router.use(downloadRouter);
 
 export default router;

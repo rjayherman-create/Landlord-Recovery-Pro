@@ -1038,6 +1038,24 @@ export function GrievanceDetail() {
                 </div>
               ) : (
                 <div className="space-y-6">
+                  {/* Download PDF banner */}
+                  <div className="flex items-center gap-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+                    <div className="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-emerald-900 text-sm">Your appeal has been professionally prepared.</p>
+                      <p className="text-emerald-700 text-xs mt-0.5">Download your pre-filled {formName} PDF — ready to print and submit.</p>
+                    </div>
+                    <a
+                      href={`/api/download/${id}`}
+                      download
+                      className="shrink-0 flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition-colors"
+                    >
+                      <FileText className="w-4 h-4" /> Download PDF
+                    </a>
+                  </div>
+
                   <ValidationPanel
                     errors={validation.errors}
                     warnings={validation.warnings}
