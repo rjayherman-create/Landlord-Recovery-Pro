@@ -10,6 +10,7 @@ import ocrTaxRecordRouter from "./ocr-tax-record";
 import autoComparablesRouter from "./auto-comparables";
 import priorYearRouter from "./prior-year";
 import stripeRouter from "./stripe";
+import linksRouter from "./links";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(ocrTaxRecordRouter);
 router.use(autoComparablesRouter);
 router.use(priorYearRouter);
 router.use(stripeRouter);
+router.use("/links", linksRouter);
 
 export default router;
