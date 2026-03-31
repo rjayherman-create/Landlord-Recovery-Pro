@@ -280,18 +280,6 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
       .catch(() => {});
   }, []);
 
-  // Auto-fill owner name / email from logged-in user (new cases only)
-  useEffect(() => {
-    if (isEditing || !user) return;
-    const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ");
-    if (fullName && !form.getValues("ownerName")) {
-      form.setValue("ownerName", fullName, { shouldValidate: true });
-    }
-    if (user.email && !form.getValues("ownerEmail")) {
-      form.setValue("ownerEmail", user.email, { shouldValidate: true });
-    }
-  }, [user, isEditing, form]);
-
   // Restore any form data saved before Stripe redirect
   useEffect(() => {
     if (isEditing) return;
@@ -425,6 +413,18 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
 
   const currentCountyOptions = isTX ? TX_COUNTY_NAMES : isNJ ? NJ_COUNTY_NAMES : isFL ? FL_COUNTY_NAMES : COUNTY_OPTIONS;
   const currentPropertyClassOptions = isTX ? TX_PROPERTY_CLASS_OPTIONS : isNJ ? NJ_PROPERTY_CLASS_OPTIONS : isFL ? FL_PROPERTY_CLASS_OPTIONS : PROPERTY_CLASS_OPTIONS;
+
+  // Auto-fill owner name / email from logged-in user (new cases only)
+  useEffect(() => {
+    if (isEditing || !user) return;
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ");
+    if (fullName && !form.getValues("ownerName")) {
+      form.setValue("ownerName", fullName, { shouldValidate: true });
+    }
+    if (user.email && !form.getValues("ownerEmail")) {
+      form.setValue("ownerEmail", user.email, { shouldValidate: true });
+    }
+  }, [user, isEditing, form]);
 
   /* ── Grounds suggestion state ── */
   const [selectedGrounds, setSelectedGrounds] = useState<string[]>(() => {
