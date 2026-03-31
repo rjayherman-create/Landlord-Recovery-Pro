@@ -1,72 +1,24 @@
+import app from "./app.js";
+
+// 🔥 FORCE LOGS TO SHOW
 console.log("🚀 SERVER FILE STARTED");
 
+// 🔥 GLOBAL ERROR HANDLING
 process.on("uncaughtException", (err) => {
   console.error("❌ UNCAUGHT EXCEPTION:", err);
-  process.exit(1);
 });
 
 process.on("unhandledRejection", (err) => {
   console.error("❌ UNHANDLED REJECTION:", err);
-  process.exit(1);
 });
 
-setTimeout(() => {
-  console.log("⏳ Server survived 3 seconds");
-}, 3000);
+// 🔥 SAFE SERVER START
+const port = process.env.PORT || 3000;
 
-import app from "./app";
-import { logger } from "./lib/logger";
-import { runMigrations } from 'stripe-replit-sync';
-import { getStripeSync } from './stripeClient';
-
-const rawPort = process.env["PORT"];
-
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+try {
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`🚀 Server running on port ${port}`);
+  });
+} catch (err) {
+  console.error("❌ SERVER FAILED TO START:", err);
 }
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-async function initStripe() {
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) {
-    logger.warn('DATABASE_URL not set — skipping Stripe init');
-    return;
-  }
-  try {
-    logger.info('Initializing Stripe schema...');
-    await runMigrations({ databaseUrl });
-    logger.info('Stripe schema ready');
-
-    const stripeSync = await getStripeSync();
-    const webhookBaseUrl =
-      process.env.APP_URL ||
-      (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : null) ||
-      `http://localhost:${port}`;
-    await stripeSync.findOrCreateManagedWebhook(`${webhookBaseUrl}/api/stripe/webhook`);
-    logger.info('Stripe webhook configured');
-
-    stripeSync.syncBackfill()
-      .then(() => logger.info('Stripe data synced'))
-      .catch((err: any) => logger.error({ err }, 'Stripe backfill error'));
-  } catch (err) {
-    logger.error({ err }, 'Stripe init failed — continuing without Stripe');
-  }
-}
-
-await initStripe();
-
-app.listen(port, "0.0.0.0", (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
-
-  logger.info({ port }, "Server listening");
-});
