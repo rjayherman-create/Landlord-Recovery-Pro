@@ -1,12 +1,15 @@
 import { Router, type IRouter } from "express";
 import multer from "multer";
 import OpenAI from "openai";
+// Import from lib directly to avoid the test-file read that happens in index.js at startup
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const pdfParse: (buf: Buffer) => Promise<{ text: string }> = require("pdf-parse/lib/pdf-parse.js");
 
 const router: IRouter = Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB
   fileFilter: (_req, file, cb) => {
     const ok = /^image\/(jpeg|jpg|png|webp|gif|heic|heif)|application\/pdf$/.test(file.mimetype);
     cb(null, ok);
@@ -80,90 +83,139 @@ General tips:
 - If values appear in thousands (e.g. a note says "values in thousands"), multiply by 1000
 - Always read carefully — assessors use many different label names for the same concept`;
 
+const TEXT_SYSTEM_PROMPT = `You are an expert assistant specializing in property tax documents from all US states,
+with deep expertise in NY, NJ, TX, and FL assessment notices, tax bills, and grievance forms.
+
+Your job: extract key property information from the text content of an official tax or assessment document (extracted from a PDF).
+
+Return ONLY a valid JSON object — no markdown, no code fences, no explanation. Use null for fields you cannot find.
+
+` + SYSTEM_PROMPT.split("\n").slice(12).join("\n"); // Reuse fields and tips sections
+
+function coerceExtracted(extracted: Record<string, any>) {
+  if (extracted.yearBuilt) extracted.yearBuilt = parseInt(String(extracted.yearBuilt).replace(/\D/g, "")) || null;
+  if (extracted.livingArea) extracted.livingArea = parseInt(String(extracted.livingArea).replace(/,/g, "").replace(/\D/g, "")) || null;
+  if (extracted.totalAssessment) extracted.totalAssessment = parseFloat(String(extracted.totalAssessment).replace(/[$,]/g, "")) || null;
+  if (extracted.landAssessment) extracted.landAssessment = parseFloat(String(extracted.landAssessment).replace(/[$,]/g, "")) || null;
+  if (extracted.estimatedMarketValue) extracted.estimatedMarketValue = parseFloat(String(extracted.estimatedMarketValue).replace(/[$,]/g, "")) || null;
+  if (extracted.taxYear) extracted.taxYear = parseInt(String(extracted.taxYear).replace(/\D/g, "")) || null;
+  return extracted;
+}
+
+function buildFieldsFound(extracted: Record<string, any>) {
+  const MAPPABLE = [
+    "ownerName", "propertyAddress", "parcelId", "county", "municipality",
+    "schoolDistrict", "propertyClass", "yearBuilt", "livingArea", "lotSize",
+    "landAssessment", "totalAssessment", "estimatedMarketValue", "taxYear", "filingDeadline",
+  ];
+  return MAPPABLE.filter(k => extracted[k] !== null && extracted[k] !== undefined && extracted[k] !== "");
+}
+
 router.post("/ocr-tax-record", upload.single("file"), async (req, res) => {
   if (!req.file) {
-    res.status(400).json({ error: "No file uploaded. Please upload a photo or scan of your tax bill." });
+    res.status(400).json({ error: "No file uploaded. Please upload a photo or scan of your tax document." });
     return;
   }
 
-  const { buffer, mimetype } = req.file;
+  const { buffer, mimetype, originalname } = req.file;
 
   try {
-    let imageContent: OpenAI.Chat.ChatCompletionContentPartImage;
-
-    if (mimetype === "application/pdf") {
-      // PDFs aren't directly supported as base64 images by the vision API.
-      // Return a helpful message asking for an image instead.
-      res.status(422).json({
-        error: "PDF upload not yet supported. Please take a photo or screenshot of your tax bill and upload that instead (JPG or PNG).",
-      });
-      return;
-    }
-
-    const b64 = buffer.toString("base64");
-    const mediaType = (mimetype.includes("heic") || mimetype.includes("heif"))
-      ? "image/jpeg"   // OpenAI doesn't support HEIC natively; treat as JPEG
-      : mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
-
-    imageContent = {
-      type: "image_url",
-      image_url: { url: `data:${mediaType};base64,${b64}`, detail: "high" },
-    };
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 2048,
-      messages: [
-        { role: "system", content: SYSTEM_PROMPT },
-        {
-          role: "user",
-          content: [
-            imageContent,
-            { type: "text", text: "Please extract all property information from this document." },
-          ],
-        },
-      ],
-    });
-
-    const raw = response.choices[0]?.message?.content?.trim() ?? "";
-
-    // Strip any accidental markdown code fences
-    const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
-
     let extracted: Record<string, any>;
-    try {
-      extracted = JSON.parse(jsonStr);
-    } catch {
-      res.status(422).json({ error: "Could not parse document. Please try a clearer photo with good lighting." });
-      return;
-    }
 
-    // Build the list of fields that were actually found
-    const fieldsFound: string[] = [];
-    const MAPPABLE = [
-      "ownerName", "propertyAddress", "parcelId", "county", "municipality",
-      "schoolDistrict", "propertyClass", "yearBuilt", "livingArea", "lotSize",
-      "landAssessment", "totalAssessment", "estimatedMarketValue", "taxYear", "filingDeadline",
-    ];
-    for (const key of MAPPABLE) {
-      if (extracted[key] !== null && extracted[key] !== undefined && extracted[key] !== "") {
-        fieldsFound.push(key);
+    // ── PDF: extract text and pass to AI as text prompt ──────────────────────
+    if (mimetype === "application/pdf") {
+      let pdfText = "";
+      try {
+        const parsed = await pdfParse(buffer);
+        pdfText = parsed.text?.trim() ?? "";
+      } catch (pdfErr) {
+        console.error("pdf-parse error:", pdfErr);
+        res.status(422).json({
+          error: "Could not read this PDF. It may be a scanned image. Please take a photo of the document with your camera or convert it to a JPG/PNG.",
+        });
+        return;
+      }
+
+      if (!pdfText || pdfText.length < 30) {
+        res.status(422).json({
+          error: "This PDF appears to be a scanned image (no selectable text). Please take a photo of the document using the camera button, or export it as a JPG/PNG from your PDF viewer.",
+        });
+        return;
+      }
+
+      // Truncate to avoid token limits (keep ~6000 chars which is ~1500 tokens)
+      const truncatedText = pdfText.length > 6000 ? pdfText.slice(0, 6000) + "\n...[truncated]" : pdfText;
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-5.2",
+        max_completion_tokens: 2048,
+        messages: [
+          { role: "system", content: TEXT_SYSTEM_PROMPT },
+          {
+            role: "user",
+            content: `Please extract all property information from this PDF tax document:\n\n${truncatedText}`,
+          },
+        ],
+      });
+
+      const raw = response.choices[0]?.message?.content?.trim() ?? "";
+      const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+
+      try {
+        extracted = JSON.parse(jsonStr);
+      } catch {
+        res.status(422).json({ error: "Could not parse document. Please try a clearer photo with good lighting." });
+        return;
+      }
+
+    } else {
+      // ── Image: use vision model ───────────────────────────────────────────
+      const b64 = buffer.toString("base64");
+      const mediaType = (mimetype.includes("heic") || mimetype.includes("heif"))
+        ? "image/jpeg"   // OpenAI doesn't support HEIC natively; treat as JPEG
+        : mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+
+      const imageContent: OpenAI.Chat.ChatCompletionContentPartImage = {
+        type: "image_url",
+        image_url: { url: `data:${mediaType};base64,${b64}`, detail: "high" },
+      };
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-5.2",
+        max_completion_tokens: 2048,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          {
+            role: "user",
+            content: [
+              imageContent,
+              { type: "text", text: "Please extract all property information from this document." },
+            ],
+          },
+        ],
+      });
+
+      const raw = response.choices[0]?.message?.content?.trim() ?? "";
+      const jsonStr = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "").trim();
+
+      try {
+        extracted = JSON.parse(jsonStr);
+      } catch {
+        res.status(422).json({ error: "Could not parse document. Please try a clearer photo with good lighting." });
+        return;
       }
     }
 
-    // Coerce numeric types
-    if (extracted.yearBuilt) extracted.yearBuilt = parseInt(String(extracted.yearBuilt).replace(/\D/g, "")) || null;
-    if (extracted.livingArea) extracted.livingArea = parseInt(String(extracted.livingArea).replace(/,/g, "").replace(/\D/g, "")) || null;
-    if (extracted.totalAssessment) extracted.totalAssessment = parseFloat(String(extracted.totalAssessment).replace(/[$,]/g, "")) || null;
-    if (extracted.estimatedMarketValue) extracted.estimatedMarketValue = parseFloat(String(extracted.estimatedMarketValue).replace(/[$,]/g, "")) || null;
-    if (extracted.taxYear) extracted.taxYear = parseInt(String(extracted.taxYear).replace(/\D/g, "")) || null;
+    coerceExtracted(extracted);
+    const fieldsFound = buildFieldsFound(extracted);
 
     res.json({
-      source: "AI Document OCR",
+      source: mimetype === "application/pdf" ? "AI Document OCR (PDF)" : "AI Document OCR (Image)",
       confidence: fieldsFound.length >= 4 ? "high" : fieldsFound.length >= 2 ? "partial" : "low",
       fieldsFound,
       ...extracted,
     });
+
   } catch (err: any) {
     console.error("OCR error:", err?.message ?? err);
     res.status(500).json({ error: "OCR service temporarily unavailable. Please enter details manually." });

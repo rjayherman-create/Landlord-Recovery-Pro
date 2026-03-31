@@ -364,6 +364,7 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
   // Physical characteristic fields are unreliable from address-lookup APIs
   const LOOKUP_UNVERIFIED_FIELDS = new Set(["yearBuilt", "livingArea", "lotSize"]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<GrievanceFormValues>({
     resolver: zodResolver(grievanceSchema),
@@ -646,8 +647,9 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
       setOcrError("Could not connect to the scanning service. Please try again.");
     } finally {
       setIsOcring(false);
-      // Reset the input so the same file can be re-uploaded if needed
+      // Reset both inputs so the same file can be re-uploaded if needed
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (cameraInputRef.current) cameraInputRef.current.value = "";
     }
   };
 
@@ -817,49 +819,76 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
           <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
           <span className="text-sm font-semibold text-primary">Auto-fill from Public Records</span>
         </div>
-        {/* Hidden file input */}
+        {/* Hidden inputs — one for camera, one for file picker */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+          accept="image/jpeg,image/png,image/webp,image/heic,image/heif,application/pdf"
           className="hidden"
           onChange={handleFileUpload}
         />
 
-        {/* Primary: Scan Tax Bill — highlighted as most accurate */}
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={isOcring || isLookingUp || isLocating}
-          className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all cursor-pointer
-            ${isOcring
-              ? "border-amber-300 bg-amber-50"
-              : "border-amber-400 bg-amber-50 hover:bg-amber-100 hover:border-amber-500"
-            }`}
-        >
-          <div className="w-10 h-10 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0">
-            {isOcring
-              ? <Loader2 className="w-5 h-5 text-white animate-spin" />
-              : <Camera className="w-5 h-5 text-white" />
-            }
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="font-semibold text-amber-900 text-sm">
-                {isOcring ? "Reading your document with AI…" : "Scan Your Tax Assessment Notice"}
-              </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-white font-bold">
-                MOST ACCURATE
-              </span>
-            </div>
-            <p className="text-xs text-amber-800 mt-0.5">
+        {/* Primary: Scan Tax Bill — two options: camera or file */}
+        <div className={`rounded-xl border-2 p-4 transition-all ${isOcring ? "border-amber-300 bg-amber-50" : "border-amber-400 bg-amber-50"}`}>
+          <div className="flex items-start gap-3 mb-3">
+            <div className="w-9 h-9 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0 mt-0.5">
               {isOcring
-                ? "This takes a few seconds — stay on this page"
-                : "Upload a photo or screenshot of your official notice. AI reads your exact assessed value, parcel ID, and more."
+                ? <Loader2 className="w-4 h-4 text-white animate-spin" />
+                : <Camera className="w-4 h-4 text-white" />
               }
-            </p>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-amber-900 text-sm">
+                  {isOcring ? "Reading your document with AI…" : "Scan Your Tax Assessment Notice"}
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-white font-bold">
+                  MOST ACCURATE
+                </span>
+              </div>
+              <p className="text-xs text-amber-800 mt-0.5">
+                {isOcring
+                  ? "This takes a few seconds — stay on this page"
+                  : "AI reads your exact assessed value, parcel ID, owner name, and more directly from your official notice."
+                }
+              </p>
+            </div>
           </div>
-        </button>
+
+          {/* Two action buttons */}
+          {!isOcring && (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={isOcring || isLookingUp || isLocating}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-white text-sm font-semibold transition-colors"
+              >
+                <Camera className="w-4 h-4 flex-shrink-0" />
+                Take Photo
+              </button>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isOcring || isLookingUp || isLocating}
+                className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-white hover:bg-amber-50 border-2 border-amber-400 text-amber-900 text-sm font-semibold transition-colors"
+              >
+                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                Attach File / PDF
+              </button>
+            </div>
+          )}
+        </div>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <div className="flex-1 h-px bg-border" />
