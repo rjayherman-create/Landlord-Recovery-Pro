@@ -138,14 +138,14 @@ export function Dashboard() {
 
           <div className="relative z-10 p-8 md:p-12 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm font-medium mb-6 backdrop-blur-sm">
-              <ShieldCheck className="w-4 h-4 text-accent" />
-              <span>Save 50% vs. hiring a professional — file it yourself</span>
+              <DollarSign className="w-4 h-4 text-accent" />
+              <span>Lawyers charge 50% commission. We charge $99 flat.</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4 leading-tight text-white">
-              Lower Your Property Taxes <br/><span className="text-accent">in Minutes</span>
+              Stop Paying 50% Commission<br/><span className="text-accent">to Lower Your Property Taxes</span>
             </h1>
             <p className="text-lg text-primary-foreground/80 mb-6 max-w-xl leading-relaxed">
-              We prepare your official {meta.form} for you — no guesswork, no lawyers, no 50% commission. Your case is saved and ready to print.
+              Tax appeal firms charge <strong className="text-white">50% of your first year's savings</strong> — typically $700–$1,200 on a winning case. TaxAppeal DIY pre-fills your official {meta.form}, finds comparable sales, and delivers a ready-to-file appeal package. <strong className="text-white">$99 flat. You keep 100% of every dollar saved — this year and every year after.</strong>
             </p>
 
             <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) { setDialogState(preferredState); setPrefillData(undefined); } }}>
@@ -187,9 +187,9 @@ export function Dashboard() {
 
             {/* Trust signals under CTA */}
             <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-primary-foreground/70">
-              <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-accent shrink-0" /> Takes less than 10 minutes</span>
-              <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" /> No legal experience required</span>
-              <span className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-accent shrink-0" /> Instant PDF download after payment</span>
+              <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-accent shrink-0" /> Ready to file in 10 minutes</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" /> ~80% of DIY filers get a reduction</span>
+              <span className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-accent shrink-0" /> $99 flat — no commission, ever</span>
             </div>
           </div>
 
@@ -247,6 +247,56 @@ export function Dashboard() {
               <p className="text-sm font-medium text-muted-foreground">Upcoming Deadlines</p>
               <h3 className="text-3xl font-bold font-serif">{upcomingCount}</h3>
             </div>
+          </div>
+        </div>
+
+        {/* ── How We Compare ── */}
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+          <div className="px-6 pt-6 pb-4 border-b border-border">
+            <h2 className="text-xl font-serif font-bold text-foreground">Why $99 Instead of $0 or $900?</h2>
+            <p className="text-sm text-muted-foreground mt-1">We sit in the sweet spot: the preparation a lawyer does, without the commission. Better than staring at a blank form, cheaper than giving away half your savings.</p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-secondary/30">
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide w-44">Feature</th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <span className="text-red-600">Tax Lawyer / Firm</span>
+                  </th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <span className="text-slate-500">Plain DIY</span>
+                  </th>
+                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide bg-primary/5 border-x border-primary/20">
+                    <span className="text-primary">TaxAppeal DIY</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/60">
+                {[
+                  { feature: "Cost", lawyer: "50% commission (~$700–$1,200)", diy: "Free (form only)", us: "$99 flat — one time", usGood: true },
+                  { feature: "Official form pre-filled", lawyer: "✓", diy: "You fill it manually", us: "✓ Auto-filled from your data", usGood: true },
+                  { feature: "Comparable sales", lawyer: "✓ Found by firm", diy: "You research manually (1–3 hrs)", us: "✓ Found & formatted for you", usGood: true },
+                  { feature: "Time to file", lawyer: "2–4 weeks (you wait)", diy: "3–6 hours of research", us: "Under 30 minutes", usGood: true },
+                  { feature: "Success rate", lawyer: "~85%", diy: "~65–80%", us: "~80% (comparable)", usGood: true },
+                  { feature: "You keep future savings", lawyer: "100% — after year 1 fee", diy: "100%", us: "100% — every year", usGood: true },
+                  { feature: "Covers all 4 states", lawyer: "County specialists only", diy: "Forms vary by state", us: "✓ NY · NJ · TX · FL", usGood: true },
+                ].map((row) => (
+                  <tr key={row.feature} className="hover:bg-secondary/20 transition-colors">
+                    <td className="px-5 py-3.5 font-medium text-foreground text-xs">{row.feature}</td>
+                    <td className="px-5 py-3.5 text-center text-muted-foreground text-xs">{row.lawyer}</td>
+                    <td className="px-5 py-3.5 text-center text-muted-foreground text-xs">{row.diy}</td>
+                    <td className={`px-5 py-3.5 text-center font-semibold text-xs bg-primary/5 border-x border-primary/20 ${row.usGood ? "text-emerald-700" : "text-muted-foreground"}`}>{row.us}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="px-6 py-4 bg-emerald-50 border-t border-emerald-100 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5 sm:mt-0" />
+            <p className="text-sm text-emerald-800 flex-1">
+              <strong>Bottom line:</strong> A tax firm does two things — fills out your form and finds comparable sales. TaxAppeal DIY does both, in minutes, for $99. The difference is that they take 50% of your first year's savings; we don't touch it.
+            </p>
           </div>
         </div>
 

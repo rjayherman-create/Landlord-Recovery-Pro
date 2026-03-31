@@ -110,15 +110,15 @@ export function Pricing() {
 
         {/* Header */}
         <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-50 border border-red-200 text-red-700 text-sm font-medium mb-6">
             <Star className="w-4 h-4" />
-            Save up to 50% vs. hiring a grievance firm
+            A lawyer charges $700–$1,200. We charge $99. You keep the rest.
           </div>
           <h1 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
             One-Time Filing Fee.<br />Keep Every Dollar You Save.
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Grievance firms charge 50% of your first-year savings. Our flat fee means the reduction goes to you — not them.
+            Tax appeal firms take 50% of your first year's savings as their commission — typically $700–$1,200 on a winning case. TaxAppeal DIY is a flat fee. Every dollar of your reduction is yours, this year and every year after.
           </p>
         </div>
 

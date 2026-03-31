@@ -330,10 +330,10 @@ export function WhyDIYSection() {
       <div>
         <div className="text-center mb-8">
           <h2 className="text-3xl font-serif font-bold text-foreground mb-3">
-            Six Reasons You Can Do This Yourself
+            Why the 50% Commission Makes No Sense
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto">
-            The grievance process is specifically designed so homeowners can navigate it without professional help.
+            The appeal process is designed for homeowners — no legal training needed. Here's why paying half your savings to a firm is a raw deal.
           </p>
         </div>
 
@@ -367,13 +367,25 @@ export function WhyDIYSection() {
         </div>
         <div className="flex-1">
           <h3 className="text-2xl font-serif font-bold text-emerald-900 mb-2">
-            Zero Risk. Guaranteed by New York Law.
+            Zero Risk. Guaranteed by Law in All 4 States.
           </h3>
           <p className="text-emerald-800 leading-relaxed">
-            New York Real Property Tax Law §524 guarantees that filing a grievance <strong>cannot result in an increase</strong> to your assessment. 
-            The Board of Assessment Review can only leave your assessment the same or lower it. 
-            There is no scenario in which filing costs you more in taxes.
+            In NY, NJ, TX, and FL, filing an appeal or grievance <strong>legally cannot increase your assessment</strong>. The board can only leave it the same or lower it.
+            The worst-case outcome: you're exactly where you started. There is no downside to filing — only upside.
           </p>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+            {[
+              { state: "NY", law: "RPTL §524" },
+              { state: "NJ", law: "N.J.S.A. 54:3-21" },
+              { state: "TX", law: "Tax Code §41.41" },
+              { state: "FL", law: "F.S. §194.011" },
+            ].map(({ state, law }) => (
+              <div key={state} className="bg-emerald-100 rounded-xl px-3 py-2 text-center">
+                <div className="font-bold text-emerald-900 text-sm">{state}</div>
+                <div className="text-xs text-emerald-700 font-mono mt-0.5">{law}</div>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="flex-shrink-0 text-center">
           <div className="text-5xl font-extrabold text-emerald-600 font-serif">$0</div>
