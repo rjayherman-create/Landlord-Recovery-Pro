@@ -122,12 +122,18 @@ function getFilingDeadline(state: string, county?: string, taxYear?: number): st
   }
 }
 
-/* ─── Grounds suggestion ─────────────────────────────── */
+/* ─── Grounds suggestion + scoring ──────────────────── */
 
 interface GroundOption {
   value: string;
   label: string;
   description: string;
+}
+
+interface ScoredGround extends GroundOption {
+  score: number;        // 0–100
+  strength: "strong" | "moderate" | "weak";
+  reason: string;       // plain-English reason it was selected
 }
 
 const GROUND_OPTIONS_BY_STATE: Record<string, GroundOption[]> = {
@@ -143,18 +149,77 @@ const GROUND_OPTIONS_BY_STATE: Record<string, GroundOption[]> = {
     { value: "excessive",       label: "Excessive Assessment", description: "Assessment exceeds 100% of true value" },
   ],
   TX: [
-    { value: "market_value",    label: "Incorrect Appraised Value",  description: "The CAD's appraised value exceeds the true market value of your property" },
-    { value: "unequal_appraisal", label: "Unequal Appraisal",       description: "Your property is appraised at a higher ratio than comparable properties" },
-    { value: "exemption",       label: "Denial of Exemption",       description: "An exemption you applied for was denied (homestead, veteran, etc.)" },
-    { value: "ownership",       label: "Incorrect Ownership Info",   description: "The owner name or legal description on the notice is incorrect" },
+    { value: "market_value",      label: "Incorrect Appraised Value", description: "The CAD's appraised value exceeds the true market value of your property" },
+    { value: "unequal_appraisal", label: "Unequal Appraisal",        description: "Your property is appraised at a higher ratio than comparable properties" },
+    { value: "exemption",         label: "Denial of Exemption",      description: "An exemption you applied for was denied (homestead, veteran, etc.)" },
+    { value: "ownership",         label: "Incorrect Ownership Info",  description: "The owner name or legal description on the notice is incorrect" },
   ],
   FL: [
-    { value: "market_value",    label: "Market Value Too High",      description: "The assessed value exceeds the just/market value of your property" },
-    { value: "unequal",         label: "Unequal Assessment",        description: "Your property is assessed higher than comparable properties nearby" },
-    { value: "exemption",       label: "Exemption Denied",          description: "A homestead or other exemption was wrongly denied or removed" },
-    { value: "classification",  label: "Incorrect Classification",  description: "The property class or land use is incorrectly assigned" },
+    { value: "market_value",   label: "Market Value Too High",    description: "The assessed value exceeds the just/market value of your property" },
+    { value: "unequal",        label: "Unequal Assessment",       description: "Your property is assessed higher than comparable properties nearby" },
+    { value: "exemption",      label: "Exemption Denied",         description: "A homestead or other exemption was wrongly denied or removed" },
+    { value: "classification", label: "Incorrect Classification", description: "The property class or land use is incorrectly assigned" },
   ],
 };
+
+function scoreGrounds(
+  state: string,
+  assessed: number,
+  marketValue: number,
+  lookupResult: any | null,
+): ScoredGround[] {
+  const allOptions = GROUND_OPTIONS_BY_STATE[state] ?? GROUND_OPTIONS_BY_STATE.NY;
+  const scored: ScoredGround[] = [];
+
+  const diff = assessed - marketValue;
+  const pct = marketValue > 0 ? (diff / marketValue) * 100 : 0;
+
+  const ovKey = state === "TX" ? "market_value" : state === "FL" ? "market_value" : "overvaluation";
+  const uneqKey = state === "TX" ? "unequal_appraisal" : "unequal";
+
+  // Overvaluation / Market value ground
+  if (assessed > 0 && marketValue > 0 && diff > 0) {
+    const base = allOptions.find(o => o.value === ovKey);
+    if (base) {
+      const score = Math.min(Math.round(pct), 100);
+      scored.push({
+        ...base,
+        score,
+        strength: pct >= 15 ? "strong" : pct >= 5 ? "moderate" : "weak",
+        reason: `Assessed ${pct.toFixed(1)}% above estimated market value`,
+      });
+    }
+  }
+
+  // Unequal assessment — available when comps exist
+  if (lookupResult) {
+    const base = allOptions.find(o => o.value === uneqKey);
+    if (base) {
+      // Rough score: higher when over-assessment gap is large relative to comps
+      const compScore = diff > 0 ? Math.min(Math.round((diff / (marketValue || 1)) * 80), 90) : 35;
+      scored.push({
+        ...base,
+        score: compScore,
+        strength: compScore >= 50 ? "strong" : compScore >= 25 ? "moderate" : "weak",
+        reason: "Comparable properties found to support this argument",
+      });
+    }
+  }
+
+  // Default: always include the primary overvaluation ground even without values
+  if (scored.length === 0) {
+    const fallback = allOptions[0];
+    scored.push({
+      ...fallback,
+      score: 40,
+      strength: "moderate",
+      reason: "Most common ground — applies to the majority of residential appeals",
+    });
+  }
+
+  // Sort by score descending, keep top 2 as primary recommendations
+  return scored.sort((a, b) => b.score - a.score);
+}
 
 function getSuggestedGrounds(state: string, isOvervalued: boolean, hasComps: boolean): string[] {
   const grounds: string[] = [];
@@ -346,6 +411,7 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
     return getSuggestedGrounds(initialState, false, false);
   });
   const [deadlineAutoFilled, setDeadlineAutoFilled] = useState(false);
+  const [showAllGrounds, setShowAllGrounds] = useState(false);
 
   const groundOptions: GroundOption[] = GROUND_OPTIONS_BY_STATE[selectedState] ?? GROUND_OPTIONS_BY_STATE.NY;
 
@@ -363,6 +429,11 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
   /* ── Auto-suggest grounds when values or state change ── */
   const isOvervalued = Number(watchedAssessment) > 0 && Number(watchedMarketValue) > 0 && Number(watchedAssessment) > Number(watchedMarketValue);
   const hasComps = lookupResult !== null;
+
+  // Scored grounds — ranked by strength based on actual user data
+  const scoredGrounds = scoreGrounds(selectedState, Number(watchedAssessment), Number(watchedMarketValue), lookupResult);
+  const primaryGrounds = scoredGrounds.slice(0, 2);
+  const secondaryGrounds = groundOptions.filter(o => !scoredGrounds.find(s => s.value === o.value));
 
   useEffect(() => {
     if (isEditing) return;
@@ -1083,71 +1154,102 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
           subtitle="We've pre-selected the best grounds based on your property data. Review and adjust if needed."
         />
 
-        {/* Suggested grounds panel */}
+        {/* Scored grounds panel */}
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
-            <p className="font-semibold text-blue-800 text-sm">
-              Recommended Grounds Based on Your Property
-            </p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+              <p className="font-semibold text-blue-800 text-sm">Recommended Grounds for Your Appeal</p>
+            </div>
           </div>
 
-          {isOvervalued && (
-            <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-100 rounded-lg px-3 py-2">
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-blue-600" />
-              Your assessed value is higher than your estimated market value — strong overvaluation case.
-            </div>
-          )}
-          {hasComps && (
-            <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-100 rounded-lg px-3 py-2">
-              <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-blue-600" />
-              Comparable properties found — supports unequal assessment argument.
-            </div>
-          )}
-
-          <div className="space-y-2 pt-1">
-            {groundOptions.map((opt) => {
-              const isChecked = selectedGrounds.includes(opt.value);
-              const isSuggested = getSuggestedGrounds(selectedState, isOvervalued, hasComps).includes(opt.value);
+          {/* Primary (top-scored) grounds — always visible, pre-checked */}
+          <div className="space-y-2">
+            {primaryGrounds.map((g) => {
+              const isChecked = selectedGrounds.includes(g.value);
+              const strengthColor =
+                g.strength === "strong" ? "text-emerald-700 bg-emerald-50 border-emerald-200" :
+                g.strength === "moderate" ? "text-amber-700 bg-amber-50 border-amber-200" :
+                "text-gray-600 bg-gray-50 border-gray-200";
+              const strengthLabel =
+                g.strength === "strong" ? "Strong match" :
+                g.strength === "moderate" ? "Good match" : "Possible match";
               return (
                 <label
-                  key={opt.value}
+                  key={g.value}
                   className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                    isChecked
-                      ? "border-blue-400 bg-white shadow-sm"
-                      : "border-blue-200 bg-blue-50/50 hover:border-blue-300"
+                    isChecked ? "border-blue-400 bg-white shadow-sm" : "border-blue-200 bg-blue-50/50 hover:border-blue-300"
                   }`}
                 >
                   <input
                     type="checkbox"
                     checked={isChecked}
-                    onChange={() => toggleGround(opt.value)}
-                    className="mt-0.5 accent-blue-600 w-4 h-4 shrink-0"
+                    onChange={() => toggleGround(g.value)}
+                    className="mt-1 accent-blue-600 w-4 h-4 shrink-0"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-foreground">{opt.label}</span>
-                      {isSuggested && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold border border-blue-200">
-                          Recommended
-                        </span>
-                      )}
+                      <span className="text-sm font-semibold text-foreground">{g.label}</span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold ${strengthColor}`}>
+                        ✓ {strengthLabel}
+                      </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{g.description}</p>
+                    <p className="text-xs text-blue-600 mt-1 font-medium">{g.reason}</p>
                   </div>
                 </label>
               );
             })}
           </div>
 
-          {selectedGrounds.length > 0 && (
-            <p className="text-green-700 text-xs font-medium flex items-center gap-1.5">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              These selections align with your property data and comparable homes.
-            </p>
+          {/* Confidence + action line */}
+          <p className="text-green-700 text-xs font-medium flex items-center gap-1.5">
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            These grounds are supported by your property data and comparable homes.
+          </p>
+
+          {/* Show all / advanced toggle */}
+          {secondaryGrounds.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowAllGrounds(v => !v)}
+              className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+            >
+              {showAllGrounds ? "▲ Hide advanced options" : "▼ Show all grounds"}
+            </button>
           )}
-          <p className="text-xs text-gray-500">
-            This is not legal advice. Final selection is your responsibility. You can adjust these before submitting.
+
+          {/* Secondary (lower-scoring) grounds — hidden by default */}
+          {showAllGrounds && secondaryGrounds.length > 0 && (
+            <div className="space-y-2 pt-1 border-t border-blue-200">
+              <p className="text-xs text-muted-foreground">Additional grounds (less common — check only if applicable):</p>
+              {secondaryGrounds.map((opt) => {
+                const isChecked = selectedGrounds.includes(opt.value);
+                return (
+                  <label
+                    key={opt.value}
+                    className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                      isChecked ? "border-blue-400 bg-white shadow-sm" : "border-blue-100 bg-white/60 hover:border-blue-300"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => toggleGround(opt.value)}
+                      className="mt-0.5 accent-blue-600 w-4 h-4 shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm font-medium text-foreground">{opt.label}</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+
+          <p className="text-xs text-gray-500 border-t border-blue-100 pt-2">
+            These selections are generated automatically based on your inputs and are not legal advice. Final selection is your responsibility.
           </p>
         </div>
       </div>
