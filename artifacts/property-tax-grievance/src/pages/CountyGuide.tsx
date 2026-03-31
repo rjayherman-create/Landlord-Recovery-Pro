@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCounties } from "@/hooks/use-counties";
 import { Map, ExternalLink, CalendarDays, FileCheck, Phone, Building2 } from "lucide-react";
@@ -55,6 +55,14 @@ const STATE_META: Record<StateTab, { label: string; flag: string; headline: stri
 export function CountyGuide() {
   const [activeState, setActiveState] = useState<StateTab>("NY");
   const { data: nyCounties, isLoading: nyLoading } = useCounties();
+  const [links, setLinks] = useState<{ id: number; state: string; county: string; label: string; url: string }[]>([]);
+
+  useEffect(() => {
+    fetch(`/api/links?state=${activeState}`)
+      .then(res => res.json())
+      .then(data => setLinks(data))
+      .catch(err => console.error(err));
+  }, [activeState]);
 
   const meta = STATE_META[activeState];
 
@@ -352,6 +360,28 @@ export function CountyGuide() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Filing Portals — live from database */}
+        {links.length > 0 && (
+          <div className="mt-10">
+            <h2 className="text-xl font-semibold mb-4">Filing Portals</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {links.map((item) => (
+                <div key={item.id} className="mb-2 p-4 border border-border rounded-xl bg-card flex items-center justify-between gap-4">
+                  <div className="font-semibold text-sm text-foreground">{item.county}</div>
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-1 text-sm text-primary hover:underline shrink-0"
+                  >
+                    Filing Portal <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
