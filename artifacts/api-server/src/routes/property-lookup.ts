@@ -14,6 +14,8 @@ interface LookupResult {
   livingArea?: number;
   lotSize?: string;
   estimatedMarketValue?: number;
+  currentAssessment?: number;
+  landAssessment?: number;
   source: string;
   confidence: "high" | "partial" | "geocode-only";
   fieldsFound: string[];
@@ -217,8 +219,12 @@ async function lookupNycPluto(address: string, lat: number, lon: number): Promis
   if (result.propertyClass) fieldsFound.push("propertyClass");
 
   if (match.assesstot && parseFloat(match.assesstot) > 0) {
-    result.estimatedMarketValue = Math.round(parseFloat(match.assesstot));
-    fieldsFound.push("estimatedMarketValue");
+    result.currentAssessment = Math.round(parseFloat(match.assesstot));
+    fieldsFound.push("currentAssessment");
+  }
+  if (match.assessland && parseFloat(match.assessland) > 0) {
+    result.landAssessment = Math.round(parseFloat(match.assessland));
+    fieldsFound.push("landAssessment");
   }
 
   // NYC school district label
@@ -365,6 +371,20 @@ async function lookupNYSOrps(
   if (fmv > 0) {
     result.estimatedMarketValue = Math.round(fmv);
     fieldsFound.push("estimatedMarketValue");
+  }
+
+  // Total assessed value (what your taxes are based on)
+  const totalAss = parseFloat(best.assessment_total || "0");
+  if (totalAss > 0) {
+    result.currentAssessment = Math.round(totalAss);
+    fieldsFound.push("currentAssessment");
+  }
+
+  // Land-only assessed value
+  const landAss = parseFloat(best.assessment_land || "0");
+  if (landAss > 0) {
+    result.landAssessment = Math.round(landAss);
+    fieldsFound.push("landAssessment");
   }
 
   // Lot size from frontage × depth

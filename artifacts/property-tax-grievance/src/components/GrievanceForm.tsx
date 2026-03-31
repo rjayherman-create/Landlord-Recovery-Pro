@@ -285,6 +285,7 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
       if (result.livingArea)          { merged.livingArea          = result.livingArea;          filled.add("livingArea"); }
       if (result.lotSize)             { merged.lotSize             = result.lotSize;             filled.add("lotSize"); }
       if (result.estimatedMarketValue){ merged.estimatedMarketValue= result.estimatedMarketValue;filled.add("estimatedMarketValue"); }
+      if (result.currentAssessment)   { merged.currentAssessment  = result.currentAssessment;   filled.add("currentAssessment"); }
 
       // form.reset with merged values atomically updates ALL Controller-managed fields
       form.reset(merged, { keepErrors: false, keepIsSubmitted: false });
@@ -996,8 +997,9 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
           <div className="space-y-1.5">
             <Label htmlFor="currentAssessment">
               {isTX ? "Current Appraised Value ($) *" : "Current Assessment ($) *"}
+              {isAutoFilled("currentAssessment") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
-            <Input id="currentAssessment" type="number" placeholder={isTX ? "425000" : "12500"} {...form.register("currentAssessment")} />
+            <Input id="currentAssessment" type="number" placeholder={isTX ? "425000" : "12500"} className={autoFillClass("currentAssessment")} {...form.register("currentAssessment")} />
             <p className="text-xs text-muted-foreground">
               {isTX
                 ? "From your Notice of Appraised Value (the CAD's number)"

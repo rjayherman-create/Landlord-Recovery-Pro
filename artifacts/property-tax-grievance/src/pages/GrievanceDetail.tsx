@@ -671,11 +671,31 @@ export function GrievanceDetail() {
               {grievance.schoolDistrict && <div><dt className="text-muted-foreground text-xs mb-0.5">School District</dt><dd className="font-medium">{grievance.schoolDistrict}</dd></div>}
               {grievance.parcelId && <div><dt className="text-muted-foreground text-xs mb-0.5">{parcelLabel}</dt><dd className="font-mono text-xs bg-secondary/50 px-2 py-1 rounded">{grievance.parcelId}</dd></div>}
               {grievance.propertyClass && <div><dt className="text-muted-foreground text-xs mb-0.5">Property Class</dt><dd className="font-medium">{grievance.propertyClass}</dd></div>}
-              <div className="flex gap-4">
-                {grievance.yearBuilt && <div><dt className="text-muted-foreground text-xs mb-0.5">Year Built</dt><dd className="font-medium">{grievance.yearBuilt}</dd></div>}
-                {grievance.livingArea && <div><dt className="text-muted-foreground text-xs mb-0.5">Living Area</dt><dd className="font-medium">{Number(grievance.livingArea).toLocaleString()} sq ft</dd></div>}
+
+              {/* Physical Characteristics — always visible */}
+              <div className="border-t border-border/50 pt-2.5 mt-2.5">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Physical Characteristics</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  <div>
+                    <dt className="text-muted-foreground text-xs mb-0.5">Year Built</dt>
+                    <dd className="font-medium">{grievance.yearBuilt ?? <span className="text-muted-foreground italic text-xs">Not recorded</span>}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground text-xs mb-0.5">Living Area</dt>
+                    <dd className="font-medium">{grievance.livingArea ? `${Number(grievance.livingArea).toLocaleString()} sq ft` : <span className="text-muted-foreground italic text-xs">Not recorded</span>}</dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-muted-foreground text-xs mb-0.5">Lot Size</dt>
+                    <dd className="font-medium">{grievance.lotSize ?? <span className="text-muted-foreground italic text-xs">Not recorded</span>}</dd>
+                  </div>
+                </div>
+                {(!grievance.yearBuilt || !grievance.livingArea || !grievance.lotSize) && (
+                  <p className="text-xs text-amber-600 mt-2 flex items-center gap-1.5">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    Edit your case to add missing characteristics — they strengthen your appeal.
+                  </p>
+                )}
               </div>
-              {grievance.lotSize && <div><dt className="text-muted-foreground text-xs mb-0.5">Lot Size</dt><dd className="font-medium">{grievance.lotSize}</dd></div>}
             </dl>
           </div>
 
