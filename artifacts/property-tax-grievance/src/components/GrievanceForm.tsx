@@ -89,11 +89,12 @@ interface GrievanceFormProps {
   initialData?: Grievance;
   onSuccess?: () => void;
   initialState?: string;
+  onStateChange?: (state: string) => void;
 }
 
 /* ─── Component ─────────────────────────────────────── */
 
-export function GrievanceForm({ initialData, onSuccess, initialState = "NY" }: GrievanceFormProps) {
+export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onStateChange }: GrievanceFormProps) {
   const { toast } = useToast();
   const createMutation = useCreateGrievance();
   const updateMutation = useUpdateGrievance();
@@ -453,6 +454,7 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY" }: G
                     const defaultBasis = value === "TX" ? "market_value" : "overvaluation";
                     form.setValue("county", defaultCounty);
                     form.setValue("basisOfComplaint", defaultBasis);
+                    onStateChange?.(value);
                   }}
                   className={`flex items-start gap-3 p-4 rounded-xl border-2 text-left transition-all duration-200 ${
                     active

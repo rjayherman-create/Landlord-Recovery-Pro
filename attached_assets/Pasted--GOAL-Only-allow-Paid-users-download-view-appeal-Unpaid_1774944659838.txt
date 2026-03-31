@@ -1,0 +1,111 @@
+🎯 GOAL
+
+Only allow:
+
+Paid users → download / view appeal
+Unpaid users → blocked
+🧠 HOW THIS WORKS (SIMPLE)
+1. User pays in Stripe
+2. Stripe notifies your backend (webhook)
+3. You mark user/case as "paid" in DB
+4. Frontend checks → unlocks download
+🚀 STEP 1 — ADD “paid” TO YOUR DATABASE
+
+In Railway (SQL box):
+
+ALTER TABLE cases ADD COLUMN paid BOOLEAN DEFAULT FALSE;
+
+👉 If you don’t have cases table yet, tell me — we’ll adjust
+
+🚀 STEP 2 — STRIPE WEBHOOK (CRITICAL)
+In your backend:
+
+Create:
+
+src/routes/webhook.ts
+Paste THIS:
+import { Router } from "express";
+import Stripe from "stripe";
+import bodyParser from "body-parser";
+import { db } from "../db";
+
+const router = Router();
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2023-10-16",
+});
+
+router.post(
+  "/webhook",
+  bodyParser.raw({ type: "application/json" }),
+  async (req, res) => {
+    const sig = req.headers["stripe-signature"] as string;
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+    } catch (err) {
+      console.error("Webhook signature failed");
+      return res.sendStatus(400);
+    }
+
+    // 🎯 PAYMENT SUCCESS
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as any;
+
+      const caseId = session.metadata.caseId;
+
+      // Mark case as paid
+      await db.execute(
+        `UPDATE cases SET paid = true WHERE id = ${caseId}`
+      );
+    }
+
+    res.sendStatus(200);
+  }
+);
+
+export default router;
+🔌 STEP 3 — REGISTER WEBHOOK
+
+In app.ts:
+
+import webhookRoute from "./routes/webhook";
+app.use("/api", webhookRoute);
+🚀 STEP 4 — PASS CASE ID TO STRIPE
+
+Update your checkout endpoint:
+
+metadata: {
+  caseId: req.body.caseId,
+},
+🎯 NOW STRIPE KNOWS WHICH CASE TO UNLOCK
+🚀 STEP 5 — FRONTEND LOCK
+
+Before showing download:
+
+if (!case.paid) {
+  return <button onClick={handleCheckout}>Pay to Unlock</button>;
+}
+🔥 STEP 6 — SECURE DOWNLOAD ENDPOINT (VERY IMPORTANT)
+
+In backend:
+
+router.get("/download/:id", async (req, res) => {
+  const caseId = req.params.id;
+
+  const result = await db.execute(
+    `SELECT paid FROM cases WHERE id = ${caseId}`
+  );
+
+  if (!result.rows[0].paid) {
+    return res.status(403).send("Payment required");
+  }
+
+  // send file / PDF
+});

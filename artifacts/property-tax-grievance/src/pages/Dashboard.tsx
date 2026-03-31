@@ -25,6 +25,8 @@ export function Dashboard() {
     try { return !!localStorage.getItem("pendingCase"); } catch { return false; }
   });
   const { preferredState, setPreferredState, meta } = usePreferredState();
+  const [dialogState, setDialogState] = useState(preferredState);
+  const dialogMeta = STATE_META[dialogState as keyof typeof STATE_META] ?? meta;
   const { isAuthenticated, login } = useAuth();
 
   const totalCases = grievances?.length || 0;
@@ -67,7 +69,7 @@ export function Dashboard() {
               Filing a {meta.verb} is your legal right and cannot increase your taxes. Build your case, track comparables, and submit with confidence.
             </p>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setDialogState(preferredState); }}>
               <DialogTrigger asChild>
                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold px-8 shadow-lg shadow-black/20 hover:-translate-y-0.5 transition-transform">
                   <Plus className="w-5 h-5 mr-2" />
@@ -76,13 +78,13 @@ export function Dashboard() {
               </DialogTrigger>
               <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="font-serif text-2xl">New {meta.name} Tax Appeal</DialogTitle>
+                  <DialogTitle className="font-serif text-2xl">New {dialogMeta.name} Tax Appeal</DialogTitle>
                   <DialogDescription>
-                    Select your state, then enter your property details to build your {meta.verb} case using {meta.form}.
+                    Select your state, then enter your property details to build your {dialogMeta.verb} case using {dialogMeta.form}.
                   </DialogDescription>
                 </DialogHeader>
                 {isAuthenticated ? (
-                  <GrievanceForm onSuccess={() => setIsDialogOpen(false)} initialState={preferredState} />
+                  <GrievanceForm onSuccess={() => setIsDialogOpen(false)} initialState={preferredState} onStateChange={setDialogState} />
                 ) : (
                   <div className="py-8 text-center space-y-4">
                     <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
