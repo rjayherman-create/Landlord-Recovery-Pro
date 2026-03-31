@@ -349,11 +349,16 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
   const [lookupResult, setLookupResult] = useState<LookupResult | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
+  // Fields read directly from an official document upload (trusted)
+  const [ocrFilledFields, setOcrFilledFields] = useState<Set<string>>(new Set());
 
   const [isOcring, setIsOcring] = useState(false);
   const [ocrPreview, setOcrPreview] = useState<string | null>(null);
   const [ocrError, setOcrError] = useState<string | null>(null);
   const [ocrFieldCount, setOcrFieldCount] = useState<number>(0);
+
+  // Physical characteristic fields are unreliable from address-lookup APIs
+  const LOOKUP_UNVERIFIED_FIELDS = new Set(["yearBuilt", "livingArea", "lotSize"]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<GrievanceFormValues>({
@@ -606,6 +611,7 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
 
       form.reset(merged, { keepErrors: false, keepIsSubmitted: false });
       setAutoFilledFields(filled);
+      setOcrFilledFields(filled);         // these came from the official document
       setOcrFieldCount(filled.size);
 
       // Also fill the address bar if we got an address
@@ -621,8 +627,20 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
   };
 
   const isAutoFilled = (field: string) => autoFilledFields.has(field);
-  const autoFillClass = (field: string) =>
-    isAutoFilled(field) ? "border-emerald-400 bg-emerald-50/50 ring-1 ring-emerald-300" : "";
+  // "ocr" = official document, "estimate" = lookup-sourced physical characteristic, "filled" = lookup-sourced reliable field
+  const fieldSource = (field: string): "ocr" | "estimate" | "filled" | "manual" => {
+    if (ocrFilledFields.has(field)) return "ocr";
+    if (autoFilledFields.has(field) && LOOKUP_UNVERIFIED_FIELDS.has(field)) return "estimate";
+    if (autoFilledFields.has(field)) return "filled";
+    return "manual";
+  };
+  const autoFillClass = (field: string) => {
+    const src = fieldSource(field);
+    if (src === "ocr")      return "border-emerald-400 bg-emerald-50/50 ring-1 ring-emerald-300";
+    if (src === "estimate") return "border-amber-400 bg-amber-50/50 ring-1 ring-amber-300";
+    if (src === "filled")   return "border-emerald-400 bg-emerald-50/50 ring-1 ring-emerald-300";
+    return "";
+  };
 
   /* ── Savings estimate ── */
   const estimatedSavings = (() => {
@@ -1127,7 +1145,9 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
           <div className="space-y-1.5">
             <Label htmlFor="yearBuilt">
               Year Built
-              {isAutoFilled("yearBuilt") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+              {fieldSource("yearBuilt") === "ocr"      && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ from document</span>}
+              {fieldSource("yearBuilt") === "estimate" && <span className="ml-2 text-xs text-amber-600 font-medium">⚠ estimate — verify</span>}
+              {fieldSource("yearBuilt") === "filled"   && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
             <Controller
               control={form.control}
@@ -1149,7 +1169,9 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
           <div className="space-y-1.5">
             <Label htmlFor="livingArea">
               Living Area (sq ft)
-              {isAutoFilled("livingArea") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+              {fieldSource("livingArea") === "ocr"      && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ from document</span>}
+              {fieldSource("livingArea") === "estimate" && <span className="ml-2 text-xs text-amber-600 font-medium">⚠ estimate — verify</span>}
+              {fieldSource("livingArea") === "filled"   && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
             <Controller
               control={form.control}
@@ -1171,7 +1193,9 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
           <div className="space-y-1.5">
             <Label htmlFor="lotSize">
               Lot Size
-              {isAutoFilled("lotSize") && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
+              {fieldSource("lotSize") === "ocr"      && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ from document</span>}
+              {fieldSource("lotSize") === "estimate" && <span className="ml-2 text-xs text-amber-600 font-medium">⚠ estimate — verify</span>}
+              {fieldSource("lotSize") === "filled"   && <span className="ml-2 text-xs text-emerald-600 font-medium">✓ auto-filled</span>}
             </Label>
             <Controller
               control={form.control}
@@ -1187,6 +1211,18 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
               )}
             />
           </div>
+
+          {/* Warning note when any physical characteristic came from address lookup */}
+          {(fieldSource("yearBuilt") === "estimate" || fieldSource("livingArea") === "estimate" || fieldSource("lotSize") === "estimate") && (
+            <div className="col-span-full flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-1">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+              <span>
+                <strong>Fields marked ⚠ are estimates from public records</strong> and are often inaccurate.
+                Check your official tax notice or county assessment record and correct any that are wrong before filing.
+                The most accurate way to fill these is to <button type="button" onClick={() => fileInputRef.current?.click()} className="underline font-semibold hover:text-amber-900">scan your tax document</button>.
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
