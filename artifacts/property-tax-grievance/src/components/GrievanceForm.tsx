@@ -17,6 +17,7 @@ import type { LookupResult } from "@/components/PropertyRecordCard";
 import { TX_COUNTY_NAMES, TX_BASIS_OPTIONS, TX_PROPERTY_CLASS_OPTIONS } from "@/data/texas-filing-instructions";
 import { NJ_COUNTY_NAMES, NJ_BASIS_OPTIONS, NJ_PROPERTY_CLASS_OPTIONS } from "@/data/nj-filing-instructions";
 import { FL_COUNTY_NAMES, FL_BASIS_OPTIONS, FL_PROPERTY_CLASS_OPTIONS } from "@/data/florida-filing-instructions";
+import { useAuth } from "@workspace/replit-auth-web";
 
 /* ─── Schema ────────────────────────────────────────── */
 
@@ -260,6 +261,7 @@ interface GrievanceFormProps {
 
 export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onStateChange, prefill }: GrievanceFormProps) {
   const { toast } = useToast();
+  const { user } = useAuth();
   const createMutation = useCreateGrievance();
   const updateMutation = useUpdateGrievance();
 
@@ -277,6 +279,18 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
       .then(data => { if (data?.plan) setUserPlan(data.plan); })
       .catch(() => {});
   }, []);
+
+  // Auto-fill owner name / email from logged-in user (new cases only)
+  useEffect(() => {
+    if (isEditing || !user) return;
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ");
+    if (fullName && !form.getValues("ownerName")) {
+      form.setValue("ownerName", fullName, { shouldValidate: true });
+    }
+    if (user.email && !form.getValues("ownerEmail")) {
+      form.setValue("ownerEmail", user.email, { shouldValidate: false });
+    }
+  }, [user, isEditing, form]);
 
   // Restore any form data saved before Stripe redirect
   useEffect(() => {
