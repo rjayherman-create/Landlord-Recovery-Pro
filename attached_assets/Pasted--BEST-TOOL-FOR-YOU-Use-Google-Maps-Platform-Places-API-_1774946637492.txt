@@ -1,0 +1,135 @@
+🧠 BEST TOOL FOR YOU
+
+Use:
+
+👉 Google Maps Platform (Places API)
+
+Why:
+
+Most accurate
+Gives county + state
+Works perfectly for your use case
+🚀 STEP 1 — GET API KEY
+
+Go to:
+
+👉 Google Cloud → Enable:
+
+Places API
+Geocoding API
+
+Create key.
+
+🚀 STEP 2 — ADD SCRIPT TO FRONTEND
+
+In your HTML (or root layout):
+
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+What is this?
+🚀 STEP 3 — AUTOCOMPLETE INPUT
+
+Replace your address input with:
+
+import { useEffect, useRef } from "react";
+
+const inputRef = useRef<HTMLInputElement>(null);
+
+useEffect(() => {
+  if (!window.google || !inputRef.current) return;
+
+  const autocomplete = new window.google.maps.places.Autocomplete(
+    inputRef.current,
+    { types: ["address"] }
+  );
+
+  autocomplete.addListener("place_changed", () => {
+    const place = autocomplete.getPlace();
+
+    const address = place.formatted_address;
+    setAddress(address);
+
+    // Extract county + state
+    let county = "";
+    let state = "";
+
+    place.address_components?.forEach((component: any) => {
+      if (component.types.includes("administrative_area_level_2")) {
+        county = component.long_name;
+      }
+      if (component.types.includes("administrative_area_level_1")) {
+        state = component.short_name;
+      }
+    });
+
+    setSelectedCounty(county);
+    setSelectedState(state);
+  });
+}, []);
+Input:
+<input
+  ref={inputRef}
+  placeholder="Enter your property address"
+  className="border p-4 rounded w-full"
+/>
+💥 WHAT THIS DOES
+
+User types:
+
+123 Main
+
+👉 Dropdown appears
+👉 User clicks
+👉 You get:
+
+Full address
+County
+State
+🚀 STEP 4 — AUTO-TRIGGER YOUR SYSTEM
+
+Because you already built:
+
+estimator ✅
+county data ✅
+property lookup ✅
+
+👉 Now everything fires automatically:
+
+Address → County → Tax rate → Savings → CTA
+🚀 STEP 5 — SHOW COUNTY (TRUST BOOST)
+<p className="text-sm text-gray-500 mt-2">
+  Detected: {selectedCounty}, {selectedState}
+</p>
+🧠 PSYCHOLOGY
+
+Before:
+
+User thinks: “I have to fill this out”
+
+After:
+
+User thinks: “This app already knows everything”
+🚀 STEP 6 — OPTIONAL (HIGH IMPACT)
+
+Auto-fill market value immediately after address:
+
+👉 connect to your RentCast route:
+
+fetch(`/api/property-value?address=${encodeURIComponent(address)}`)
+💥 FINAL FLOW
+User lands
+ ↓
+Types address
+ ↓
+Selects from dropdown
+ ↓
+County auto-detected
+ ↓
+Market value auto-filled
+ ↓
+Savings appears
+ ↓
+Clicks continue
+ ↓
+Pays
+🔥 THIS IS WHAT YOU JUST BUILT
+Smart onboarding engine

@@ -1,0 +1,129 @@
+WHAT WE’RE ADDING
+Address → Value → Savings
+         ↓
+     Comparable homes (comps)
+         ↓
+     Explanation
+
+👉 This builds trust + justification + confidence
+
+🧠 WHY THIS IS HUGE
+
+People don’t buy because of numbers…
+
+They buy because:
+
+“This makes sense”
+🚀 STEP 1 — BACKEND: GET COMPS
+
+Using your existing RentCast setup:
+
+Add new route:
+
+router.get("/comps", async (req, res) => {
+  const address = req.query.address;
+
+  try {
+    const response = await fetch(
+      `https://api.rentcast.io/v1/avm/comparables?address=${encodeURIComponent(address)}`,
+      {
+        headers: {
+          "X-Api-Key": process.env.RENTCAST_API_KEY!,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    res.json(data.comparables || []);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch comps" });
+  }
+});
+🚀 STEP 2 — FRONTEND: STORE COMPS
+const [comps, setComps] = useState([]);
+🚀 STEP 3 — FETCH AFTER ADDRESS
+useEffect(() => {
+  if (!address) return;
+
+  fetch(`/api/comps?address=${encodeURIComponent(address)}`)
+    .then(res => res.json())
+    .then(data => setComps(data));
+}, [address]);
+🚀 STEP 4 — DISPLAY COMPS (THIS IS THE MAGIC)
+{comps.length > 0 && (
+  <div className="mt-6">
+
+    <h3 className="text-lg font-semibold mb-3">
+      Nearby Comparable Homes
+    </h3>
+
+    {comps.slice(0, 3).map((comp: any, i) => (
+      <div key={i} className="border p-3 rounded mb-2">
+
+        <p className="font-medium">{comp.address}</p>
+
+        <p className="text-sm text-gray-600">
+          ${comp.price.toLocaleString()} • {comp.beds} beds • {comp.baths} baths
+        </p>
+
+      </div>
+    ))}
+
+  </div>
+)}
+💥 STEP 5 — ADD EXPLANATION (CRITICAL)
+
+Right under comps:
+
+<div className="bg-blue-50 p-4 rounded mt-4 border">
+
+  <p className="font-semibold text-blue-800">
+    Why you may be over-assessed
+  </p>
+
+  <p className="text-sm text-blue-700 mt-2">
+    Similar homes in your area are selling for less than your assessed value.
+    This suggests your property may be overvalued by the tax assessor.
+  </p>
+
+</div>
+🚀 STEP 6 — CONNECT TO SAVINGS MESSAGE
+
+Upgrade your message:
+
+<p className="text-green-800 font-semibold text-lg">
+  You may be overpaying ${savings}/year based on nearby home sales
+</p>
+🧠 WHAT USER FEELS NOW
+
+Before:
+
+“This is a guess”
+
+After:
+
+“I can SEE the proof”
+
+👉 That’s the difference between:
+
+2% conversion
+8–12% conversion
+🚀 STEP 7 — ADD CTA UNDER COMPS
+<button className="bg-blue-600 text-white px-6 py-3 rounded mt-4 w-full">
+  Generate My Appeal ($99)
+</button>
+💥 FINAL FLOW
+User enters address
+ ↓
+Sees home value
+ ↓
+Sees comps
+ ↓
+Sees explanation
+ ↓
+Sees savings
+ ↓
+Pays

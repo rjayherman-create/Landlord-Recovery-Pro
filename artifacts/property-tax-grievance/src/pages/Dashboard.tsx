@@ -5,7 +5,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { GrievanceForm } from "@/components/GrievanceForm";
-import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSign, AlertTriangle, Award, ChevronRight, Calculator, Sparkles, CheckCircle } from "lucide-react";
+import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSign, AlertTriangle, Award, ChevronRight, Calculator, Sparkles, CheckCircle, MapPin } from "lucide-react";
+import { useGooglePlaces } from "@/hooks/use-google-places";
 import { format, parseISO, isValid, isFuture } from "date-fns";
 import { getComputedDeadline } from "@/data/county-filing-instructions";
 import { usePreferredState, STATE_META, type AppState } from "@/hooks/use-preferred-state";
@@ -75,13 +76,30 @@ export function Dashboard() {
       .catch(() => setRealTaxRate(null));
   }, [estCounty, preferredState]);
 
-  // Auto-detect county from address text
+  // Auto-detect county from address text (fallback when no Places API)
   useEffect(() => {
     if (!estAddress || countyList.length === 0) return;
     const lower = estAddress.toLowerCase();
     const match = countyList.find(c => lower.includes(c.county.toLowerCase().replace(" county", "")) || lower.includes(c.county.toLowerCase()));
     if (match && match.county !== estCounty) setEstCounty(match.county);
   }, [estAddress, countyList]);
+
+  // Google Places autocomplete — fires when user picks a suggestion
+  const { inputRef: addressInputRef, isEnabled: placesEnabled } = useGooglePlaces(({ address, county, state }) => {
+    setEstAddress(address);
+    if (state && Object.keys(STATE_META).includes(state)) setPreferredState(state as AppState);
+    if (county) {
+      const norm = county.replace(/ county$/i, "").trim();
+      const match = countyList.find(c =>
+        c.county.toLowerCase().includes(norm.toLowerCase()) ||
+        norm.toLowerCase().includes(c.county.toLowerCase().replace(" county", "").toLowerCase())
+      );
+      if (match) setEstCounty(match.county);
+    }
+  });
+
+  // Progressive reveal — show value inputs once address is entered
+  const showValueFields = estAddress.length > 5 || estCounty.length > 0 || estMarketValue.length > 0;
 
   const activeRate = realTaxRate ?? STATE_TAX_RATES[preferredState];
 
@@ -246,80 +264,94 @@ export function Dashboard() {
               </div>
             </div>
 
-            {/* Address input — auto-detects county */}
-            <div className="mb-3">
-              <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
-                Property Address <span className="text-amber-500 font-normal normal-case">(auto-detects your county)</span>
+            {/* STEP 1 — Address (always visible, anchors the whole flow) */}
+            <div className="mb-4">
+              <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 flex items-center gap-1.5">
+                <MapPin className="w-3 h-3" />
+                Property Address
+                {placesEnabled && <span className="text-amber-500 font-normal normal-case">— type to autocomplete</span>}
+                {!placesEnabled && <span className="text-amber-500 font-normal normal-case">— include county name for best results</span>}
               </label>
               <input
+                ref={addressInputRef}
                 type="text"
                 placeholder={`e.g. 123 Main St, Nassau County, ${preferredState}`}
                 value={estAddress}
                 onChange={e => setEstAddress(e.target.value)}
-                className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium placeholder:text-muted-foreground/50 transition"
+                className="w-full px-4 py-3 border-2 border-amber-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium placeholder:text-muted-foreground/40 transition shadow-sm"
               />
-              {estCounty && estAddress && (
-                <p className="text-xs text-emerald-700 font-medium mt-1 flex items-center gap-1">
-                  <CheckCircle className="w-3 h-3" /> County detected: <strong>{estCounty}</strong> — {(activeRate * 100).toFixed(2)}% tax rate loaded
+              {estCounty && estAddress ? (
+                <p className="text-xs text-emerald-700 font-medium mt-1.5 flex items-center gap-1.5">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <strong>{estCounty}</strong> detected — {(activeRate * 100).toFixed(2)}% effective tax rate loaded
                 </p>
-              )}
+              ) : !showValueFields ? (
+                <p className="text-xs text-amber-600/70 mt-1.5">
+                  Enter your address above to see your potential savings ↓
+                </p>
+              ) : null}
             </div>
 
-            {/* County selector */}
-            {countyList.length > 0 && (
-              <div className="mb-3">
-                <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
-                  Your County <span className="text-amber-500 font-normal normal-case">(optional — loads real tax rate)</span>
-                </label>
-                <select
-                  value={estCounty}
-                  onChange={e => setEstCounty(e.target.value)}
-                  className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium text-foreground transition appearance-none"
-                >
-                  <option value="">Select county…</option>
-                  {countyList.map(c => (
-                    <option key={c.county} value={c.county}>
-                      {c.county} — {(c.tax_rate * 100).toFixed(2)}% effective rate
-                    </option>
-                  ))}
-                </select>
+            {/* STEP 2 — County + Values (revealed after address entry) */}
+            {showValueFields && (
+              <div className="space-y-3 mb-4">
+                {/* County fallback — only shown when not auto-detected */}
+                {!estCounty && countyList.length > 0 && (
+                  <div>
+                    <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
+                      Your County <span className="text-amber-500 font-normal normal-case">(select to load real tax rate)</span>
+                    </label>
+                    <select
+                      value={estCounty}
+                      onChange={e => setEstCounty(e.target.value)}
+                      className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium text-foreground transition appearance-none"
+                    >
+                      <option value="">Select county…</option>
+                      {countyList.map(c => (
+                        <option key={c.county} value={c.county}>
+                          {c.county} — {(c.tax_rate * 100).toFixed(2)}% effective rate
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
+                      Your Estimated Market Value
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 font-semibold text-sm">$</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="e.g. 550,000"
+                        value={estMarketValue}
+                        onChange={e => setEstMarketValue(e.target.value)}
+                        className="w-full pl-7 pr-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium placeholder:text-muted-foreground/50 transition"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
+                      Current Assessed Value
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 font-semibold text-sm">$</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="e.g. 700,000"
+                        value={estAssessedValue}
+                        onChange={e => setEstAssessedValue(e.target.value)}
+                        className="w-full pl-7 pr-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium placeholder:text-muted-foreground/50 transition"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
-                  Your Estimated Market Value
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 font-semibold text-sm">$</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="e.g. 550,000"
-                    value={estMarketValue}
-                    onChange={e => setEstMarketValue(e.target.value)}
-                    className="w-full pl-7 pr-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium placeholder:text-muted-foreground/50 transition"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
-                  Current Assessed Value
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 font-semibold text-sm">$</span>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="e.g. 700,000"
-                    value={estAssessedValue}
-                    onChange={e => setEstAssessedValue(e.target.value)}
-                    className="w-full pl-7 pr-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium placeholder:text-muted-foreground/50 transition"
-                  />
-                </div>
-              </div>
-            </div>
 
             {/* Result */}
             {estimatedSavings > 0 ? (
