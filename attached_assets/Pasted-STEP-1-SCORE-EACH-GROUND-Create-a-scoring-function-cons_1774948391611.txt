@@ -1,0 +1,125 @@
+STEP 1 — SCORE EACH GROUND
+
+Create a scoring function:
+
+const scoreGrounds = (data: any, comps: any[]) => {
+  const grounds = [];
+
+  const market = Number(data.marketValue);
+  const assessed = Number(data.assessedValue);
+  const diff = assessed - market;
+  const percentDiff = diff / market;
+
+  // 🔥 OVERVALUATION
+  if (percentDiff > 0.1) {
+    grounds.push({
+      name: "Overvaluation",
+      score: percentDiff * 100,
+    });
+  }
+
+  // 🔥 UNEQUAL ASSESSMENT
+  if (comps.length >= 2) {
+    const avgComp =
+      comps.reduce((sum, c) => sum + c.price, 0) / comps.length;
+
+    if (assessed > avgComp) {
+      grounds.push({
+        name: "Unequal Assessment",
+        score: (assessed - avgComp) / avgComp * 100,
+      });
+    }
+  }
+
+  return grounds.sort((a, b) => b.score - a.score);
+};
+🚀 STEP 2 — PICK ONLY THE BEST
+const rankedGrounds = scoreGrounds(formData, comps);
+
+// 🔥 Only take top 1–2
+const selectedGrounds = rankedGrounds.slice(0, 2);
+🚀 STEP 3 — UI (AUTO-SELECTED)
+
+Replace your manual selection with:
+
+<div className="bg-blue-50 p-4 rounded border mt-4">
+
+  <p className="font-semibold text-blue-800">
+    Recommended Grounds for Your Appeal
+  </p>
+
+  <div className="mt-3 space-y-2">
+
+    {selectedGrounds.map((g) => (
+      <div key={g.name} className="flex items-center gap-2">
+
+        <input type="checkbox" checked readOnly />
+
+        <span className="font-medium">{g.name}</span>
+
+      </div>
+    ))}
+
+  </div>
+
+</div>
+💥 STEP 4 — HIDE WEAK OPTIONS
+
+Instead of showing everything…
+
+👉 Add “Advanced” toggle:
+
+const [showAll, setShowAll] = useState(false);
+Button:
+<button
+  onClick={() => setShowAll(!showAll)}
+  className="text-sm text-blue-600 mt-2"
+>
+  {showAll ? "Hide advanced options" : "Show all grounds"}
+</button>
+Show extras ONLY if clicked:
+{showAll && (
+  <div className="mt-2 text-sm text-gray-600">
+    {/* render weaker grounds here */}
+  </div>
+)}
+🧠 WHY THIS WORKS
+
+User now sees:
+
+“These are already chosen for me”
+
+instead of:
+
+“What should I pick?”
+🚀 STEP 5 — ADD STRENGTH INDICATOR (VERY POWERFUL)
+<span className="text-green-600 text-sm ml-2">
+  Strong match
+</span>
+Example:
+Overvaluation ✅ Strong match
+Unequal Assessment ✅ Strong match
+💥 STEP 6 — ADD CONFIDENCE LINE
+<p className="text-green-700 text-sm mt-2">
+  These grounds are supported by your property data and comparable homes
+</p>
+🚨 STEP 7 — LEGAL PROTECTION (IMPORTANT)
+<p className="text-xs text-gray-500 mt-2">
+  These selections are generated automatically based on your inputs and are not legal advice.
+</p>
+🎯 FINAL UX
+User enters address
+ ↓
+System analyzes data
+ ↓
+Grounds are pre-selected
+ ↓
+User does nothing
+ ↓
+Continues
+ ↓
+Pays
+🔥 WHAT YOU JUST BUILT
+Automated decision engine
+
+👉 This removes one of the biggest friction points.
