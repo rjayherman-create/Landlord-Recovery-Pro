@@ -1,16 +1,16 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useCreateGrievance, useUpdateGrievance } from "@/hooks/use-grievances";
 import { useToast } from "@/hooks/use-toast";
-import { Search, Loader2, CheckCircle2, AlertTriangle, Info, Sparkles, LocateFixed, Camera, X } from "lucide-react";
-import { useRef } from "react";
+import { Search, Loader2, CheckCircle2, AlertTriangle, Info, Sparkles, LocateFixed, Camera, X, Lock } from "lucide-react";
 import type { Grievance } from "@workspace/api-client-react";
 import { PropertyRecordCard } from "@/components/PropertyRecordCard";
 import type { LookupResult } from "@/components/PropertyRecordCard";
@@ -100,6 +100,19 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY" }: G
 
   const isEditing = !!initialData;
   const isPending = createMutation.isPending || updateMutation.isPending;
+
+  // Payment gate
+  const [userPlan, setUserPlan] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/stripe/me")
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data?.plan) setUserPlan(data.plan); })
+      .catch(() => {});
+  }, []);
+
+  const userHasPaid = !!userPlan;
 
   // Lookup state
   const [lookupAddress, setLookupAddress] = useState("");
@@ -322,8 +335,23 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY" }: G
   const autoFillClass = (field: string) =>
     isAutoFilled(field) ? "border-emerald-400 bg-emerald-50/50 ring-1 ring-emerald-300" : "";
 
+  /* ── Savings estimate ── */
+  const watchedAssessment = form.watch("currentAssessment");
+  const watchedRequested = form.watch("requestedAssessment");
+  const estimatedSavings = (() => {
+    const over = Number(watchedAssessment) - Number(watchedRequested);
+    if (!over || over <= 0) return null;
+    const low = Math.round(over * 0.015);
+    const high = Math.round(over * 0.025);
+    return { low, high };
+  })();
+
   /* ── Submit ── */
   const onSubmit = async (data: GrievanceFormValues) => {
+    if (!isEditing && !userHasPaid) {
+      setShowPaymentModal(true);
+      return;
+    }
     try {
       if (isEditing && initialData) {
         await updateMutation.mutateAsync({ id: initialData.id, data });
@@ -964,15 +992,76 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY" }: G
         </p>
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-border">
-        <Button
-          type="submit"
-          disabled={isPending}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 shadow-lg shadow-primary/20"
-        >
-          {isPending ? "Saving..." : isEditing ? "Save Changes" : "Create Case"}
-        </Button>
+      {/* ── Savings estimate + submit ── */}
+      <div className="pt-4 border-t border-border space-y-3">
+        {!isEditing && estimatedSavings && (
+          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+            <p className="text-green-700 font-semibold text-sm">
+              💰 Estimated savings: ${estimatedSavings.low.toLocaleString()}–${estimatedSavings.high.toLocaleString()}/year
+            </p>
+            <p className="text-green-600 text-xs mt-0.5">
+              Based on your over-assessment amount and typical local tax rates.
+            </p>
+          </div>
+        )}
+
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            disabled={isPending}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 shadow-lg shadow-primary/20 gap-2"
+          >
+            {isPending ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+            ) : isEditing ? (
+              "Save Changes"
+            ) : userHasPaid ? (
+              "Create Case"
+            ) : (
+              <><Lock className="w-4 h-4" /> Generate My Appeal ($99)</>
+            )}
+          </Button>
+        </div>
+
+        {!isEditing && !userHasPaid && (
+          <p className="text-sm text-muted-foreground text-right">
+            If you don't save money, you don't pay again next year.
+          </p>
+        )}
       </div>
+
+      {/* ── Payment Modal ── */}
+      <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Unlock Your Tax Appeal Case</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-muted-foreground">
+              We've prepared your filing. Complete payment to generate your pre-filled form, comparable sales report, and step-by-step county instructions.
+            </p>
+            {estimatedSavings && (
+              <p className="text-green-700 font-semibold">
+                💰 Your estimated savings: ${estimatedSavings.low.toLocaleString()}–${estimatedSavings.high.toLocaleString()}/year
+              </p>
+            )}
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p>✔ Pre-filled state form (RP-524, A-1, Notice of Protest, or DR-486)</p>
+              <p>✔ Printable comparable sales report</p>
+              <p>✔ County-specific filing instructions &amp; portal link</p>
+              <p>✔ Step-by-step guidance to avoid common mistakes</p>
+            </div>
+            <a href="/pricing" className="block">
+              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base py-6">
+                Pay $99 — Generate My Appeal
+              </Button>
+            </a>
+            <p className="text-xs text-center text-muted-foreground">
+              One-time payment · No subscription · If you don't save, you don't pay again next year.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }
