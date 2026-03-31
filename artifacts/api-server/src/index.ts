@@ -1,13 +1,18 @@
-// force rebuild
+console.log("🚀 SERVER FILE STARTED");
+
 process.on("uncaughtException", (err) => {
   console.error("❌ UNCAUGHT EXCEPTION:", err);
+  process.exit(1);
 });
 
 process.on("unhandledRejection", (err) => {
   console.error("❌ UNHANDLED REJECTION:", err);
+  process.exit(1);
 });
 
-console.log("🚀 SERVER FILE STARTED");
+setTimeout(() => {
+  console.log("⏳ Server survived 3 seconds");
+}, 3000);
 
 import app from "./app";
 import { logger } from "./lib/logger";
