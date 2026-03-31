@@ -12,6 +12,9 @@ import { FilingCalendar } from "@/pages/FilingCalendar";
 import { Pricing } from "@/pages/Pricing";
 import { CheckoutSuccess } from "@/pages/CheckoutSuccess";
 import { CheckoutCancel } from "@/pages/CheckoutCancel";
+import { Terms } from "@/pages/Terms";
+import { Disclaimer } from "@/pages/Disclaimer";
+import { Privacy } from "@/pages/Privacy";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +36,9 @@ function Router() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/checkout/success" component={CheckoutSuccess} />
       <Route path="/checkout/cancel" component={CheckoutCancel} />
+      <Route path="/terms" component={Terms} />
+      <Route path="/disclaimer" component={Disclaimer} />
+      <Route path="/privacy" component={Privacy} />
       <Route component={NotFound} />
     </Switch>
   );

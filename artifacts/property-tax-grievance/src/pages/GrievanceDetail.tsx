@@ -1253,6 +1253,19 @@ export function GrievanceDetail() {
                       </Button>
                       <p className="text-xs text-emerald-700 font-semibold">Keep 100% of your savings — no commissions, ever</p>
                       <p className="text-xs text-muted-foreground">One-time · No subscription · Secured by Stripe</p>
+
+                      {/* ── Disclaimers ── */}
+                      <div className="text-xs text-gray-500 leading-relaxed text-left border-t border-gray-100 pt-3 space-y-2">
+                        <p>This service provides assistance with preparing property tax appeal documents based on user-provided information and publicly available data.</p>
+                        <p>We are not attorneys and do not provide legal advice or representation. No guarantee is made regarding the outcome of any appeal.</p>
+                        <p>Results may vary depending on local assessment practices, market conditions, and the information submitted. Users are responsible for reviewing and submitting their appeal.</p>
+                      </div>
+                      <p className="text-xs text-gray-400 text-left">
+                        By proceeding, you agree to our{" "}
+                        <a href="/terms" className="underline hover:text-gray-600">Terms of Service</a>
+                        {" "}and{" "}
+                        <a href="/disclaimer" className="underline hover:text-gray-600">Disclaimer</a>.
+                      </p>
                     </div>
                   </div>
                 </div>

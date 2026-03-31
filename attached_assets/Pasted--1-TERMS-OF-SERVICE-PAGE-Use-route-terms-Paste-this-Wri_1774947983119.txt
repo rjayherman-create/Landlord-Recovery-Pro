@@ -1,0 +1,203 @@
+📄 1. TERMS OF SERVICE PAGE
+
+Use route:
+
+/terms
+Paste this:
+Writing
+
+Terms of Service
+
+Last Updated: [Insert Date]
+
+Welcome to TaxAppeal DIY. By accessing or using this service, you agree to the following terms.
+
+1. Nature of Service
+
+TaxAppeal DIY provides a software platform that assists users in preparing property tax appeal documents using user-provided information and publicly available data.
+
+We are not a law firm and do not provide legal advice, legal representation, or professional services.
+
+2. No Attorney-Client Relationship
+
+Use of this service does not create an attorney-client relationship. Nothing on this platform should be interpreted as legal advice.
+
+3. User Responsibility
+
+You are responsible for:
+
+Providing accurate and complete information
+Reviewing all generated documents before submission
+Submitting your appeal to the appropriate authority
+
+We are not responsible for errors resulting from incorrect or incomplete information provided by users.
+
+4. No Guarantee of Results
+
+We do not guarantee:
+
+Approval of any tax appeal
+Reduction in property taxes
+Accuracy of third-party data
+
+Results vary based on local jurisdictions, assessors, and market conditions.
+
+5. Payments
+
+All payments are one-time fees unless otherwise stated.
+By purchasing, you agree to the pricing displayed at checkout.
+
+Refunds are only provided in accordance with our stated refund policy.
+
+6. Intellectual Property
+
+All content, software, and materials provided through this service are owned by TaxAppeal DIY and may not be copied, redistributed, or resold.
+
+7. Limitation of Liability
+
+To the fullest extent permitted by law, TaxAppeal DIY shall not be liable for:
+
+Any financial loss
+Missed filing deadlines
+Denied appeals
+Indirect or consequential damages
+8. Changes to Terms
+
+We may update these Terms at any time. Continued use of the service constitutes acceptance of updated terms.
+
+9. Contact
+
+For questions, contact: [Your Email]
+
+⚖️ 2. DISCLAIMER PAGE
+
+Use route:
+
+/disclaimer
+Paste this:
+Writing
+
+Disclaimer
+
+Last Updated: [Insert Date]
+
+Not Legal Advice
+
+TaxAppeal DIY is not a law firm and does not provide legal advice.
+All information and documents generated are for informational and self-service purposes only.
+
+No Guarantee of Outcome
+
+We do not guarantee any specific results, including:
+
+Approval of a property tax appeal
+Reduction in assessed value
+Financial savings
+
+Outcomes depend on local tax authorities and factors beyond our control.
+
+Data Accuracy
+
+Property data, estimates, comparable sales, and valuations are derived from third-party sources and public data.
+We do not guarantee the accuracy, completeness, or timeliness of this information.
+
+User Responsibility
+
+Users are solely responsible for:
+
+Reviewing all generated documents
+Verifying accuracy
+Filing appeals correctly and on time
+No Professional Relationship
+
+Use of this platform does not create any professional, legal, or advisory relationship.
+
+Limitation of Liability
+
+Under no circumstances shall TaxAppeal DIY be liable for:
+
+Denied appeals
+Financial losses
+Errors in filings
+Decisions made by tax authorities
+
+Use of this service is at your own risk.
+
+🔐 3. PRIVACY POLICY (YOU NEED THIS TOO)
+
+Use route:
+
+/privacy
+Paste this:
+Writing
+
+Privacy Policy
+
+Last Updated: [Insert Date]
+
+Information We Collect
+
+We may collect:
+
+Name, email, and contact information
+Property address and related details
+Usage data
+How We Use Information
+
+We use this data to:
+
+Generate property tax appeal documents
+Improve our services
+Communicate with users
+Data Sharing
+
+We do not sell your personal information.
+We may use third-party services (e.g., payment processors, APIs) to operate the platform.
+
+Data Security
+
+We implement reasonable safeguards to protect your information, but no system is 100% secure.
+
+User Rights
+
+You may request deletion of your data by contacting us.
+
+Changes
+
+We may update this policy at any time.
+
+Contact
+
+[Your Email]
+
+🚀 WHERE TO ADD IN YOUR APP
+
+Add links in your footer:
+
+<div className="text-xs text-gray-400 mt-6 text-center">
+  <a href="/terms">Terms</a> • 
+  <a href="/disclaimer">Disclaimer</a> • 
+  <a href="/privacy">Privacy</a>
+</div>
+🧠 IMPORTANT (READ THIS)
+
+This setup protects you by clearly stating:
+
+✔ You are NOT a lawyer  
+✔ You do NOT guarantee results  
+✔ User is responsible  
+✔ Data may not be perfect  
+
+👉 That’s exactly what you need.
+
+🔥 OPTIONAL (STRONGER PROTECTION)
+
+Add checkbox before payment:
+
+<label className="text-sm">
+  <input type="checkbox" required /> I agree to the Terms and Disclaimer
+</label>
+🎯 YOU ARE NOW
+✔ Legally covered  
+✔ Monetizable  
+✔ Ready to launch
