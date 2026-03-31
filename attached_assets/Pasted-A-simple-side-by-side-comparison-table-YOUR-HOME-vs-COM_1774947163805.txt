@@ -1,0 +1,171 @@
+A simple side-by-side comparison table
+
+YOUR HOME vs COMPS
+
+With highlights like:
+
+bigger / smaller
+newer / older
+higher price (problem)
+🧠 VISUAL STRATEGY
+
+We highlight:
+
+🔴 BAD (your property overvalued)
+🟢 GOOD (comps cheaper / better)
+🚀 STEP 1 — PREP DATA
+
+You already have:
+
+propertyDetails
+comps
+marketValue
+
+We’ll compare against first 3 comps:
+
+🚀 STEP 2 — UI COMPONENT
+
+Add this below your comps section:
+
+<div className="mt-6">
+
+  <h3 className="text-lg font-semibold mb-3">
+    Property Comparison
+  </h3>
+
+  <div className="overflow-x-auto">
+    <table className="w-full border rounded">
+
+      <thead className="bg-gray-100">
+        <tr>
+          <th className="p-2 text-left">Feature</th>
+          <th className="p-2">Your Property</th>
+          {comps.slice(0, 2).map((_, i) => (
+            <th key={i} className="p-2">Comp {i + 1}</th>
+          ))}
+        </tr>
+      </thead>
+
+      <tbody>
+
+        {/* PRICE */}
+        <tr className="border-t">
+          <td className="p-2">Price</td>
+
+          <td className="p-2 text-red-600 font-semibold">
+            ${Number(marketValue).toLocaleString()}
+          </td>
+
+          {comps.slice(0, 2).map((comp: any, i) => (
+            <td key={i} className="p-2 text-green-600">
+              ${comp.price?.toLocaleString()}
+            </td>
+          ))}
+        </tr>
+
+        {/* SQFT */}
+        <tr className="border-t">
+          <td className="p-2">Sq Ft</td>
+
+          <td className="p-2">
+            {propertyDetails.sqft}
+          </td>
+
+          {comps.slice(0, 2).map((comp: any, i) => (
+            <td key={i} className="p-2">
+              {comp.squareFootage}
+            </td>
+          ))}
+        </tr>
+
+        {/* YEAR BUILT */}
+        <tr className="border-t">
+          <td className="p-2">Year Built</td>
+
+          <td className="p-2">
+            {propertyDetails.year}
+          </td>
+
+          {comps.slice(0, 2).map((comp: any, i) => (
+            <td key={i} className="p-2">
+              {comp.yearBuilt}
+            </td>
+          ))}
+        </tr>
+
+        {/* BEDS */}
+        <tr className="border-t">
+          <td className="p-2">Beds</td>
+
+          <td className="p-2">
+            {propertyDetails.beds}
+          </td>
+
+          {comps.slice(0, 2).map((comp: any, i) => (
+            <td key={i} className="p-2">
+              {comp.bedrooms}
+            </td>
+          ))}
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+</div>
+💥 STEP 3 — ADD VISUAL SIGNAL (KEY PART)
+
+Under table:
+
+<div className="bg-red-50 border border-red-200 p-4 rounded mt-4">
+
+  <p className="text-red-700 font-semibold">
+    Your property appears to be valued higher than comparable homes.
+  </p>
+
+  <p className="text-sm text-red-600 mt-1">
+    This strengthens your case for a reduced assessment.
+  </p>
+
+</div>
+🧠 WHAT USER EXPERIENCES
+
+Before:
+
+“I think I might be overpaying”
+
+After:
+
+“These houses are cheaper AND better… this is wrong”
+
+👉 Emotional trigger = conversion
+
+🚀 STEP 4 — ADD CTA RIGHT BELOW
+<button className="bg-blue-600 text-white px-6 py-3 rounded mt-4 w-full">
+  Generate My Appeal ($99)
+</button>
+🚀 STEP 5 — OPTIONAL (VERY POWERFUL)
+
+Highlight “better comps”:
+
+className={
+  comp.price < marketValue
+    ? "text-green-600 font-semibold"
+    : ""
+}
+💥 FINAL FLOW
+Enter address
+ ↓
+See savings
+ ↓
+See comps
+ ↓
+See comparison table
+ ↓
+“Wow this is obvious”
+ ↓
+Pay
+🔥 WHAT YOU JUST BUILT
+Visual proof engine
+
+👉 This is what makes people TRUST the result

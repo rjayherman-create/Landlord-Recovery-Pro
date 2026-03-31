@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { GrievanceForm } from "@/components/GrievanceForm";
 import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSign, AlertTriangle, Award, ChevronRight, Calculator, Sparkles, CheckCircle, MapPin } from "lucide-react";
 import { useGooglePlaces } from "@/hooks/use-google-places";
+import { calculateApprovalLikelihood } from "@/utils/generate-argument";
 import { format, parseISO, isValid, isFuture } from "date-fns";
 import { getComputedDeadline } from "@/data/county-filing-instructions";
 import { usePreferredState, STATE_META, type AppState } from "@/hooks/use-preferred-state";
@@ -368,6 +369,26 @@ export function Dashboard() {
                       : <>Based on {preferredState} statewide rate ({(activeRate * 100).toFixed(1)}%) — select your county above for a more accurate figure</>
                     }
                   </p>
+                  {(() => {
+                    const mv = parseFloat(estMarketValue.replace(/[^0-9.]/g, ""));
+                    const av = parseFloat(estAssessedValue.replace(/[^0-9.]/g, ""));
+                    const lik = calculateApprovalLikelihood(mv, av, 0);
+                    return (
+                      <div className="mt-3 pt-3 border-t border-emerald-200">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-emerald-800">Approval Likelihood</span>
+                          <span className={`text-sm font-extrabold ${lik.color}`}>{lik.score}%</span>
+                        </div>
+                        <div className="w-full bg-emerald-100 rounded-full h-1.5 overflow-hidden mb-1">
+                          <div className={`h-1.5 rounded-full ${lik.label === "High" ? "bg-emerald-500" : lik.label === "Moderate" ? "bg-amber-500" : "bg-slate-400"}`} style={{ width: `${lik.score}%` }} />
+                        </div>
+                        <p className={`text-xs font-semibold ${lik.color}`}>Confidence Level: {lik.label}</p>
+                        {lik.label === "High" && (
+                          <p className="text-xs text-red-600 font-medium mt-1">High-confidence cases are best filed before the deadline</p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:min-w-[180px]">
                   <Button

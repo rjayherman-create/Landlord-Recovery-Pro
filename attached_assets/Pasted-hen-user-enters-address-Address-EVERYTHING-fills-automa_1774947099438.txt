@@ -1,0 +1,167 @@
+hen user enters address:
+
+Address → EVERYTHING fills automatically
+
+Including:
+
+✔ Beds / Baths
+✔ Square footage
+✔ Lot size
+✔ Year built
+✔ Property type
+🧠 WHERE THIS DATA COMES FROM
+
+Best source for YOU (based on your setup):
+
+👉 RentCast (you already use it)
+
+It returns:
+
+{
+  "bedrooms": 3,
+  "bathrooms": 2,
+  "squareFootage": 1850,
+  "lotSize": 6000,
+  "yearBuilt": 1985,
+  "propertyType": "Single Family"
+}
+🚀 STEP 1 — UPGRADE YOUR BACKEND ROUTE
+
+Go to:
+
+src/routes/property.ts
+🔥 Update it to return FULL DATA:
+router.get("/property-details", async (req, res) => {
+  const address = req.query.address;
+
+  try {
+    const response = await fetch(
+      `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address)}`,
+      {
+        headers: {
+          "X-Api-Key": process.env.RENTCAST_API_KEY!,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data || data.length === 0) {
+      return res.json({});
+    }
+
+    const property = data[0];
+
+    res.json({
+      value: property.price || property.estimatedValue,
+      beds: property.bedrooms,
+      baths: property.bathrooms,
+      sqft: property.squareFootage,
+      lot: property.lotSize,
+      year: property.yearBuilt,
+      type: property.propertyType,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch property data" });
+  }
+});
+🚀 STEP 2 — FRONTEND STATE
+const [propertyDetails, setPropertyDetails] = useState({
+  beds: "",
+  baths: "",
+  sqft: "",
+  lot: "",
+  year: "",
+  type: "",
+});
+🚀 STEP 3 — FETCH AFTER ADDRESS
+
+Update your existing effect:
+
+useEffect(() => {
+  if (address.length < 10) return;
+
+  const timeout = setTimeout(() => {
+    fetch(`/api/property-details?address=${encodeURIComponent(address)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!data) return;
+
+        setMarketValue(data.value || "");
+
+        setPropertyDetails({
+          beds: data.beds || "",
+          baths: data.baths || "",
+          sqft: data.sqft || "",
+          lot: data.lot || "",
+          year: data.year || "",
+          type: data.type || "",
+        });
+      });
+  }, 800);
+
+  return () => clearTimeout(timeout);
+}, [address]);
+🚀 STEP 4 — DISPLAY AUTO-FILLED FIELDS
+<div className="grid grid-cols-2 gap-3 mt-4">
+
+  <input value={propertyDetails.beds} placeholder="Beds" className="border p-3 rounded" />
+  <input value={propertyDetails.baths} placeholder="Baths" className="border p-3 rounded" />
+
+  <input value={propertyDetails.sqft} placeholder="Square Feet" className="border p-3 rounded" />
+  <input value={propertyDetails.lot} placeholder="Lot Size" className="border p-3 rounded" />
+
+  <input value={propertyDetails.year} placeholder="Year Built" className="border p-3 rounded" />
+  <input value={propertyDetails.type} placeholder="Property Type" className="border p-3 rounded" />
+
+</div>
+💥 STEP 5 — TRUST BOOST (VERY IMPORTANT)
+<p className="text-green-700 text-sm mt-2">
+  Property details auto-filled from public records
+</p>
+🧠 WHAT USER FEELS NOW
+
+Before:
+
+“This is work”
+
+After:
+
+“This app already knows everything about my house”
+
+👉 That = TRUST + SPEED
+
+🚀 STEP 6 — HANDLE MISSING DATA (IMPORTANT)
+
+Not all addresses return full data.
+
+Add fallback:
+
+if (!data.beds) {
+  // allow manual input
+}
+🔥 STEP 7 — CONNECT TO PDF + ARGUMENT
+
+Now you can include:
+
+- square footage comparison
+- property size mismatch
+- lot size differences
+
+👉 Makes your argument STRONGER
+
+💰 WHAT THIS UNLOCKS
+
+You now have:
+
+✔ Auto address
+✔ Auto value
+✔ Auto comps
+✔ Auto property details
+✔ Auto argument
+✔ Auto PDF
+✔ Payment
+
+👉 This is a FULL system
