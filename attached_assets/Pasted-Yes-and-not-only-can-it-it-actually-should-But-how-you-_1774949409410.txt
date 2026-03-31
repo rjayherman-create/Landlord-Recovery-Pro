@@ -1,0 +1,123 @@
+Yes — and not only can it, it actually should.
+
+👉 But how you say it matters a lot.
+
+If you do it wrong:
+❌ You scare users away
+❌ You lose trust
+❌ You lose future customers
+
+If you do it right:
+✅ You build massive trust
+✅ You look honest (rare)
+✅ You increase conversions on strong cases
+
+🧠 THE RIGHT APPROACH
+
+Never say:
+
+“You don’t have a case”
+
+Say:
+
+“Your case may not be strong enough to justify filing right now”
+
+👉 That’s guidance, not a hard rejection.
+
+🎯 HOW TO POSITION IT
+🔥 BEST VERSION
+<div className="bg-yellow-50 border border-yellow-200 p-4 rounded mt-4">
+
+  <p className="text-yellow-800 font-semibold">
+    Your case appears to be low strength
+  </p>
+
+  <p className="text-sm mt-2 text-yellow-700">
+    Based on your property data and comparable homes, your assessment appears 
+    close to market value. Filing may not result in meaningful savings.
+  </p>
+
+</div>
+💥 ADD THIS (VERY IMPORTANT)
+<p className="text-sm text-gray-600 mt-2">
+  We only recommend filing when there is a strong likelihood of savings.
+</p>
+
+👉 Now you’re positioned as:
+
+honest + data-driven + not trying to take their money
+🚀 GIVE THEM OPTIONS (DON’T DEAD-END)
+
+Never stop the flow completely.
+
+Offer:
+
+OPTION 1 — Continue anyway
+<button className="text-blue-600 underline mt-3">
+  Continue anyway
+</button>
+OPTION 2 — Check again later
+<p className="text-sm text-gray-500 mt-2">
+  Property values change — you may want to recheck in the future.
+</p>
+OPTION 3 — Improve case
+<p className="text-sm text-gray-500 mt-2">
+  Adding additional comparable properties may strengthen your case.
+</p>
+🧠 WHY THIS WORKS
+
+User thinks:
+
+“These guys could have taken my $99… but didn’t”
+
+👉 That builds HUGE trust
+
+💰 BUSINESS IMPACT
+
+Counterintuitive truth:
+
+Rejecting weak cases → increases revenue
+
+Because:
+
+Strong cases convert higher
+Fewer refunds / complaints
+Better reviews
+More referrals
+🚀 ADVANCED VERSION (BEST)
+
+Use 3 tiers instead of yes/no
+
+High Confidence → Strong case → Show payment  
+Moderate → “Possible” → Soft CTA  
+Low → “Not recommended” → No pressure  
+Example:
+if (confidence.score > 70) {
+  // Strong → push payment
+}
+
+if (confidence.score > 40) {
+  // Moderate → cautious messaging
+}
+
+if (confidence.score <= 40) {
+  // Low → discourage
+}
+🔥 FINAL POSITIONING
+
+You are NOT:
+
+❌ selling filings
+
+You ARE:
+
+A decision engine that tells people when it’s worth filing
+🧠 THIS IS YOUR EDGE OVER LAWYERS
+
+Lawyers:
+
+Take cases → slow → selective → opaque
+
+You:
+
+Instant → transparent → honest → data-driven

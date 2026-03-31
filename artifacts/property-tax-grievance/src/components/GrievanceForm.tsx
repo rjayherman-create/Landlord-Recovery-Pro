@@ -356,6 +356,8 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
   const [ocrPreview, setOcrPreview] = useState<string | null>(null);
   const [ocrError, setOcrError] = useState<string | null>(null);
   const [ocrFieldCount, setOcrFieldCount] = useState<number>(0);
+  // Low-confidence override: user chose to file anyway despite weak case
+  const [forceFilingOverride, setForceFilingOverride] = useState(false);
 
   // Physical characteristic fields are unreliable from address-lookup APIs
   const LOOKUP_UNVERIFIED_FIELDS = new Set(["yearBuilt", "livingArea", "lotSize"]);
@@ -649,6 +651,31 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
     const low = Math.round(over * 0.015);
     const high = Math.round(over * 0.025);
     return { low, high };
+  })();
+
+  /* ── Case strength score (0–100) ── */
+  const caseStrength = (() => {
+    const assessed = Number(watchedAssessment) || 0;
+    const market   = Number(watchedMarketValue) || 0;
+    if (!assessed || !market) return null;
+
+    const overPct = ((assessed - market) / market) * 100;
+
+    let score = 0;
+    if (overPct >= 30)      score = 85;
+    else if (overPct >= 20) score = 74;
+    else if (overPct >= 10) score = 60;
+    else if (overPct >= 5)  score = 44;
+    else if (overPct >= 0)  score = 24;
+    else                    score = 8;  // assessed < market — under-assessed
+
+    // Comparable data strengthens the case
+    if (hasComps) score = Math.min(100, score + 15);
+
+    const tier: "high" | "moderate" | "low" =
+      score >= 65 ? "high" : score >= 35 ? "moderate" : "low";
+
+    return { score, tier, overPct };
   })();
 
   /* ── Submit ── */
@@ -1479,38 +1506,158 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
         </p>
       </div>
 
-      {/* ── Savings estimate + submit ── */}
-      <div className="pt-4 border-t border-border space-y-3">
-        {!isEditing && estimatedSavings && (
-          <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-            <p className="text-green-700 font-semibold text-sm">
-              💰 Estimated savings: ${estimatedSavings.low.toLocaleString()}–${estimatedSavings.high.toLocaleString()}/year
-            </p>
-            <p className="text-green-600 text-xs mt-0.5">
-              Based on your over-assessment amount and typical local tax rates.
-            </p>
-          </div>
+      {/* ── Case Strength Panel + Submit ── */}
+      <div className="pt-4 border-t border-border space-y-4">
+
+        {/* Case strength — only shown when we have enough data to score */}
+        {!isEditing && caseStrength && (
+          <>
+            {/* HIGH confidence */}
+            {caseStrength.tier === "high" && (
+              <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                    <span className="font-bold text-emerald-800 text-sm">Strong case — we recommend filing</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-24 h-2 rounded-full bg-emerald-200 overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${caseStrength.score}%` }} />
+                    </div>
+                    <span className="text-xs font-bold text-emerald-700">{caseStrength.score}/100</span>
+                  </div>
+                </div>
+                <p className="text-sm text-emerald-700">
+                  Your property is assessed <strong>{caseStrength.overPct.toFixed(1)}% above</strong> estimated market value.
+                  {hasComps && " Comparable sales data further supports your appeal."}
+                </p>
+                {estimatedSavings && (
+                  <p className="text-sm font-semibold text-emerald-800">
+                    💰 Estimated savings: ${estimatedSavings.low.toLocaleString()}–${estimatedSavings.high.toLocaleString()}/year
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* MODERATE confidence */}
+            {caseStrength.tier === "moderate" && (
+              <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                    <span className="font-bold text-amber-800 text-sm">Possible case — outcome uncertain</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-24 h-2 rounded-full bg-amber-200 overflow-hidden">
+                      <div className="h-full bg-amber-500 rounded-full" style={{ width: `${caseStrength.score}%` }} />
+                    </div>
+                    <span className="text-xs font-bold text-amber-700">{caseStrength.score}/100</span>
+                  </div>
+                </div>
+                <p className="text-sm text-amber-700">
+                  Your assessment appears {caseStrength.overPct > 0 ? <><strong>{caseStrength.overPct.toFixed(1)}% above</strong> market value</> : "close to market value"}.
+                  {" "}Filing may result in savings, but the case isn't as clear-cut.
+                </p>
+                {estimatedSavings && (
+                  <p className="text-sm font-semibold text-amber-800">
+                    💰 Potential savings if successful: ${estimatedSavings.low.toLocaleString()}–${estimatedSavings.high.toLocaleString()}/year
+                  </p>
+                )}
+                {!hasComps && (
+                  <p className="text-xs text-amber-600 italic">
+                    Tip: Adding comparable property sales would strengthen your case significantly.
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* LOW confidence */}
+            {caseStrength.tier === "low" && !forceFilingOverride && (
+              <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0" />
+                    <span className="font-bold text-yellow-800 text-sm">Case appears low strength</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-24 h-2 rounded-full bg-yellow-200 overflow-hidden">
+                      <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${caseStrength.score}%` }} />
+                    </div>
+                    <span className="text-xs font-bold text-yellow-700">{caseStrength.score}/100</span>
+                  </div>
+                </div>
+                <p className="text-sm text-yellow-800">
+                  Based on your property data, your assessment appears close to — or below — market value.
+                  Filing may not result in meaningful savings. <strong>We only recommend filing when there is a clear likelihood of success.</strong>
+                </p>
+                <div className="space-y-1.5 text-sm text-yellow-700">
+                  <p className="font-medium">Your options:</p>
+                  <ul className="space-y-1 ml-3">
+                    <li>• <strong>Add comparable sales</strong> — comps showing lower-assessed neighbors can make a weak case strong</li>
+                    <li>• <strong>Recheck your market value</strong> — if your estimate is too high, your case may actually be stronger than shown</li>
+                    <li>• <strong>Recheck in the future</strong> — property values shift each year; you can file in future assessment cycles</li>
+                  </ul>
+                </div>
+                <p className="text-xs text-yellow-600 italic">
+                  We're being honest here: we could take your $99, but if the case isn't strong, we'd rather tell you upfront.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setForceFilingOverride(true)}
+                  className="text-sm text-yellow-700 underline hover:text-yellow-900 font-medium"
+                >
+                  I understand — continue filing anyway →
+                </button>
+              </div>
+            )}
+
+            {/* LOW override confirmation */}
+            {caseStrength.tier === "low" && forceFilingOverride && (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">Proceeding with filing despite low case strength.</p>
+                <button type="button" onClick={() => setForceFilingOverride(false)} className="text-xs text-muted-foreground underline">Reconsider</button>
+              </div>
+            )}
+          </>
         )}
 
+        {/* Submit button — adapts to case strength tier */}
         <div className="flex justify-end">
-          <Button
-            type="submit"
-            disabled={isPending}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 shadow-lg shadow-primary/20 gap-2"
-          >
-            {isPending ? (
-              <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
-            ) : isEditing ? (
-              "Save Changes"
-            ) : userHasPaid ? (
-              "Create Case"
-            ) : (
-              <><Lock className="w-4 h-4" /> Generate My Appeal ($99)</>
-            )}
-          </Button>
+          {/* Block the submit on low-strength cases unless explicitly overridden */}
+          {!isEditing && caseStrength?.tier === "low" && !forceFilingOverride ? (
+            <Button type="button" disabled variant="outline" className="px-8 opacity-60 cursor-not-allowed">
+              <Lock className="w-4 h-4 mr-2" /> Strengthen Your Case First
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              disabled={isPending}
+              className={`font-semibold px-8 shadow-lg gap-2 ${
+                caseStrength?.tier === "high"
+                  ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200"
+                  : caseStrength?.tier === "moderate"
+                  ? "bg-amber-500 hover:bg-amber-600 text-white shadow-amber-200"
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-primary/20"
+              }`}
+            >
+              {isPending ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+              ) : isEditing ? (
+                "Save Changes"
+              ) : userHasPaid ? (
+                caseStrength?.tier === "high" ? "Create My Appeal — Strong Case ✓" : "Create Case"
+              ) : caseStrength?.tier === "high" ? (
+                <><Lock className="w-4 h-4" /> Generate My Appeal ($99) — Strong Case ✓</>
+              ) : caseStrength?.tier === "moderate" ? (
+                <><Lock className="w-4 h-4" /> Generate My Appeal ($99)</>
+              ) : (
+                <><Lock className="w-4 h-4" /> Generate My Appeal ($99)</>
+              )}
+            </Button>
+          )}
         </div>
 
-        {!isEditing && !userHasPaid && (
+        {!isEditing && !userHasPaid && caseStrength?.tier !== "low" && (
           <p className="text-sm text-muted-foreground text-right">
             If you don't save money, you don't pay again next year.
           </p>
