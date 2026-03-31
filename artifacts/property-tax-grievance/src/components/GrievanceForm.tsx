@@ -1149,12 +1149,26 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
                 💰 Your estimated savings: ${estimatedSavings.low.toLocaleString()}–${estimatedSavings.high.toLocaleString()}/year
               </p>
             )}
-            <div className="space-y-2 text-sm text-muted-foreground">
-              <p>✔ Pre-filled state form (RP-524, A-1, Notice of Protest, or DR-486)</p>
-              <p>✔ Printable comparable sales report</p>
-              <p>✔ County-specific filing instructions &amp; portal link</p>
-              <p>✔ Step-by-step guidance to avoid common mistakes</p>
+            {/* ── Pricing + Guarantee card ── */}
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <h2 className="text-xl font-bold text-center text-gray-900">Simple, One-Time Pricing</h2>
+              <p className="text-center text-gray-500 text-sm mt-1">No subscriptions. No commissions. No surprises.</p>
+              <div className="text-center mt-3">
+                <span className="text-4xl font-bold text-gray-900">$99</span>
+                <p className="text-sm text-gray-400 mt-0.5">Pay once. Keep 100% of your savings.</p>
+              </div>
+              <ul className="mt-4 text-sm text-gray-700 space-y-2">
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Official appeal form auto-filled</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Comparable sales analysis</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Written appeal argument included</li>
+                <li className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Instant download</li>
+              </ul>
+              <div className="bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
+                <p className="text-green-800 font-semibold text-sm">No-Risk Guarantee</p>
+                <p className="text-sm text-green-700 mt-1">If you don't file your appeal, we'll refund you.</p>
+              </div>
             </div>
+
             <Button
               onClick={handleCheckout}
               disabled={checkoutLoading}
@@ -1167,9 +1181,6 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
             </Button>
             <p className="text-xs text-center text-muted-foreground">
               One-time payment · No subscription · Secured by Stripe.
-            </p>
-            <p className="text-xs text-center text-muted-foreground">
-              If you don't save, you don't pay again next year.
             </p>
           </div>
         </DialogContent>

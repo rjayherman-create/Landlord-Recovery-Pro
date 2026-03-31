@@ -1221,27 +1221,23 @@ export function GrievanceDetail() {
                         <p className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> County filing instructions &amp; portal link</p>
                       </div>
 
-                      {/* Conversion: vs lawyer */}
-                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-left">
-                        <p className="text-xs font-bold text-blue-800 mb-1.5">Why use this instead of a lawyer?</p>
-                        <ul className="space-y-1 text-xs text-blue-700">
-                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" /> File in minutes — not months</li>
-                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" /> No waiting for callbacks</li>
-                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" /> Full control of your appeal</li>
-                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" /> Same official forms used by professionals</li>
-                        </ul>
-                      </div>
-
-                      {/* Math: savings vs commission */}
-                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-left">
-                        <p className="text-xs font-bold text-emerald-800 mb-1">The math is clear:</p>
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="text-muted-foreground">Lawyer (30–50% of savings)</span>
-                          <span className="font-semibold text-red-600">You lose $600+/yr</span>
+                      {/* ── Pricing + Guarantee card ── */}
+                      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm text-left">
+                        <h2 className="text-base font-bold text-center text-gray-900">Simple, One-Time Pricing</h2>
+                        <p className="text-center text-gray-500 text-xs mt-1">No subscriptions. No commissions. No surprises.</p>
+                        <div className="text-center mt-3">
+                          <span className="text-3xl font-bold text-gray-900">$99</span>
+                          <p className="text-xs text-gray-400 mt-0.5">Pay once. Keep 100% of your savings.</p>
                         </div>
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">TaxAppeal DIY — one-time fee</span>
-                          <span className="font-bold text-emerald-700">You keep 100%</span>
+                        <ul className="mt-3 text-xs text-gray-700 space-y-1.5">
+                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Official appeal form auto-filled</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Comparable sales analysis</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Written appeal argument included</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> Instant download</li>
+                        </ul>
+                        <div className="bg-green-50 border border-green-200 p-3 rounded-lg mt-3">
+                          <p className="text-green-800 font-semibold text-xs">No-Risk Guarantee</p>
+                          <p className="text-xs text-green-700 mt-0.5">If you don't file your appeal, we'll refund you.</p>
                         </div>
                       </div>
 
