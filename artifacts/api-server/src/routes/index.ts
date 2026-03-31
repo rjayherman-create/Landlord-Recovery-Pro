@@ -12,6 +12,7 @@ import priorYearRouter from "./prior-year";
 import stripeRouter from "./stripe";
 import linksRouter from "./links";
 import downloadRouter from "./download";
+import countyDataRouter from "./county-data";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(priorYearRouter);
 router.use(stripeRouter);
 router.use("/links", linksRouter);
 router.use(downloadRouter);
+router.use(countyDataRouter);
 
 export default router;

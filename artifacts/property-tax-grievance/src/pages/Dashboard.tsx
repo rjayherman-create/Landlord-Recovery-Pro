@@ -48,13 +48,36 @@ export function Dashboard() {
   // Savings estimator state
   const [estMarketValue, setEstMarketValue] = useState("");
   const [estAssessedValue, setEstAssessedValue] = useState("");
+  const [estCounty, setEstCounty] = useState("");
+  const [countyList, setCountyList] = useState<{ county: string; tax_rate: number }[]>([]);
+  const [realTaxRate, setRealTaxRate] = useState<number | null>(null);
   const [estimatedSavings, setEstimatedSavings] = useState(0);
+
+  useEffect(() => {
+    setEstCounty("");
+    setRealTaxRate(null);
+    fetch(`/api/county-data?state=${preferredState}`)
+      .then(r => r.json())
+      .then((rows: { county: string; tax_rate: number }[]) => setCountyList(Array.isArray(rows) ? rows : []))
+      .catch(() => setCountyList([]));
+  }, [preferredState]);
+
+  useEffect(() => {
+    if (!estCounty) { setRealTaxRate(null); return; }
+    fetch(`/api/county-data?state=${preferredState}&county=${encodeURIComponent(estCounty)}`)
+      .then(r => r.json())
+      .then((row: { tax_rate: number } | null) => setRealTaxRate(row?.tax_rate ?? null))
+      .catch(() => setRealTaxRate(null));
+  }, [estCounty, preferredState]);
+
+  const activeRate = realTaxRate ?? STATE_TAX_RATES[preferredState];
 
   useEffect(() => {
     const mv = parseFloat(estMarketValue.replace(/[^0-9.]/g, ""));
     const av = parseFloat(estAssessedValue.replace(/[^0-9.]/g, ""));
-    setEstimatedSavings(calcSavings(mv, av, preferredState));
-  }, [estMarketValue, estAssessedValue, preferredState]);
+    if (!mv || !av || av <= mv) { setEstimatedSavings(0); return; }
+    setEstimatedSavings(Math.round((av - mv) * activeRate));
+  }, [estMarketValue, estAssessedValue, activeRate]);
 
   function resolveDeadline(g: { filingDeadline?: string | null; county: string; state?: string | null }): Date | null {
     const src = g.filingDeadline || getComputedDeadline(g.county, g.state ?? undefined);
@@ -210,6 +233,27 @@ export function Dashboard() {
               </div>
             </div>
 
+            {/* County selector */}
+            {countyList.length > 0 && (
+              <div className="mb-3">
+                <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
+                  Your County <span className="text-amber-500 font-normal normal-case">(optional — loads real tax rate)</span>
+                </label>
+                <select
+                  value={estCounty}
+                  onChange={e => setEstCounty(e.target.value)}
+                  className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium text-foreground transition appearance-none"
+                >
+                  <option value="">Select county…</option>
+                  {countyList.map(c => (
+                    <option key={c.county} value={c.county}>
+                      {c.county} — {(c.tax_rate * 100).toFixed(2)}% effective rate
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               <div>
                 <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
@@ -255,7 +299,10 @@ export function Dashboard() {
                   </div>
                   <p className="text-3xl font-extrabold font-serif text-emerald-700">{fmt(estimatedSavings)}<span className="text-lg font-semibold text-emerald-600">/year</span></p>
                   <p className="text-xs text-emerald-600 mt-1">
-                    Based on {preferredState} effective tax rate ({(STATE_TAX_RATES[preferredState] * 100).toFixed(1)}%) and your assessment gap of {fmt(parseFloat(estAssessedValue.replace(/[^0-9.]/g,"")) - parseFloat(estMarketValue.replace(/[^0-9.]/g,"")))}
+                    {estCounty
+                      ? <>Based on <strong>{estCounty}</strong> tax rate ({(activeRate * 100).toFixed(2)}%) and your assessment gap of {fmt(parseFloat(estAssessedValue.replace(/[^0-9.]/g,"")) - parseFloat(estMarketValue.replace(/[^0-9.]/g,"")))}</>
+                      : <>Based on {preferredState} statewide rate ({(activeRate * 100).toFixed(1)}%) — select your county above for a more accurate figure</>
+                    }
                   </p>
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:min-w-[180px]">
@@ -278,7 +325,9 @@ export function Dashboard() {
             ) : (
               <div className="text-xs text-amber-700/70 flex items-center gap-1.5">
                 <span>Results update live as you type ·</span>
-                <span className="font-medium">Using {preferredState} effective tax rate of {(STATE_TAX_RATES[preferredState] * 100).toFixed(1)}%</span>
+                <span className="font-medium">
+                  {estCounty ? `Using ${estCounty} rate of ${(activeRate * 100).toFixed(2)}%` : `Select county above or using ${preferredState} rate of ${(activeRate * 100).toFixed(1)}%`}
+                </span>
               </div>
             )}
           </div>
