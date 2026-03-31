@@ -1,7 +1,7 @@
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -82,6 +82,94 @@ const FIELD_LABELS: Record<string, string> = {
   lotSize: "Lot Size",
   estimatedMarketValue: "Est. Market Value",
 };
+
+/* ─── Filing deadline auto-fill ──────────────────────── */
+
+function getFilingDeadline(state: string, county?: string, taxYear?: number): string {
+  const year = taxYear ?? new Date().getFullYear();
+  // If we're past the deadline month, use next year
+  const now = new Date();
+  switch (state) {
+    case "NY": {
+      // Nassau County BAR: typically April 1. NYC Tax Commission: March 1. Most of NY: May 1.
+      if (county === "New York City") {
+        const d = new Date(year, 2, 1); // March 1
+        return (d < now ? new Date(year + 1, 2, 1) : d).toISOString().slice(0, 10);
+      }
+      if (county === "Nassau") {
+        const d = new Date(year, 3, 1); // April 1
+        return (d < now ? new Date(year + 1, 3, 1) : d).toISOString().slice(0, 10);
+      }
+      const d = new Date(year, 4, 1); // May 1
+      return (d < now ? new Date(year + 1, 4, 1) : d).toISOString().slice(0, 10);
+    }
+    case "NJ": {
+      const d = new Date(year, 3, 1); // April 1
+      return (d < now ? new Date(year + 1, 3, 1) : d).toISOString().slice(0, 10);
+    }
+    case "TX": {
+      const d = new Date(year, 4, 15); // May 15
+      return (d < now ? new Date(year + 1, 4, 15) : d).toISOString().slice(0, 10);
+    }
+    case "FL": {
+      const d = new Date(year, 8, 18); // September 18
+      return (d < now ? new Date(year + 1, 8, 18) : d).toISOString().slice(0, 10);
+    }
+    default: {
+      const d = new Date(year, 4, 1);
+      return (d < now ? new Date(year + 1, 4, 1) : d).toISOString().slice(0, 10);
+    }
+  }
+}
+
+/* ─── Grounds suggestion ─────────────────────────────── */
+
+interface GroundOption {
+  value: string;
+  label: string;
+  description: string;
+}
+
+const GROUND_OPTIONS_BY_STATE: Record<string, GroundOption[]> = {
+  NY: [
+    { value: "overvaluation",   label: "Overvaluation",        description: "Your property is assessed higher than its market value" },
+    { value: "unequal",         label: "Unequal Assessment",   description: "Similar nearby properties are assessed at a lower rate" },
+    { value: "excessive",       label: "Excessive Assessment", description: "Assessment exceeds statutory or constitutional limits" },
+    { value: "unlawful",        label: "Unlawful Assessment",  description: "Property is exempt or the assessment is otherwise improper" },
+  ],
+  NJ: [
+    { value: "overvaluation",   label: "Overvaluation",        description: "Your property is assessed higher than its true market value" },
+    { value: "unequal",         label: "Discrimination",       description: "Your assessment ratio is higher than the county average ratio" },
+    { value: "excessive",       label: "Excessive Assessment", description: "Assessment exceeds 100% of true value" },
+  ],
+  TX: [
+    { value: "market_value",    label: "Incorrect Appraised Value",  description: "The CAD's appraised value exceeds the true market value of your property" },
+    { value: "unequal_appraisal", label: "Unequal Appraisal",       description: "Your property is appraised at a higher ratio than comparable properties" },
+    { value: "exemption",       label: "Denial of Exemption",       description: "An exemption you applied for was denied (homestead, veteran, etc.)" },
+    { value: "ownership",       label: "Incorrect Ownership Info",   description: "The owner name or legal description on the notice is incorrect" },
+  ],
+  FL: [
+    { value: "market_value",    label: "Market Value Too High",      description: "The assessed value exceeds the just/market value of your property" },
+    { value: "unequal",         label: "Unequal Assessment",        description: "Your property is assessed higher than comparable properties nearby" },
+    { value: "exemption",       label: "Exemption Denied",          description: "A homestead or other exemption was wrongly denied or removed" },
+    { value: "classification",  label: "Incorrect Classification",  description: "The property class or land use is incorrectly assigned" },
+  ],
+};
+
+function getSuggestedGrounds(state: string, isOvervalued: boolean, hasComps: boolean): string[] {
+  const grounds: string[] = [];
+  if (state === "TX") {
+    if (isOvervalued || !hasComps) grounds.push("market_value");
+    if (hasComps) grounds.push("unequal_appraisal");
+  } else if (state === "FL") {
+    if (isOvervalued || !hasComps) grounds.push("market_value");
+    if (hasComps) grounds.push("unequal");
+  } else {
+    if (isOvervalued || !hasComps) grounds.push("overvaluation");
+    if (hasComps) grounds.push("unequal");
+  }
+  return grounds.length > 0 ? grounds : (state === "TX" ? ["market_value"] : state === "FL" ? ["market_value"] : ["overvaluation"]);
+}
 
 /* ─── Props ─────────────────────────────────────────── */
 
@@ -238,13 +326,56 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
   });
 
   const selectedState = form.watch("state") ?? "NY";
+  const watchedAssessment = form.watch("currentAssessment");
+  const watchedRequested = form.watch("requestedAssessment");
+  const watchedMarketValue = form.watch("estimatedMarketValue");
+  const watchedCounty = form.watch("county");
+  const watchedTaxYear = form.watch("taxYear");
+
   const isTX = selectedState === "TX";
   const isNJ = selectedState === "NJ";
   const isFL = selectedState === "FL";
 
   const currentCountyOptions = isTX ? TX_COUNTY_NAMES : isNJ ? NJ_COUNTY_NAMES : isFL ? FL_COUNTY_NAMES : COUNTY_OPTIONS;
-  const currentBasisOptions = isTX ? TX_BASIS_OPTIONS : isNJ ? NJ_BASIS_OPTIONS : isFL ? FL_BASIS_OPTIONS : BASIS_OPTIONS;
   const currentPropertyClassOptions = isTX ? TX_PROPERTY_CLASS_OPTIONS : isNJ ? NJ_PROPERTY_CLASS_OPTIONS : isFL ? FL_PROPERTY_CLASS_OPTIONS : PROPERTY_CLASS_OPTIONS;
+
+  /* ── Grounds suggestion state ── */
+  const [selectedGrounds, setSelectedGrounds] = useState<string[]>(() => {
+    const existing = initialData?.basisOfComplaint;
+    if (existing) return existing.split(",").map(s => s.trim()).filter(Boolean);
+    return getSuggestedGrounds(initialState, false, false);
+  });
+  const [deadlineAutoFilled, setDeadlineAutoFilled] = useState(false);
+
+  const groundOptions: GroundOption[] = GROUND_OPTIONS_BY_STATE[selectedState] ?? GROUND_OPTIONS_BY_STATE.NY;
+
+  const toggleGround = useCallback((value: string) => {
+    setSelectedGrounds(prev =>
+      prev.includes(value) ? prev.filter(g => g !== value) : [...prev, value]
+    );
+  }, []);
+
+  /* ── Sync selected grounds → form field ── */
+  useEffect(() => {
+    form.setValue("basisOfComplaint", selectedGrounds.join(","), { shouldDirty: true });
+  }, [selectedGrounds, form]);
+
+  /* ── Auto-suggest grounds when values or state change ── */
+  const isOvervalued = Number(watchedAssessment) > 0 && Number(watchedMarketValue) > 0 && Number(watchedAssessment) > Number(watchedMarketValue);
+  const hasComps = lookupResult !== null;
+
+  useEffect(() => {
+    if (isEditing) return;
+    setSelectedGrounds(getSuggestedGrounds(selectedState, isOvervalued, hasComps));
+  }, [selectedState, isOvervalued, hasComps, isEditing]);
+
+  /* ── Auto-fill filing deadline when state or county changes ── */
+  useEffect(() => {
+    if (isEditing && initialData?.filingDeadline) return;
+    const deadline = getFilingDeadline(selectedState, watchedCounty, watchedTaxYear);
+    form.setValue("filingDeadline", deadline);
+    setDeadlineAutoFilled(true);
+  }, [selectedState, watchedCounty, watchedTaxYear, isEditing, initialData?.filingDeadline, form]);
 
   /* ── Property lookup ── */
   const runLookup = async (addr: string) => {
@@ -412,8 +543,6 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
     isAutoFilled(field) ? "border-emerald-400 bg-emerald-50/50 ring-1 ring-emerald-300" : "";
 
   /* ── Savings estimate ── */
-  const watchedAssessment = form.watch("currentAssessment");
-  const watchedRequested = form.watch("requestedAssessment");
   const estimatedSavings = (() => {
     const over = Number(watchedAssessment) - Number(watchedRequested);
     if (!over || over <= 0) return null;
@@ -951,30 +1080,75 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
       <div>
         <SectionHeader
           title={isTX ? "Part 2 — Grounds for Protest" : "Part 2 — Basis of Complaint"}
-          subtitle={isTX
-            ? "Select the ground(s) for your protest. Most homeowners use Incorrect Appraised Value or Unequal Appraisal."
-            : "Select the legal basis for your grievance. Most homeowners use Overvaluation."
-          }
+          subtitle="We've pre-selected the best grounds based on your property data. Review and adjust if needed."
         />
-        <div className="space-y-2">
-          {currentBasisOptions.map((opt) => (
-            <label
-              key={opt.value}
-              className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                form.watch("basisOfComplaint") === opt.value
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/40 hover:bg-secondary/30"
-              }`}
-            >
-              <input
-                type="radio"
-                value={opt.value}
-                {...form.register("basisOfComplaint")}
-                className="mt-0.5 accent-primary"
-              />
-              <span className="text-sm text-foreground">{opt.label}</span>
-            </label>
-          ))}
+
+        {/* Suggested grounds panel */}
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+            <p className="font-semibold text-blue-800 text-sm">
+              Recommended Grounds Based on Your Property
+            </p>
+          </div>
+
+          {isOvervalued && (
+            <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-100 rounded-lg px-3 py-2">
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-blue-600" />
+              Your assessed value is higher than your estimated market value — strong overvaluation case.
+            </div>
+          )}
+          {hasComps && (
+            <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-100 rounded-lg px-3 py-2">
+              <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-blue-600" />
+              Comparable properties found — supports unequal assessment argument.
+            </div>
+          )}
+
+          <div className="space-y-2 pt-1">
+            {groundOptions.map((opt) => {
+              const isChecked = selectedGrounds.includes(opt.value);
+              const isSuggested = getSuggestedGrounds(selectedState, isOvervalued, hasComps).includes(opt.value);
+              return (
+                <label
+                  key={opt.value}
+                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                    isChecked
+                      ? "border-blue-400 bg-white shadow-sm"
+                      : "border-blue-200 bg-blue-50/50 hover:border-blue-300"
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleGround(opt.value)}
+                    className="mt-0.5 accent-blue-600 w-4 h-4 shrink-0"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-medium text-foreground">{opt.label}</span>
+                      {isSuggested && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 font-semibold border border-blue-200">
+                          Recommended
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5">{opt.description}</p>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
+
+          {selectedGrounds.length > 0 && (
+            <p className="text-green-700 text-xs font-medium flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              These selections align with your property data and comparable homes.
+            </p>
+          )}
+          <p className="text-xs text-gray-500">
+            This is not legal advice. Final selection is your responsibility. You can adjust these before submitting.
+          </p>
         </div>
       </div>
 
@@ -1071,8 +1245,36 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
             )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="filingDeadline">Filing Deadline</Label>
-            <Input id="filingDeadline" type="date" {...form.register("filingDeadline")} />
+            <Label htmlFor="filingDeadline" className="flex items-center gap-2">
+              Filing Deadline
+              {deadlineAutoFilled && (
+                <span className="text-xs text-emerald-600 font-medium bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">
+                  ✓ auto-filled
+                </span>
+              )}
+            </Label>
+            <Controller
+              control={form.control}
+              name="filingDeadline"
+              render={({ field }) => (
+                <Input
+                  id="filingDeadline"
+                  type="date"
+                  className={deadlineAutoFilled ? "border-emerald-400 bg-emerald-50/50 ring-1 ring-emerald-300" : ""}
+                  {...field}
+                  value={field.value ?? ""}
+                />
+              )}
+            />
+            <p className="text-xs text-muted-foreground">
+              {selectedState === "NY"
+                ? watchedCounty === "Nassau" ? "Nassau County BAR: typically April 1" : watchedCounty === "New York City" ? "NYC Tax Commission: typically March 1" : "Most NY municipalities: May 1 — confirm with your local Board of Assessment Review"
+                : selectedState === "NJ" ? "NJ Tax Court: April 1 — confirm with your county board"
+                : selectedState === "TX" ? "TX ARB: May 15 or 30 days after your appraisal notice, whichever is later"
+                : selectedState === "FL" ? "FL VAB: approximately September 18 — confirm with your county VAB"
+                : "Confirm exact deadline with your local assessment authority"
+              }
+            </p>
           </div>
         </div>
       </div>
