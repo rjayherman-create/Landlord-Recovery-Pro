@@ -394,16 +394,6 @@ async function lookupNYSOrps(
     fieldsFound.push("landAssessment");
   }
 
-  // Lot size from frontage × depth
-  const front = parseFloat(best.front || "0");
-  const depth = parseFloat(best.depth || "0");
-  if (front > 0 && depth > 0) {
-    const sqft = Math.round(front * depth);
-    const acres = (sqft / 43560).toFixed(3);
-    result.lotSize = `${front}×${depth} ft (≈${sqft.toLocaleString()} sq ft / ${acres} acres)`;
-    fieldsFound.push("lotSize");
-  }
-
   // Owner name — combine first + last from ORPS, convert from ALL CAPS
   const ownerFirst = toTitleCase(String(best.primary_owner_first_name || "").trim());
   const ownerLast = toTitleCase(String(best.primary_owner_last_name || "").trim());
@@ -413,6 +403,77 @@ async function lookupNYSOrps(
     fieldsFound.push("ownerName");
   }
 
+  // ── Supplemental physical characteristics from NYS Real Property Sales (5ry4-ks3m) ──
+  // The ORPS assessment roll (7vem-aaz7) doesn't carry year built, sq ft, floors, or units.
+  // The sales dataset shares parcel IDs and does carry these fields.
+  let suppYearBuilt: number | undefined;
+  let suppGrossSqFt: number | undefined;
+  let suppTotalUnits: number | undefined;
+  let suppNumBuildings: number | undefined;
+  let suppNumFloors: number | undefined;
+  let suppLotArea: number | undefined;
+
+  if (best.print_key_code) {
+    try {
+      const suppUrl = "https://data.ny.gov/resource/5ry4-ks3m.json?" + new URLSearchParams({
+        "$where": `county_name='${countyName}' AND print_key_code='${best.print_key_code}'`,
+        "$order": "sale_date DESC",
+        "$limit": "5",
+      });
+      const suppRes = await fetch(suppUrl, {
+        headers: { Accept: "application/json" },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (suppRes.ok) {
+        const suppData: any[] = await suppRes.json();
+        if (Array.isArray(suppData) && suppData.length > 0) {
+          // Use the record with the most physical data (prefer highest gross_sq_ft)
+          const suppBest = suppData.reduce((a, b) =>
+            (parseFloat(b.gross_sq_ft || "0") > parseFloat(a.gross_sq_ft || "0")) ? b : a
+          , suppData[0]);
+
+          const yb = parseInt(suppBest.year_built || "0");
+          if (yb > 1600 && yb <= new Date().getFullYear()) suppYearBuilt = yb;
+
+          const gsf = parseFloat(suppBest.gross_sq_ft || "0");
+          if (gsf > 0) suppGrossSqFt = Math.round(gsf);
+
+          const tu = parseInt(suppBest.total_units || "0");
+          if (tu > 0) suppTotalUnits = tu;
+
+          const nb = parseInt(suppBest.number_of_buildings || suppBest.num_buildings || "0");
+          if (nb > 0) suppNumBuildings = nb;
+
+          const nf = parseFloat(suppBest.number_of_stories || suppBest.num_floors || "0");
+          if (nf > 0) suppNumFloors = nf;
+
+          // Lot area from sales dataset (calc_acre_lot or lot_size)
+          const la = parseFloat(suppBest.lot_size || suppBest.calc_acre_lot || "0");
+          if (la > 0) {
+            // If < 10 it's probably acres, else sq ft
+            suppLotArea = la < 10 ? Math.round(la * 43560) : Math.round(la);
+          }
+        }
+      }
+    } catch { /* non-fatal: supplemental data only */ }
+  }
+
+  // Merge supplemental physical data into top-level result
+  if (suppYearBuilt) { result.yearBuilt = suppYearBuilt; fieldsFound.push("yearBuilt"); }
+  if (suppGrossSqFt) { result.livingArea = suppGrossSqFt; fieldsFound.push("livingArea"); }
+
+  // Lot area — prefer supplemental over frontage × depth
+  const front = parseFloat(best.front || "0");
+  const depth = parseFloat(best.depth || "0");
+  const lotSqft = suppLotArea ?? (front > 0 && depth > 0 ? Math.round(front * depth) : 0);
+  if (lotSqft > 0) {
+    const acres = (lotSqft / 43560).toFixed(3);
+    result.lotSize = front > 0 && depth > 0 && !suppLotArea
+      ? `${front}×${depth} ft (≈${lotSqft.toLocaleString()} sq ft / ${acres} acres)`
+      : `${lotSqft.toLocaleString()} sq ft / ${acres} acres`;
+    if (!fieldsFound.includes("lotSize")) fieldsFound.push("lotSize");
+  }
+
   // Raw property record card
   result.rawRecord = {
     address: `${best.parcel_address_number} ${best.parcel_address_street}`,
@@ -420,6 +481,12 @@ async function lookupNYSOrps(
     ownerName: ownerFull || undefined,
     buildingClass: best.property_class,
     buildingClassDesc: best.property_class_description ? toTitleCase(best.property_class_description) : undefined,
+    yearBuilt: suppYearBuilt,
+    numBuildings: suppNumBuildings,
+    numFloors: suppNumFloors,
+    unitCount: suppTotalUnits,
+    buildingArea: suppGrossSqFt,
+    lotArea: lotSqft > 0 ? lotSqft : undefined,
     lotFrontage: front > 0 ? front : undefined,
     lotDepth: depth > 0 ? depth : undefined,
     landAssessment: best.assessment_land ? Math.round(parseFloat(best.assessment_land)) : undefined,
