@@ -1,15 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useGrievances } from "@/hooks/use-grievances";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { GrievanceForm } from "@/components/GrievanceForm";
-import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSign, AlertTriangle, Award, ChevronRight } from "lucide-react";
+import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSign, AlertTriangle, Award, ChevronRight, Calculator, Sparkles } from "lucide-react";
 import { format, parseISO, isValid, isFuture } from "date-fns";
 import { getComputedDeadline } from "@/data/county-filing-instructions";
 import { usePreferredState, STATE_META, type AppState } from "@/hooks/use-preferred-state";
 import { useAuth } from "@workspace/replit-auth-web";
+
+const STATE_TAX_RATES: Record<string, number> = { NY: 0.020, NJ: 0.025, TX: 0.022, FL: 0.018 };
+
+function calcSavings(marketValue: number, assessedValue: number, state: string): number {
+  if (!marketValue || !assessedValue || assessedValue <= marketValue) return 0;
+  const overAssessment = assessedValue - marketValue;
+  const rate = STATE_TAX_RATES[state] ?? 0.020;
+  return Math.round(overAssessment * rate);
+}
+
+function fmt(n: number): string {
+  return "$" + n.toLocaleString("en-US");
+}
 
 const STATUS_COLORS = {
   draft: "bg-slate-100 text-slate-700 border-slate-200",
@@ -31,6 +44,17 @@ export function Dashboard() {
 
   const totalCases = grievances?.length || 0;
   const reducedCases = grievances?.filter(g => g.status === 'reduced').length || 0;
+
+  // Savings estimator state
+  const [estMarketValue, setEstMarketValue] = useState("");
+  const [estAssessedValue, setEstAssessedValue] = useState("");
+  const [estimatedSavings, setEstimatedSavings] = useState(0);
+
+  useEffect(() => {
+    const mv = parseFloat(estMarketValue.replace(/[^0-9.]/g, ""));
+    const av = parseFloat(estAssessedValue.replace(/[^0-9.]/g, ""));
+    setEstimatedSavings(calcSavings(mv, av, preferredState));
+  }, [estMarketValue, estAssessedValue, preferredState]);
 
   function resolveDeadline(g: { filingDeadline?: string | null; county: string; state?: string | null }): Date | null {
     const src = g.filingDeadline || getComputedDeadline(g.county, g.state ?? undefined);
@@ -168,6 +192,95 @@ export function Dashboard() {
               <p className="text-sm font-medium text-muted-foreground">Upcoming Deadlines</p>
               <h3 className="text-3xl font-bold font-serif">{upcomingCount}</h3>
             </div>
+          </div>
+        </div>
+
+        {/* ── Instant Savings Estimator ── */}
+        <div className="rounded-2xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 shadow-sm overflow-hidden">
+          <div className="p-6">
+            <div className="flex items-start gap-3 mb-5">
+              <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center shrink-0">
+                <Calculator className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-serif font-bold text-amber-900">How much are you overpaying?</h2>
+                <p className="text-sm text-amber-700 mt-0.5">
+                  Enter your numbers below — see your potential savings instantly.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
+                  Your Estimated Market Value
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 font-semibold text-sm">$</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="e.g. 550,000"
+                    value={estMarketValue}
+                    onChange={e => setEstMarketValue(e.target.value)}
+                    className="w-full pl-7 pr-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium placeholder:text-muted-foreground/50 transition"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
+                  Current Assessed Value
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-amber-600 font-semibold text-sm">$</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="e.g. 700,000"
+                    value={estAssessedValue}
+                    onChange={e => setEstAssessedValue(e.target.value)}
+                    className="w-full pl-7 pr-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium placeholder:text-muted-foreground/50 transition"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Result */}
+            {estimatedSavings > 0 ? (
+              <div className="bg-white border-2 border-emerald-300 rounded-2xl p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Sparkles className="w-4 h-4 text-emerald-600" />
+                    <p className="text-xs font-semibold text-emerald-700 uppercase tracking-wide">Potential annual savings</p>
+                  </div>
+                  <p className="text-3xl font-extrabold font-serif text-emerald-700">{fmt(estimatedSavings)}<span className="text-lg font-semibold text-emerald-600">/year</span></p>
+                  <p className="text-xs text-emerald-600 mt-1">
+                    Based on {preferredState} effective tax rate ({(STATE_TAX_RATES[preferredState] * 100).toFixed(1)}%) and your assessment gap of {fmt(parseFloat(estAssessedValue.replace(/[^0-9.]/g,"")) - parseFloat(estMarketValue.replace(/[^0-9.]/g,"")))}
+                  </p>
+                </div>
+                <div className="flex flex-col items-stretch gap-2 sm:min-w-[180px]">
+                  <Button
+                    onClick={() => setIsDialogOpen(true)}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5"
+                  >
+                    <Plus className="w-4 h-4" /> Start Filing Now
+                  </Button>
+                  <p className="text-center text-xs text-emerald-600">One-time $99 · Pays for itself in days</p>
+                </div>
+              </div>
+            ) : estMarketValue && estAssessedValue ? (
+              <div className="bg-white border border-border rounded-2xl p-4 text-sm text-muted-foreground">
+                {parseFloat(estAssessedValue.replace(/[^0-9.]/g,"")) <= parseFloat(estMarketValue.replace(/[^0-9.]/g,""))
+                  ? <p>Your assessment appears to be at or below market value. You may still have a case if comparable sales are lower — <button className="text-primary underline" onClick={() => setIsDialogOpen(true)}>start a case to check</button>.</p>
+                  : <p>Enter both values to see your estimate.</p>
+                }
+              </div>
+            ) : (
+              <div className="text-xs text-amber-700/70 flex items-center gap-1.5">
+                <span>Results update live as you type ·</span>
+                <span className="font-medium">Using {preferredState} effective tax rate of {(STATE_TAX_RATES[preferredState] * 100).toFixed(1)}%</span>
+              </div>
+            )}
           </div>
         </div>
 

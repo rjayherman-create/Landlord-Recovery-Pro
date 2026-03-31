@@ -1,0 +1,134 @@
+STEP 1 — GET API KEY
+
+Go to:
+
+👉 https://rentcast.io
+
+Get API key
+
+🚀 STEP 2 — ADD TO ENV (Replit / Railway)
+RENTCAST_API_KEY=your_key_here
+🚀 STEP 3 — BACKEND ROUTE
+
+Create:
+
+src/routes/property.ts
+Paste:
+import { Router } from "express";
+import fetch from "node-fetch";
+
+const router = Router();
+
+router.get("/property-value", async (req, res) => {
+  const address = req.query.address;
+
+  try {
+    const response = await fetch(
+      `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address)}`,
+      {
+        headers: {
+          "X-Api-Key": process.env.RENTCAST_API_KEY!,
+        },
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data || data.length === 0) {
+      return res.json({ value: null });
+    }
+
+    res.json({
+      value: data[0].price || data[0].estimatedValue,
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch property data" });
+  }
+});
+
+export default router;
+🔌 REGISTER ROUTE
+
+In app.ts:
+
+import propertyRoute from "./routes/property";
+app.use("/api", propertyRoute);
+🚀 STEP 4 — FRONTEND AUTO-FILL
+
+Add state:
+
+const [address, setAddress] = useState("");
+const [marketValue, setMarketValue] = useState("");
+Input:
+<input
+  placeholder="Enter property address"
+  value={address}
+  onChange={(e) => setAddress(e.target.value)}
+  className="border p-3 rounded w-full"
+/>
+🚀 STEP 5 — AUTO FETCH VALUE
+useEffect(() => {
+  if (address.length < 10) return;
+
+  const timeout = setTimeout(() => {
+    fetch(`/api/property-value?address=${encodeURIComponent(address)}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.value) {
+          setMarketValue(data.value);
+        }
+      });
+  }, 800);
+
+  return () => clearTimeout(timeout);
+
+}, [address]);
+💥 STEP 6 — SHOW AUTO-FILL
+<input
+  value={marketValue}
+  onChange={(e) => setMarketValue(e.target.value)}
+  className="border p-3 rounded w-full mt-3"
+/>
+🔥 UX MAGIC (IMPORTANT)
+
+Add this:
+
+{marketValue && (
+  <p className="text-green-700 text-sm mt-2">
+    Estimated market value auto-filled based on your address
+  </p>
+)}
+🧠 WHAT USER EXPERIENCES
+Types address
+   ↓
+Value appears automatically
+   ↓
+Sees savings
+   ↓
+Clicks Start Filing
+
+👉 friction = gone
+👉 conversion = ↑↑↑
+
+🚀 NEXT LEVEL (OPTIONAL BUT HUGE)
+
+We can also auto-fill:
+
+property size
+lot size
+year built
+comps
+🎯 WHERE YOU ARE NOW
+
+You have:
+
+✔ Data pipeline
+✔ Payment
+✔ Filing system
+✔ PDF output
+✔ Real county data
+✔ Auto property value
+
+👉 This is a serious product.
