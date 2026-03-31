@@ -24,8 +24,8 @@ import { useAuth } from "@workspace/replit-auth-web";
 const grievanceSchema = z.object({
   state: z.string().default("NY"),
   ownerName: z.string().min(2, "Owner name is required"),
-  ownerPhone: z.string().optional(),
-  ownerEmail: z.string().optional(),
+  ownerPhone: z.string().min(7, "Phone number is required"),
+  ownerEmail: z.string().email("Valid email address is required"),
   ownerMailingAddress: z.string().optional(),
   propertyAddress: z.string().min(5, "Property address is required"),
   county: z.string().min(2, "County is required"),
@@ -288,7 +288,7 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
       form.setValue("ownerName", fullName, { shouldValidate: true });
     }
     if (user.email && !form.getValues("ownerEmail")) {
-      form.setValue("ownerEmail", user.email, { shouldValidate: false });
+      form.setValue("ownerEmail", user.email, { shouldValidate: true });
     }
   }, [user, isEditing, form]);
 
@@ -1022,12 +1022,18 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
             )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="ownerPhone">Phone Number</Label>
+            <Label htmlFor="ownerPhone">Phone Number *</Label>
             <Input id="ownerPhone" type="tel" placeholder="(516) 555-0100" {...form.register("ownerPhone")} />
+            {form.formState.errors.ownerPhone && (
+              <p className="text-xs text-destructive">{form.formState.errors.ownerPhone.message}</p>
+            )}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="ownerEmail">Email Address</Label>
+            <Label htmlFor="ownerEmail">Email Address *</Label>
             <Input id="ownerEmail" type="email" placeholder="jane@example.com" {...form.register("ownerEmail")} />
+            {form.formState.errors.ownerEmail && (
+              <p className="text-xs text-destructive">{form.formState.errors.ownerEmail.message}</p>
+            )}
           </div>
           <div className="space-y-1.5 md:col-span-2">
             <Label htmlFor="ownerMailingAddress">
