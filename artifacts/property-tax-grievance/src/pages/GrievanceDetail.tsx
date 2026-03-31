@@ -116,6 +116,42 @@ export function GrievanceDetail() {
   const addCompMutation = useAddComparable(id);
   const deleteCompMutation = useDeleteComparable(id);
 
+  // Payment gate
+  const [userPlan, setUserPlan] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/stripe/me")
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.plan) setUserPlan(d.plan); })
+      .catch(() => {});
+  }, []);
+
+  const userHasPaid = !!userPlan;
+
+  const handleCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const pr = await fetch("/api/stripe/products");
+      if (!pr.ok) throw new Error();
+      const { data: products } = await pr.json() as { data: any[] };
+      const product = products.find((p: any) => p.metadata?.plan === "basic" || p.name?.toLowerCase().includes("basic"));
+      if (!product?.prices?.[0]?.id) throw new Error("Plan unavailable");
+      const cr = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId: product.prices[0].id }),
+      });
+      if (!cr.ok) throw new Error("Checkout failed");
+      const { url } = await cr.json();
+      window.location.href = url;
+    } catch {
+      toast({ title: "Checkout error", description: "Could not start checkout. Please try again.", variant: "destructive" });
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
   const { toast } = useToast();
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddCompOpen, setIsAddCompOpen] = useState(false);
@@ -356,12 +392,25 @@ export function GrievanceDetail() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline" onClick={handlePrintCompsReport} className="gap-2" disabled={comparables.length === 0} title={comparables.length === 0 ? "Add comparable sales first" : "Print Comparable Sales Analysis PDF"}>
-              <FileText className="w-4 h-4" /> Print Comps Report
+            <Button
+              variant="outline"
+              onClick={userHasPaid ? handlePrintCompsReport : handleCheckout}
+              className="gap-2"
+              disabled={userHasPaid && comparables.length === 0}
+              title={!userHasPaid ? "Pay to unlock" : comparables.length === 0 ? "Add comparable sales first" : "Print Comparable Sales Analysis PDF"}
+            >
+              {!userHasPaid ? <Lock className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+              Print Comps Report
             </Button>
-            <Button variant="outline" onClick={handlePrintGated} className="gap-2" title={!isAttested ? "Complete the filer sign-off in Forms & PDF to unlock" : undefined}>
-              <Printer className="w-4 h-4" /> Print {formName}
-              {!isAttested && <Lock className="w-3 h-3 opacity-50" />}
+            <Button
+              variant="outline"
+              onClick={userHasPaid ? handlePrintGated : handleCheckout}
+              className="gap-2"
+              title={!userHasPaid ? "Pay to unlock" : !isAttested ? "Complete the filer sign-off in Forms & PDF to unlock" : undefined}
+            >
+              {!userHasPaid ? <Lock className="w-4 h-4" /> : <Printer className="w-4 h-4" />}
+              Print {formName}
+              {userHasPaid && !isAttested && <Lock className="w-3 h-3 opacity-50" />}
             </Button>
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
               <DialogTrigger asChild>
@@ -949,43 +998,83 @@ export function GrievanceDetail() {
 
             {/* Tab: Print */}
             <TabsContent value="print">
-              <div className="space-y-6">
-                <ValidationPanel
-                  errors={validation.errors}
-                  warnings={validation.warnings}
-                  suggestions={validation.suggestions}
-                  isReadyToFile={validation.isReadyToFile}
-                  onFix={handleValidationFix}
-                />
-
-                <FormsPrepPanel
-                  grievance={grievance}
-                  comparables={comparables}
-                  onPrint={handlePrint}
-                  onPrintComps={handlePrintCompsReport}
-                  isAttested={isAttested}
-                  onAttest={() => setIsAttested(true)}
-                />
-
-                {/* Form preview */}
-                <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
-                  <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/30">
-                    <div>
-                      <h3 className="font-semibold text-base">RP-524 — Pre-filled Form Preview</h3>
-                      <p className="text-xs text-muted-foreground mt-0.5">This is exactly what will be in your downloaded PDF.</p>
-                    </div>
-                    <Button onClick={handlePrintGated} variant="outline" className="gap-2">
-                      <Printer className="w-4 h-4" /> Print
-                      {!isAttested && <Lock className="w-3 h-3 opacity-50" />}
-                    </Button>
+              {!userHasPaid ? (
+                <div className="relative">
+                  {/* Blurred preview */}
+                  <div className="pointer-events-none select-none blur-sm opacity-40 space-y-6">
+                    <div className="bg-card rounded-2xl border border-border p-6 h-40" />
+                    <div className="bg-card rounded-2xl border border-border p-6 h-64" />
+                    <div className="bg-card rounded-2xl border border-border overflow-hidden h-96" />
                   </div>
-                  <div className="p-4 overflow-auto bg-gray-100" style={{ minHeight: 400 }}>
-                    <div className="bg-white shadow-md rounded" style={{ transform: "scale(0.85)", transformOrigin: "top left", width: "117%" }}>
-                      <RP524PrintForm grievance={grievance} comparables={comparables} />
+
+                  {/* Lock overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="bg-white border border-border shadow-2xl rounded-2xl p-8 max-w-sm w-full text-center space-y-4 mx-4">
+                      <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                        <Lock className="w-7 h-7 text-primary" />
+                      </div>
+                      <h3 className="font-serif font-bold text-xl">Unlock Your {formName}</h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed">
+                        Your case data is saved. Pay once to generate your pre-filled form, comparable sales report, and step-by-step county instructions.
+                      </p>
+                      <div className="text-left space-y-1.5 text-sm text-muted-foreground">
+                        <p className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Pre-filled {formName} — ready to print</p>
+                        <p className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Comparable sales report PDF</p>
+                        <p className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> County filing instructions &amp; portal link</p>
+                      </div>
+                      <Button
+                        onClick={handleCheckout}
+                        disabled={checkoutLoading}
+                        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2"
+                      >
+                        {checkoutLoading
+                          ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening Checkout…</>
+                          : <><Lock className="w-4 h-4" /> Unlock for $99</>
+                        }
+                      </Button>
+                      <p className="text-xs text-muted-foreground">One-time · No subscription · Secured by Stripe</p>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-6">
+                  <ValidationPanel
+                    errors={validation.errors}
+                    warnings={validation.warnings}
+                    suggestions={validation.suggestions}
+                    isReadyToFile={validation.isReadyToFile}
+                    onFix={handleValidationFix}
+                  />
+
+                  <FormsPrepPanel
+                    grievance={grievance}
+                    comparables={comparables}
+                    onPrint={handlePrint}
+                    onPrintComps={handlePrintCompsReport}
+                    isAttested={isAttested}
+                    onAttest={() => setIsAttested(true)}
+                  />
+
+                  {/* Form preview */}
+                  <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/30">
+                      <div>
+                        <h3 className="font-semibold text-base">{formName} — Pre-filled Form Preview</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5">This is exactly what will be in your downloaded PDF.</p>
+                      </div>
+                      <Button onClick={handlePrintGated} variant="outline" className="gap-2">
+                        <Printer className="w-4 h-4" /> Print
+                        {!isAttested && <Lock className="w-3 h-3 opacity-50" />}
+                      </Button>
+                    </div>
+                    <div className="p-4 overflow-auto bg-gray-100" style={{ minHeight: 400 }}>
+                      <div className="bg-white shadow-md rounded" style={{ transform: "scale(0.85)", transformOrigin: "top left", width: "117%" }}>
+                        <RP524PrintForm grievance={grievance} comparables={comparables} state={grievanceState} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </TabsContent>
           </Tabs>
         </div>
