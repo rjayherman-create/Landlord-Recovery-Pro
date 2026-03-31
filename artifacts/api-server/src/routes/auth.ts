@@ -19,6 +19,12 @@ const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 const router: IRouter = Router();
 
 function getOrigin(req: Request): string {
+  // REPLIT_DEV_DOMAIN is the authoritative host when running inside Replit.
+  // Vite's changeOrigin proxy replaces the Host header with localhost:8080,
+  // so we cannot rely on req.headers.host to build the correct callback URL.
+  if (process.env.REPLIT_DEV_DOMAIN) {
+    return `https://${process.env.REPLIT_DEV_DOMAIN}`;
+  }
   const proto = req.headers["x-forwarded-proto"] || "https";
   const host = req.headers["x-forwarded-host"] || req.headers["host"] || "localhost";
   return `${proto}://${host}`;
