@@ -1,9 +1,11 @@
 import express from "express";
 
+console.log("🚀 STARTING SERVER");
+
 const app = express();
 
 app.get("/", (req, res) => {
-  res.send("WORKING 🚀 CLEAN DEPLOY");
+  res.send("WORKING 🚀 FINAL");
 });
 
 const port = process.env.PORT || 3000;
