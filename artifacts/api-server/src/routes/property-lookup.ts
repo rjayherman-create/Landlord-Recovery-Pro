@@ -71,19 +71,39 @@ interface PropertyRecord {
 
 /* ─── Nominatim geocoding ────────────────────────────── */
 
-async function geocodeAddress(address: string): Promise<{
+const STATE_NAMES: Record<string, string> = {
+  NY: "New York", NJ: "New Jersey", TX: "Texas", FL: "Florida",
+};
+
+async function geocodeAddress(address: string, stateHint?: string): Promise<{
   lat: number; lon: number;
   county: string; municipality: string; state: string; postcode: string;
   displayName: string;
 } | null> {
-  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address + " New York")}&format=json&addressdetails=1&limit=1&countrycodes=us`;
+  // Append the state name only if the address doesn't already include a state abbreviation/name
+  const stateLabel = stateHint ? (STATE_NAMES[stateHint] || stateHint) : "";
+  const hasState = /\b(NY|NJ|TX|FL|New York|New Jersey|Texas|Florida)\b/i.test(address);
+  const query = hasState ? address : (stateLabel ? `${address}, ${stateLabel}` : address);
+
+  const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1&limit=3&countrycodes=us`;
   const res = await fetch(url, {
-    headers: { "User-Agent": "NYPropertyTaxGrievanceApp/1.0 (educational-tool)" },
+    headers: { "User-Agent": "TaxAppealDIY/1.0 (educational-tool)" },
   });
   if (!res.ok) return null;
   const data = await res.json() as any[];
   if (!data?.length) return null;
-  const r = data[0];
+
+  // Prefer results matching the requested state
+  let r = data[0];
+  if (stateHint && data.length > 1) {
+    const stateFullLower = (STATE_NAMES[stateHint] || stateHint).toLowerCase();
+    const stateMatch = data.find((d: any) => {
+      const addrState = (d.address?.state || "").toLowerCase();
+      return addrState.includes(stateFullLower) || addrState === stateHint.toLowerCase();
+    });
+    if (stateMatch) r = stateMatch;
+  }
+
   const addr = r.address || {};
 
   const municipality =
@@ -499,12 +519,184 @@ async function lookupNYSOrps(
   return result;
 }
 
+/* ─── NJ lookup — geocode + county detection + Tax Board directory link ────── */
+// NJ property assessment data (MOD-IV) is not exposed through a public JSON API.
+// We confirm the address via Nominatim, fill county + municipality, and direct
+// the user to their specific County Board of Taxation or municipality assessor.
+
+const NJ_TAX_BOARD_URLS: Record<string, string> = {
+  "atlantic":    "https://www.atlantic-county.org/tax/",
+  "bergen":      "https://www.co.bergen.nj.us/tax-board",
+  "burlington":  "https://co.burlington.nj.us/135/Tax-Board",
+  "camden":      "https://www.camdencounty.com/service/boards-commissions/county-board-of-taxation/",
+  "cape may":    "https://capemaycountynj.gov/365/Tax-Board",
+  "cumberland":  "https://www.co.cumberland.nj.us/200/Tax-Board",
+  "essex":       "https://www.essexcountytaxboard.com/",
+  "gloucester":  "https://www.gloucestercountynj.gov/222/Tax-Board",
+  "hudson":      "https://www.hudsoncountytaxboard.com/",
+  "hunterdon":   "https://www.co.hunterdon.nj.us/taxboard.htm",
+  "mercer":      "https://www.mercercounty.org/departments/tax-board",
+  "middlesex":   "https://www.co.middlesex.nj.us/Government/Departments/TaxBoard",
+  "monmouth":    "https://www.co.monmouth.nj.us/county_departments/tax_board/",
+  "morris":      "https://www.morriscountynj.gov/Departments/Tax-Board",
+  "ocean":       "https://www.co.ocean.nj.us/OC/Boards/TaxBoard",
+  "passaic":     "https://www.passaiccountynj.org/government/departments/tax_board",
+  "salem":       "https://www.salemcountynj.gov/county/departments/tax-board/",
+  "somerset":    "https://www.co.somerset.nj.us/government/boards-committees-commissions/tax-board",
+  "sussex":      "https://www.sussex.nj.us/cn/webpage.cfm?tpid=8624",
+  "union":       "https://ucnj.org/county-services/tax-board/",
+  "warren":      "https://www.co.warren.nj.us/government/departments/tax-board.html",
+};
+
+async function lookupNJProperty(
+  _address: string,
+  geocodeMunicipality: string,
+  geocodeCounty: string,
+): Promise<Partial<LookupResult>> {
+  const countyLow = geocodeCounty.toLowerCase();
+  const taxBoardUrl = Object.entries(NJ_TAX_BOARD_URLS).find(([k]) => countyLow.includes(k))?.[1]
+    ?? "https://www.njtaxationpropertyapp.com/Appeal";
+
+  const result: Partial<LookupResult> = {
+    county: geocodeCounty,
+    municipality: geocodeMunicipality,
+    confidence: "partial",
+    source: "OpenStreetMap (geocode confirmed)",
+    message: `${geocodeCounty} County address confirmed. To get your assessed value and Block/Lot number, visit your County Tax Board: ${taxBoardUrl}`,
+    fieldsFound: ["county", "municipality"],
+    rawRecord: {
+      address: geocodeMunicipality,
+      dataSource: `New Jersey — ${geocodeCounty} County Board of Taxation`,
+      retrievedAt: new Date().toISOString(),
+    },
+  };
+  return result;
+}
+
+/* ─── TX lookup — geocode + county detection + CAD directory link ─────────── */
+// Texas has ~250+ county appraisal districts (CADs), each with its own API.
+// We confirm the address via geocoding, fill in county/municipality, then
+// provide a direct link to the county CAD for the user to retrieve their
+// appraised value and account number.
+
+const TX_CAD_URLS: Record<string, string> = {
+  "harris":     "https://public.hcad.org/records/",
+  "dallas":     "https://www.dallascad.org/SearchAddr.aspx",
+  "tarrant":    "https://www.tad.org/",
+  "bexar":      "https://esearch.bcad.org/",
+  "travis":     "https://tcad.org/",
+  "collin":     "https://search.collincad.org/",
+  "denton":     "https://dentoncad.com/",
+  "hidalgo":    "https://hcad.net/",
+  "el paso":    "https://www.epcad.org/",
+  "fort bend":  "https://www.fbcad.org/",
+  "montgomery": "https://www.mctx.org/departments/tax_assessor_collector/",
+  "williamson": "https://wcad.org/",
+  "galveston":  "https://actweb.acttax.com/act_webdev/galveston/",
+  "nueces":     "https://www.nuecescad.net/",
+  "lubbock":    "https://lubbockcad.org/",
+  "jefferson":  "https://www.jcad.org/",
+  "smith":      "https://www.smithcad.org/",
+  "webb":       "https://www.webbcad.org/",
+  "brazoria":   "https://brazoriacad.org/",
+  "bell":       "https://www.bellcad.org/",
+};
+
+async function lookupTXProperty(
+  geocodeCounty: string,
+  geocodeMunicipality: string,
+): Promise<Partial<LookupResult>> {
+  const countyLow = geocodeCounty.toLowerCase();
+  const cadUrl = Object.entries(TX_CAD_URLS).find(([k]) => countyLow.includes(k))?.[1]
+    ?? `https://comptroller.texas.gov/taxes/property-tax/cadmap.php`;
+
+  const result: Partial<LookupResult> = {
+    county: geocodeCounty,
+    municipality: geocodeMunicipality,
+    confidence: "partial",
+    source: "OpenStreetMap (geocode confirmed)",
+    message: `${geocodeCounty} County address confirmed. To get your appraised value and account number, visit your County Appraisal District: ${cadUrl}`,
+    fieldsFound: ["county", "municipality"],
+    rawRecord: {
+      address: geocodeMunicipality,
+      dataSource: `Texas — ${geocodeCounty} County Appraisal District`,
+      retrievedAt: new Date().toISOString(),
+    },
+  };
+  return result;
+}
+
+/* ─── FL lookup — geocode + county detection + PAO directory link ─────────── */
+// Florida has 67 county Property Appraiser Offices (PAOs).
+// We confirm the address and provide a direct link to the correct PAO.
+
+const FL_PAO_URLS: Record<string, string> = {
+  "miami-dade":  "https://www.miamidade.gov/pa/property_search.asp",
+  "miami dade":  "https://www.miamidade.gov/pa/property_search.asp",
+  "broward":     "https://web.bcpa.net/bcpaclient/",
+  "palm beach":  "https://www.pbcpao.gov/",
+  "hillsborough":"https://gis.hcpafl.org/PTsearch/",
+  "orange":      "https://www.ocpafl.org/",
+  "pinellas":    "https://www.pcpao.gov/",
+  "duval":       "https://www.coj.net/departments/property-appraiser/search-real-estate-records",
+  "lee":         "https://www.leepa.org/",
+  "polk":        "https://www.polkpa.org/",
+  "brevard":     "https://www.bcpao.us/",
+  "volusia":     "https://vcpa.volusia.org/",
+  "seminole":    "https://www.scpafl.org/",
+  "pasco":       "https://www.pascopa.com/",
+  "sarasota":    "https://www.sc-pa.com/",
+  "manatee":     "https://www.manateepao.gov/",
+  "collier":     "https://www.collierappraiser.com/",
+  "st. johns":   "https://www.sjcpa.us/",
+  "st johns":    "https://www.sjcpa.us/",
+  "alachua":     "https://www.acpafl.org/",
+  "escambia":    "https://www.escpa.org/",
+  "lake":        "https://www.lakecopropappr.com/",
+  "osceola":     "https://www.property-appraiser.org/",
+  "marion":      "https://www.pa.marion.fl.us/",
+  "charlotte":   "https://www.ccappraiser.com/",
+  "leon":        "https://www.leonpa.org/",
+};
+
+async function lookupFLProperty(
+  geocodeCounty: string,
+  geocodeMunicipality: string,
+): Promise<Partial<LookupResult>> {
+  const countyLow = geocodeCounty.toLowerCase();
+  const paoUrl = Object.entries(FL_PAO_URLS).find(([k]) => countyLow.includes(k))?.[1]
+    ?? `https://floridarevenue.com/property/Pages/Taxpayers_ListOfCountyPropertyAppraisers.aspx`;
+
+  const result: Partial<LookupResult> = {
+    county: geocodeCounty,
+    municipality: geocodeMunicipality,
+    confidence: "partial",
+    source: "OpenStreetMap (geocode confirmed)",
+    message: `${geocodeCounty} County address confirmed. To get your assessed value and parcel ID, visit your County Property Appraiser: ${paoUrl}`,
+    fieldsFound: ["county", "municipality"],
+    rawRecord: {
+      address: geocodeMunicipality,
+      dataSource: `Florida — ${geocodeCounty} County Property Appraiser`,
+      retrievedAt: new Date().toISOString(),
+    },
+  };
+  return result;
+}
+
 /* ─── Main route ─────────────────────────────────────── */
+
+const SUPPORTED_STATES = new Set(["NY", "NJ", "TX", "FL"]);
 
 router.get("/property-lookup", async (req, res) => {
   const address = req.query.address as string;
+  const stateParam = ((req.query.state as string) || "NY").toUpperCase();
+
   if (!address || address.trim().length < 5) {
     res.status(400).json({ error: "Address is required (minimum 5 characters)" });
+    return;
+  }
+  if (!SUPPORTED_STATES.has(stateParam)) {
+    res.status(400).json({ error: `State '${stateParam}' is not yet supported.` });
     return;
   }
 
@@ -515,15 +707,20 @@ router.get("/property-lookup", async (req, res) => {
   };
 
   try {
-    // Step 1: Geocode
-    const geo = await geocodeAddress(address);
+    // Step 1: Geocode with state hint
+    const geo = await geocodeAddress(address, stateParam);
     if (!geo) {
-      res.status(404).json({ error: "Address not found. Try including the town, county, and state (e.g. '123 Main St, Garden City, NY')." });
+      res.status(404).json({ error: `Address not found. Try including your town and state — e.g. '123 Main St, Trenton, NJ'.` });
       return;
     }
 
-    if (geo.state && !geo.state.toLowerCase().includes("new york")) {
-      res.status(400).json({ error: "This tool is for New York State properties only." });
+    // Warn if geocode returns a different state than requested
+    const geoStateLow = geo.state.toLowerCase();
+    const expectedLow = (STATE_NAMES[stateParam] || stateParam).toLowerCase();
+    if (geo.state && !geoStateLow.includes(expectedLow) && !expectedLow.includes(geoStateLow.split(" ")[0])) {
+      res.status(400).json({
+        error: `That address appears to be in ${geo.state}, not ${STATE_NAMES[stateParam] || stateParam}. Please check the state you selected.`,
+      });
       return;
     }
 
@@ -532,77 +729,95 @@ router.get("/property-lookup", async (req, res) => {
     result.fieldsFound.push("county", "municipality");
 
     const countyLower = geo.county.toLowerCase();
-    const isNYC = ["new york", "kings", "queens", "bronx", "richmond"].includes(countyLower);
-    const isNassau = countyLower.includes("nassau");
 
-    // Step 2: County-specific enrichment
-    if (isNYC) {
-      try {
-        const pluto = await lookupNycPluto(address, geo.lat, geo.lon);
-        const { fieldsFound: plutoFields, ...plutoRest } = pluto;
-        Object.assign(result, plutoRest);
-        if (plutoFields?.length) {
-          result.fieldsFound.push(...plutoFields);
-          result.source = "NYC Open Data (PLUTO)";
-          result.confidence = "high";
-        } else {
-          result.source = "OpenStreetMap + NYC Open Data";
-          result.confidence = "partial";
-          result.message = "NYC property found but detailed data unavailable. Verify year built, living area, and lot size from your tax bill.";
-        }
-      } catch {
-        result.source = "OpenStreetMap";
-        result.confidence = "partial";
-      }
+    // Step 2: State-specific enrichment
+    if (stateParam === "NY") {
+      const isNYC = ["new york", "kings", "queens", "bronx", "richmond"].includes(countyLower);
 
-      // Map borough → municipality label
-      const boroughMap: Record<string, string> = {
-        "new york": "Manhattan",
-        "kings": "Brooklyn",
-        "queens": "Queens",
-        "bronx": "The Bronx",
-        "richmond": "Staten Island",
-      };
-      result.municipality = boroughMap[countyLower] || result.municipality;
-      result.county = "New York City";
-
-    } else {
-      // ── All non-NYC NY counties: query NYS ORPS Assessment Roll ──────────
-      // Covers Nassau, Suffolk, Westchester, Rockland, and every other county.
-      // Normalise the county name to match what ORPS stores (e.g. "Nassau", "Suffolk").
-      const orpsCounty = countyLower.includes("nassau")      ? "Nassau"
-                       : countyLower.includes("suffolk")     ? "Suffolk"
-                       : countyLower.includes("westchester") ? "Westchester"
-                       : countyLower.includes("rockland")    ? "Rockland"
-                       : countyLower.includes("orange")      ? "Orange"
-                       : countyLower.includes("dutchess")    ? "Dutchess"
-                       : countyLower.includes("putnam")      ? "Putnam"
-                       : countyLower.includes("ulster")      ? "Ulster"
-                       : geo.county; // pass raw geocoded county for other counties
-
-      result.county = orpsCounty;
-
-      try {
-        const orps = await lookupNYSOrps(address, orpsCounty, geo.municipality);
-        const { fieldsFound: orpsFields, rawRecord: orpsRaw, ...orpsRest } = orps;
-
-        Object.assign(result, orpsRest);
-        if (orpsRaw) result.rawRecord = orpsRaw;
-
-        if (orpsFields && orpsFields.length > 0) {
-          result.fieldsFound.push(...orpsFields);
-          result.source = `NYS Assessment Roll (${orpsCounty} County)`;
-          result.confidence = "high";
-        } else {
+      if (isNYC) {
+        try {
+          const pluto = await lookupNycPluto(address, geo.lat, geo.lon);
+          const { fieldsFound: plutoFields, ...plutoRest } = pluto;
+          Object.assign(result, plutoRest);
+          if (plutoFields?.length) {
+            result.fieldsFound.push(...plutoFields);
+            result.source = "NYC Open Data (PLUTO)";
+            result.confidence = "high";
+          } else {
+            result.source = "OpenStreetMap + NYC Open Data";
+            result.confidence = "partial";
+            result.message = "NYC property found but detailed data unavailable. Verify year built, living area, and lot size from your tax bill.";
+          }
+        } catch {
           result.source = "OpenStreetMap";
           result.confidence = "partial";
-          result.message = `${orpsCounty} County address confirmed. Property details not found by address — enter your SBL number and other details from your tax bill.`;
         }
+        const boroughMap: Record<string, string> = {
+          "new york": "Manhattan", "kings": "Brooklyn", "queens": "Queens",
+          "bronx": "The Bronx", "richmond": "Staten Island",
+        };
+        result.municipality = boroughMap[countyLower] || result.municipality;
+        result.county = "New York City";
+
+      } else {
+        // All non-NYC NY counties — NYS ORPS Assessment Roll
+        const orpsCounty = countyLower.includes("nassau")      ? "Nassau"
+                         : countyLower.includes("suffolk")     ? "Suffolk"
+                         : countyLower.includes("westchester") ? "Westchester"
+                         : countyLower.includes("rockland")    ? "Rockland"
+                         : countyLower.includes("orange")      ? "Orange"
+                         : countyLower.includes("dutchess")    ? "Dutchess"
+                         : countyLower.includes("putnam")      ? "Putnam"
+                         : countyLower.includes("ulster")      ? "Ulster"
+                         : geo.county;
+        result.county = orpsCounty;
+        try {
+          const orps = await lookupNYSOrps(address, orpsCounty, geo.municipality);
+          const { fieldsFound: orpsFields, rawRecord: orpsRaw, ...orpsRest } = orps;
+          Object.assign(result, orpsRest);
+          if (orpsRaw) result.rawRecord = orpsRaw;
+          if (orpsFields && orpsFields.length > 0) {
+            result.fieldsFound.push(...orpsFields);
+            result.source = `NYS Assessment Roll (${orpsCounty} County)`;
+            result.confidence = "high";
+          } else {
+            result.source = "OpenStreetMap";
+            result.confidence = "partial";
+            result.message = `${orpsCounty} County address confirmed. Property details not found by address — enter your SBL number and other details from your tax bill.`;
+          }
+        } catch {
+          result.source = "OpenStreetMap";
+          result.confidence = "partial";
+          result.message = `${orpsCounty} County address confirmed. Enter your SBL and property details from your tax bill.`;
+        }
+      }
+
+    } else if (stateParam === "NJ") {
+      try {
+        const nj = await lookupNJProperty(address, geo.municipality, geo.county);
+        const { fieldsFound: njFields, rawRecord: njRaw, ...njRest } = nj;
+        Object.assign(result, njRest);
+        if (njRaw) result.rawRecord = njRaw;
+        if (njFields) result.fieldsFound.push(...njFields.filter(f => !result.fieldsFound.includes(f)));
       } catch {
         result.source = "OpenStreetMap";
         result.confidence = "partial";
-        result.message = `${orpsCounty} County address confirmed. Enter your SBL and property details from your tax bill.`;
+        result.message = `${geo.county} County address confirmed. Enter your Block/Lot and assessed value from your tax bill.`;
       }
+
+    } else if (stateParam === "TX") {
+      const tx = await lookupTXProperty(geo.county, geo.municipality);
+      const { fieldsFound: txFields, rawRecord: txRaw, ...txRest } = tx;
+      Object.assign(result, txRest);
+      if (txRaw) result.rawRecord = txRaw;
+      if (txFields) result.fieldsFound.push(...txFields.filter(f => !result.fieldsFound.includes(f)));
+
+    } else if (stateParam === "FL") {
+      const fl = await lookupFLProperty(geo.county, geo.municipality);
+      const { fieldsFound: flFields, rawRecord: flRaw, ...flRest } = fl;
+      Object.assign(result, flRest);
+      if (flRaw) result.rawRecord = flRaw;
+      if (flFields) result.fieldsFound.push(...flFields.filter(f => !result.fieldsFound.includes(f)));
     }
 
     // Deduplicate fieldsFound
@@ -612,7 +827,7 @@ router.get("/property-lookup", async (req, res) => {
     result.lookupAddress = address;
     result.lookupDate = new Date().toISOString();
 
-    // For non-NYC (geocode only), build a minimal raw record from geocode data
+    // Fallback raw record for geocode-only cases
     if (!result.rawRecord) {
       result.rawRecord = {
         address: geo.displayName.split(",").slice(0, 2).join(",").trim(),

@@ -480,11 +480,18 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
 
     try {
       const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-      const res = await fetch(`${BASE}/api/property-lookup?address=${encodeURIComponent(trimmed)}`);
+      const res = await fetch(`${BASE}/api/property-lookup?address=${encodeURIComponent(trimmed)}&state=${encodeURIComponent(selectedState)}`);
       const data = await res.json();
 
       if (!res.ok) {
-        setLookupError(data.error || "Address not found. Try including your town and state — e.g. '123 Main St, Garden City, NY'.");
+        const stateExamples: Record<string, string> = {
+          NY: "123 Main St, Garden City, NY",
+          NJ: "123 Main St, Trenton, NJ",
+          TX: "1234 Westheimer Rd, Houston, TX",
+          FL: "100 Collins Ave, Miami Beach, FL",
+        };
+        const example = stateExamples[selectedState] ?? "123 Main St, Your City, State";
+        setLookupError(data.error || `Address not found. Try including your town and state — e.g. '${example}'.`);
         return;
       }
 
