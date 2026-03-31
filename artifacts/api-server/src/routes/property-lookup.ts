@@ -16,6 +16,7 @@ interface LookupResult {
   estimatedMarketValue?: number;
   currentAssessment?: number;
   landAssessment?: number;
+  ownerName?: string;
   source: string;
   confidence: "high" | "partial" | "geocode-only";
   fieldsFound: string[];
@@ -233,6 +234,12 @@ async function lookupNycPluto(address: string, lat: number, lon: number): Promis
     fieldsFound.push("schoolDistrict");
   }
 
+  // Owner name from PLUTO — stored in mixed case already
+  if (match.ownername) {
+    result.ownerName = String(match.ownername).trim();
+    fieldsFound.push("ownerName");
+  }
+
   // Raw record for visual confirmation
   const LAND_USE_LABELS: Record<string, string> = {
     "1": "One & Two Family Buildings", "2": "Multi-Family Walkup Buildings",
@@ -397,11 +404,20 @@ async function lookupNYSOrps(
     fieldsFound.push("lotSize");
   }
 
+  // Owner name — combine first + last from ORPS, convert from ALL CAPS
+  const ownerFirst = toTitleCase(String(best.primary_owner_first_name || "").trim());
+  const ownerLast = toTitleCase(String(best.primary_owner_last_name || "").trim());
+  const ownerFull = [ownerFirst, ownerLast].filter(Boolean).join(" ");
+  if (ownerFull) {
+    result.ownerName = ownerFull;
+    fieldsFound.push("ownerName");
+  }
+
   // Raw property record card
   result.rawRecord = {
     address: `${best.parcel_address_number} ${best.parcel_address_street}`,
     zipcode: best.mailing_address_zip,
-    ownerName: best.primary_owner_last_name || best.primary_owner_first_name,
+    ownerName: ownerFull || undefined,
     buildingClass: best.property_class,
     buildingClassDesc: best.property_class_description ? toTitleCase(best.property_class_description) : undefined,
     lotFrontage: front > 0 ? front : undefined,

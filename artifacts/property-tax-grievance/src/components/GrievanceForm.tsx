@@ -510,6 +510,8 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
       if (result.lotSize)             { merged.lotSize             = result.lotSize;             filled.add("lotSize"); }
       if (result.estimatedMarketValue){ merged.estimatedMarketValue= result.estimatedMarketValue;filled.add("estimatedMarketValue"); }
       if (result.currentAssessment)   { merged.currentAssessment  = result.currentAssessment;   filled.add("currentAssessment"); }
+      // Owner name from official records always takes priority
+      if (result.ownerName)           { merged.ownerName           = result.ownerName;           filled.add("ownerName"); }
 
       // form.reset with merged values atomically updates ALL Controller-managed fields
       form.reset(merged, { keepErrors: false, keepIsSubmitted: false });

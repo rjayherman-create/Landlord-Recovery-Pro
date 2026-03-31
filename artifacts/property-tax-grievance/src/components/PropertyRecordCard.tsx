@@ -46,6 +46,9 @@ export interface LookupResult {
   livingArea?: number;
   lotSize?: string;
   estimatedMarketValue?: number;
+  currentAssessment?: number;
+  landAssessment?: number;
+  ownerName?: string;
   source: string;
   confidence: "high" | "partial" | "geocode-only";
   fieldsFound: string[];
