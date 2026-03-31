@@ -353,6 +353,7 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
   const [isOcring, setIsOcring] = useState(false);
   const [ocrPreview, setOcrPreview] = useState<string | null>(null);
   const [ocrError, setOcrError] = useState<string | null>(null);
+  const [ocrFieldCount, setOcrFieldCount] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<GrievanceFormValues>({
@@ -579,6 +580,15 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
       const str = (v: any) => (v != null && v !== "" ? String(v) : undefined);
       const num = (v: any) => (v != null && !isNaN(Number(v)) ? Number(v) : undefined);
 
+      // Auto-switch state if detected from the document
+      const VALID_STATES = ["NY", "NJ", "TX", "FL"];
+      const detectedState = data.state && VALID_STATES.includes(data.state.toUpperCase()) ? data.state.toUpperCase() : null;
+      if (detectedState && detectedState !== selectedState) {
+        setSelectedState(detectedState);
+        merged.state = detectedState;
+        filled.add("state");
+      }
+
       if (data.propertyAddress) { merged.propertyAddress = data.propertyAddress; filled.add("propertyAddress"); }
       if (data.county)          { merged.county          = data.county;          filled.add("county"); }
       if (data.municipality)    { merged.municipality    = data.municipality;    filled.add("municipality"); }
@@ -596,6 +606,7 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
 
       form.reset(merged, { keepErrors: false, keepIsSubmitted: false });
       setAutoFilledFields(filled);
+      setOcrFieldCount(filled.size);
 
       // Also fill the address bar if we got an address
       if (data.propertyAddress) setLookupAddress(data.propertyAddress);
@@ -738,10 +749,6 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
           <Sparkles className="w-4 h-4 text-primary flex-shrink-0" />
           <span className="text-sm font-semibold text-primary">Auto-fill from Public Records</span>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Type your address and tap <strong>Look Up</strong>, use your location, or <strong>scan your tax bill</strong> — we'll extract county, parcel ID, year built, living area, and more automatically.
-        </p>
-
         {/* Hidden file input */}
         <input
           ref={fileInputRef}
@@ -750,6 +757,47 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
           className="hidden"
           onChange={handleFileUpload}
         />
+
+        {/* Primary: Scan Tax Bill — highlighted as most accurate */}
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isOcring || isLookingUp || isLocating}
+          className={`w-full flex items-center gap-3 p-4 rounded-xl border-2 text-left transition-all cursor-pointer
+            ${isOcring
+              ? "border-amber-300 bg-amber-50"
+              : "border-amber-400 bg-amber-50 hover:bg-amber-100 hover:border-amber-500"
+            }`}
+        >
+          <div className="w-10 h-10 rounded-full bg-amber-400 flex items-center justify-center flex-shrink-0">
+            {isOcring
+              ? <Loader2 className="w-5 h-5 text-white animate-spin" />
+              : <Camera className="w-5 h-5 text-white" />
+            }
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-amber-900 text-sm">
+                {isOcring ? "Reading your document with AI…" : "Scan Your Tax Assessment Notice"}
+              </span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-white font-bold">
+                MOST ACCURATE
+              </span>
+            </div>
+            <p className="text-xs text-amber-800 mt-0.5">
+              {isOcring
+                ? "This takes a few seconds — stay on this page"
+                : "Upload a photo or screenshot of your official notice. AI reads your exact assessed value, parcel ID, and more."
+              }
+            </p>
+          </div>
+        </button>
+
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="flex-1 h-px bg-border" />
+          <span>or look up by address</span>
+          <div className="flex-1 h-px bg-border" />
+        </div>
 
         <div className="flex flex-col gap-2">
           <div className="flex gap-2">
@@ -774,63 +822,58 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
               }
             </Button>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={handleUseLocation}
-              disabled={isLocating || isLookingUp || isOcring}
-              className="gap-2 border-primary/30 text-primary hover:bg-primary/5"
-            >
-              {isLocating
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Detecting…</>
-                : <><LocateFixed className="w-4 h-4" /> Use My Location</>
-              }
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isOcring || isLookingUp || isLocating}
-              className="gap-2 border-amber-400/60 text-amber-700 hover:bg-amber-50"
-            >
-              {isOcring
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Scanning…</>
-                : <><Camera className="w-4 h-4" /> Scan Tax Bill</>
-              }
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleUseLocation}
+            disabled={isLocating || isLookingUp || isOcring}
+            className="gap-2 border-primary/30 text-primary hover:bg-primary/5 w-full"
+          >
+            {isLocating
+              ? <><Loader2 className="w-4 h-4 animate-spin" /> Detecting…</>
+              : <><LocateFixed className="w-4 h-4" /> Use My Location</>
+            }
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Address lookup estimates may differ from your official assessment — always verify against your tax notice.
+          </p>
         </div>
 
         {/* OCR image preview + status */}
         {ocrPreview && (
-          <div className="flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className={`flex items-start gap-3 p-3 rounded-xl border ${
+            isOcring ? "bg-amber-50 border-amber-200" : "bg-emerald-50 border-emerald-200"
+          }`}>
             <img
               src={ocrPreview}
               alt="Tax bill preview"
-              className="w-16 h-16 object-cover rounded-md border border-amber-300 flex-shrink-0"
+              className="w-16 h-16 object-cover rounded-md border border-gray-200 flex-shrink-0"
             />
             <div className="flex-1 min-w-0">
               {isOcring ? (
-                <div className="flex items-center gap-2 text-sm text-amber-800 font-medium">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Reading your tax bill with AI — this takes a few seconds…
-                </div>
+                <>
+                  <div className="flex items-center gap-2 text-sm text-amber-800 font-semibold">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Reading your official document with AI…
+                  </div>
+                  <p className="text-xs text-amber-700 mt-1">Extracting assessed value, parcel ID, and property details — this takes a few seconds.</p>
+                </>
               ) : (
-                <div className="flex items-center gap-2 text-sm text-emerald-700 font-medium">
-                  <CheckCircle2 className="w-4 h-4" />
-                  Document scanned — fields filled below
-                </div>
+                <>
+                  <div className="flex items-center gap-2 text-sm text-emerald-700 font-semibold">
+                    <CheckCircle2 className="w-4 h-4" />
+                    {ocrFieldCount > 0 ? `${ocrFieldCount} fields read from your official document` : "Document scanned — fields filled below"}
+                  </div>
+                  <p className="text-xs text-emerald-600 mt-1">
+                    These values came directly from your tax notice — review and correct any that look wrong.
+                  </p>
+                </>
               )}
-              <p className="text-xs text-muted-foreground mt-1">
-                Review each auto-filled field and correct anything that doesn't look right.
-              </p>
             </div>
             <button
               type="button"
-              onClick={() => { setOcrPreview(null); setOcrError(null); }}
+              onClick={() => { setOcrPreview(null); setOcrError(null); setOcrFieldCount(0); }}
               className="text-muted-foreground hover:text-foreground p-0.5 flex-shrink-0"
             >
               <X className="w-4 h-4" />

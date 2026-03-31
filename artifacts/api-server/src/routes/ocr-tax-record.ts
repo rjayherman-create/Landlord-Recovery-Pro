@@ -18,39 +18,67 @@ const openai = new OpenAI({
   apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
 });
 
-const SYSTEM_PROMPT = `You are an expert OCR assistant specializing in New York State property tax documents.
-Your job is to extract key property information from uploaded images of tax bills, assessment notices,
-tax records, or any NY property document.
+const SYSTEM_PROMPT = `You are an expert OCR assistant specializing in property tax documents from all US states,
+with deep expertise in NY, NJ, TX, and FL assessment notices, tax bills, and grievance forms.
 
-Return ONLY a JSON object — no markdown, no explanation. Use null for fields you cannot find.
+Your job: extract key property information from uploaded images of any official tax or assessment document.
+
+Return ONLY a valid JSON object — no markdown, no code fences, no explanation. Use null for fields you cannot find.
 
 Fields to extract:
 {
-  "ownerName": "Full name of property owner(s)",
-  "propertyAddress": "Full street address of the property",
-  "parcelId": "Tax Map Number, SBL (Section-Block-Lot), or Parcel ID — look for labels like 'Tax Map #', 'Parcel ID', 'SBL', 'Section/Block/Lot', 'Print Key'",
-  "county": "County name (e.g. Nassau, Suffolk, Westchester)",
-  "municipality": "Town, city, or village (e.g. Town of Hempstead, Glen Cove, Oyster Bay)",
-  "schoolDistrict": "School district name",
-  "propertyClass": "Property classification code (e.g. 210, 220) — may be labeled 'Class', 'Property Class', or 'Use Code'",
-  "yearBuilt": "Year the building was constructed — look for 'Year Built', 'Built', 'Construction Year'",
-  "livingArea": "Living area or gross square footage as a number — look for 'Living Area', 'GBA', 'Gross Building Area', 'Floor Area', 'Sq Ft', 'Square Feet'",
-  "lotSize": "Lot size description — look for 'Lot Size', 'Lot Area', 'Acreage', 'Frontage', dimensions like '60x120'",
-  "landAssessment": "Assessed value of the land only — look for 'Land AV', 'Land Assessment', 'Land Value'",
-  "totalAssessment": "Total assessed value of land + improvements — look for 'Total AV', 'Total Assessment', 'Assessed Value', 'Full Value'",
-  "estimatedMarketValue": "Full market value — look for 'Market Value', 'Full Market Value', 'Appraised Value'",
-  "taxYear": "Tax year or assessment year — look for 'Tax Year', 'Assessment Year', 'Roll Year'",
-  "filingDeadline": "Grievance filing deadline if shown — look for 'Grievance Day', 'Deadline', 'File By'",
-  "exemptions": "Any exemptions listed (e.g. STAR, Senior, Veterans)",
-  "rawText": "A brief summary (1-2 sentences) of what type of document this appears to be"
+  "state": "Two-letter state code detected from the document (NY, NJ, TX, FL, or other)",
+  "ownerName": "Full name of property owner(s) as printed",
+  "propertyAddress": "Full street address of the property including city, state, zip if shown",
+  "parcelId": "The official parcel/account ID. In NY: SBL or Tax Map # (e.g. 064.00-04-001.000). In NJ: Block/Lot (e.g. Block 42, Lot 7). In TX: Account Number or Appraisal District Number. In FL: Parcel ID or Folio Number.",
+  "county": "County name (e.g. Nassau, Middlesex, Harris, Miami-Dade)",
+  "municipality": "Town, city, township, or village (e.g. Town of Hempstead, Township of Edison, City of Houston)",
+  "schoolDistrict": "School district name if shown",
+  "propertyClass": "Classification code or land use code — NY: 210/220/etc; NJ: Class 2; TX: A1/A2; FL: 0100/0101/etc",
+  "yearBuilt": "Year constructed — look for 'Year Built', 'Yr Built', 'Built', 'Construction Year'",
+  "livingArea": "Gross living area in sq ft (number only) — look for 'Living Area', 'GBA', 'Gross Building Area', 'Sq Ft', 'Heated Area', 'Under Air'",
+  "lotSize": "Lot size — dimensions, acreage, or sq ft (e.g. '60x120', '0.25 acres', '7,500 sq ft')",
+  "landAssessment": "Land-only assessed value — 'Land AV', 'Land Value', 'Land Assessment', 'Site Value'",
+  "totalAssessment": "CRITICAL: The total assessed value used for tax calculation. NY: 'Total AV' or 'Assessed Value'. NJ: 'Total Assessment'. TX: 'Assessed Value' (may differ from 'Appraised Value' due to cap). FL: 'Assessed Value' (after SOH cap). This is the value the homeowner wants to challenge.",
+  "estimatedMarketValue": "Full market/appraised value before any caps or exemptions. NY: 'Full Market Value'. NJ: true market value. TX: 'Appraised Value' or 'Market Value'. FL: 'Just Value' or 'Market Value'. This is what the assessor thinks the property is worth.",
+  "taxYear": "Assessment or tax year as a 4-digit number — 'Tax Year', 'Assessment Year', 'Roll Year', 'For Year'",
+  "filingDeadline": "Appeal/protest/grievance filing deadline if printed — 'Grievance Day', 'Protest Deadline', 'File By', 'ARB Hearing'",
+  "exemptions": "List any exemptions shown (e.g. STAR, Homestead Exemption, Senior, Veterans, Disability, Agricultural)",
+  "rawText": "One sentence describing the document type (e.g. 'NY Nassau County 2024 Property Assessment Notice')"
 }
 
-Important extraction tips:
-- NY SBL format is typically like: 09-C-32 or 064.00-04-001.000 or 21-24.-3
-- Living area is usually in square feet, a number like 1,200 or 2,400
-- Year built is a 4-digit year like 1965
-- Total assessment in Nassau is often labeled "Total AV" and may be in thousands
-- Look carefully at all text including headers, tables, and fine print`;
+State-specific extraction tips:
+NEW YORK (NY):
+- SBL (Section-Block-Lot) is the parcel ID, format like 064.00-04-001.000 or 09-C-32
+- 'Total AV' = Assessed Value to challenge; 'Full Market Value' = estimated market value
+- Nassau County often shows values in full dollars; other counties may show in thousands
+- STAR exemption reduces the taxable assessed value — note it separately
+
+NEW JERSEY (NJ):
+- Block and Lot number is the parcel ID (e.g. Block 42, Lot 7, Qualifier C0001)
+- 'Total Assessment' = assessed value; NJ assesses at a county-specific ratio of market value
+- 'Average Ratio' or 'Equalization Ratio' may be shown — extract it if present
+- Look for 'Land', 'Improvements', 'Total' columns
+
+TEXAS (TX):
+- Account Number is the parcel ID (sometimes called Appraisal District Number)
+- 'Market Value' or 'Appraised Value' = full appraised value
+- 'Assessed Value' = value after any homestead/agricultural cap (may be lower)
+- '10% cap', 'HS Cap', or 'Ag Val' indicate value limitations
+- Homestead exemption amounts should be noted
+
+FLORIDA (FL):
+- Parcel ID or Folio Number is the identifier (format varies by county, e.g. 12-3456-789-0010)
+- 'Just Value' = full market value (what to compare against comps)
+- 'Assessed Value' = value after Save Our Homes (SOH) cap — may be much lower than Just Value
+- 'Taxable Value' = after all exemptions are applied
+- Homestead Exemption ($25,000 + $25,000) should be noted
+
+General tips:
+- Prioritize tables and clearly labeled fields over running text
+- Dollar signs and commas are common — strip them from numeric values
+- If values appear in thousands (e.g. a note says "values in thousands"), multiply by 1000
+- Always read carefully — assessors use many different label names for the same concept`;
 
 router.post("/ocr-tax-record", upload.single("file"), async (req, res) => {
   if (!req.file) {
