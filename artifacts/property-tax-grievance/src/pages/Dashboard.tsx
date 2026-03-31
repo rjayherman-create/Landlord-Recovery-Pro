@@ -5,7 +5,7 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { GrievanceForm } from "@/components/GrievanceForm";
-import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSign, AlertTriangle, Award, ChevronRight, Calculator, Sparkles } from "lucide-react";
+import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSign, AlertTriangle, Award, ChevronRight, Calculator, Sparkles, CheckCircle } from "lucide-react";
 import { format, parseISO, isValid, isFuture } from "date-fns";
 import { getComputedDeadline } from "@/data/county-filing-instructions";
 import { usePreferredState, STATE_META, type AppState } from "@/hooks/use-preferred-state";
@@ -46,12 +46,17 @@ export function Dashboard() {
   const reducedCases = grievances?.filter(g => g.status === 'reduced').length || 0;
 
   // Savings estimator state
+  const [estAddress, setEstAddress] = useState("");
   const [estMarketValue, setEstMarketValue] = useState("");
   const [estAssessedValue, setEstAssessedValue] = useState("");
   const [estCounty, setEstCounty] = useState("");
   const [countyList, setCountyList] = useState<{ county: string; tax_rate: number }[]>([]);
   const [realTaxRate, setRealTaxRate] = useState<number | null>(null);
   const [estimatedSavings, setEstimatedSavings] = useState(0);
+  const [prefillData, setPrefillData] = useState<{
+    propertyAddress?: string; county?: string; state?: string;
+    currentAssessment?: number; estimatedMarketValue?: number; requestedAssessment?: number; estimatedSavings?: number;
+  } | undefined>(undefined);
 
   useEffect(() => {
     setEstCounty("");
@@ -69,6 +74,14 @@ export function Dashboard() {
       .then((row: { tax_rate: number } | null) => setRealTaxRate(row?.tax_rate ?? null))
       .catch(() => setRealTaxRate(null));
   }, [estCounty, preferredState]);
+
+  // Auto-detect county from address text
+  useEffect(() => {
+    if (!estAddress || countyList.length === 0) return;
+    const lower = estAddress.toLowerCase();
+    const match = countyList.find(c => lower.includes(c.county.toLowerCase().replace(" county", "")) || lower.includes(c.county.toLowerCase()));
+    if (match && match.county !== estCounty) setEstCounty(match.county);
+  }, [estAddress, countyList]);
 
   const activeRate = realTaxRate ?? STATE_TAX_RATES[preferredState];
 
@@ -116,7 +129,7 @@ export function Dashboard() {
               We prepare your official {meta.form} for you — no guesswork, no lawyers, no 50% commission. Your case is saved and ready to print.
             </p>
 
-            <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setDialogState(preferredState); }}>
+            <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) { setDialogState(preferredState); setPrefillData(undefined); } }}>
               <DialogTrigger asChild>
                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 font-bold px-8 shadow-lg shadow-black/20 hover:-translate-y-0.5 transition-transform">
                   <Plus className="w-5 h-5 mr-2" />
@@ -131,7 +144,7 @@ export function Dashboard() {
                   </DialogDescription>
                 </DialogHeader>
                 {isAuthenticated ? (
-                  <GrievanceForm onSuccess={() => setIsDialogOpen(false)} initialState={preferredState} onStateChange={setDialogState} />
+                  <GrievanceForm onSuccess={() => setIsDialogOpen(false)} initialState={prefillData?.state ?? preferredState} onStateChange={setDialogState} prefill={prefillData} />
                 ) : (
                   <div className="py-8 text-center space-y-4">
                     <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
@@ -233,6 +246,25 @@ export function Dashboard() {
               </div>
             </div>
 
+            {/* Address input — auto-detects county */}
+            <div className="mb-3">
+              <label className="text-xs font-semibold text-amber-800 uppercase tracking-wide mb-1.5 block">
+                Property Address <span className="text-amber-500 font-normal normal-case">(auto-detects your county)</span>
+              </label>
+              <input
+                type="text"
+                placeholder={`e.g. 123 Main St, Nassau County, ${preferredState}`}
+                value={estAddress}
+                onChange={e => setEstAddress(e.target.value)}
+                className="w-full px-4 py-3 border-2 border-amber-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent text-sm font-medium placeholder:text-muted-foreground/50 transition"
+              />
+              {estCounty && estAddress && (
+                <p className="text-xs text-emerald-700 font-medium mt-1 flex items-center gap-1">
+                  <CheckCircle className="w-3 h-3" /> County detected: <strong>{estCounty}</strong> — {(activeRate * 100).toFixed(2)}% tax rate loaded
+                </p>
+              )}
+            </div>
+
             {/* County selector */}
             {countyList.length > 0 && (
               <div className="mb-3">
@@ -307,7 +339,20 @@ export function Dashboard() {
                 </div>
                 <div className="flex flex-col items-stretch gap-2 sm:min-w-[180px]">
                   <Button
-                    onClick={() => setIsDialogOpen(true)}
+                    onClick={() => {
+                      const mv = parseFloat(estMarketValue.replace(/[^0-9.]/g, ""));
+                      const av = parseFloat(estAssessedValue.replace(/[^0-9.]/g, ""));
+                      setPrefillData({
+                        propertyAddress: estAddress || undefined,
+                        county: estCounty || undefined,
+                        state: preferredState,
+                        currentAssessment: av || undefined,
+                        estimatedMarketValue: mv || undefined,
+                        requestedAssessment: mv || undefined,
+                        estimatedSavings: estimatedSavings || undefined,
+                      });
+                      setIsDialogOpen(true);
+                    }}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold gap-1.5"
                   >
                     <Plus className="w-4 h-4" /> Start Filing Now

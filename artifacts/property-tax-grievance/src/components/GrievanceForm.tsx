@@ -85,16 +85,27 @@ const FIELD_LABELS: Record<string, string> = {
 
 /* ─── Props ─────────────────────────────────────────── */
 
+interface EstimatorPrefill {
+  propertyAddress?: string;
+  county?: string;
+  currentAssessment?: number;
+  estimatedMarketValue?: number;
+  requestedAssessment?: number;
+  state?: string;
+  estimatedSavings?: number;
+}
+
 interface GrievanceFormProps {
   initialData?: Grievance;
   onSuccess?: () => void;
   initialState?: string;
   onStateChange?: (state: string) => void;
+  prefill?: EstimatorPrefill;
 }
 
 /* ─── Component ─────────────────────────────────────── */
 
-export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onStateChange }: GrievanceFormProps) {
+export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onStateChange, prefill }: GrievanceFormProps) {
   const { toast } = useToast();
   const createMutation = useCreateGrievance();
   const updateMutation = useUpdateGrievance();
@@ -123,8 +134,22 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
         const parsed = JSON.parse(saved);
         form.reset(parsed, { keepErrors: false });
         localStorage.removeItem("pendingCase");
+        return;
       }
     } catch {}
+    // Apply estimator prefill when no pending case
+    if (prefill && !isEditing) {
+      const current = form.getValues();
+      form.reset({
+        ...current,
+        state: prefill.state ?? current.state,
+        propertyAddress: prefill.propertyAddress ?? current.propertyAddress,
+        county: prefill.county ?? current.county,
+        currentAssessment: prefill.currentAssessment ?? current.currentAssessment,
+        estimatedMarketValue: prefill.estimatedMarketValue ?? current.estimatedMarketValue,
+        requestedAssessment: prefill.requestedAssessment ?? current.requestedAssessment,
+      }, { keepErrors: false });
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

@@ -1,0 +1,143 @@
+KEY PRINCIPLE
+
+👉 Value first, effort second
+
+🚀 STEP 1 — ADDRESS + SAVINGS SCREEN
+This replaces your current first page
+const [address, setAddress] = useState("");
+const [marketValue, setMarketValue] = useState("");
+const [assessedValue, setAssessedValue] = useState("");
+const [savings, setSavings] = useState(0);
+const [showStep2, setShowStep2] = useState(false);
+UI
+<div className="bg-white p-6 rounded-xl shadow-md max-w-xl mx-auto">
+
+  <h1 className="text-2xl font-bold">
+    Lower Your Property Taxes
+  </h1>
+
+  <p className="text-gray-600 mt-2">
+    Enter your address to estimate your savings
+  </p>
+
+  <input
+    placeholder="123 Main St, Nassau County, NY"
+    value={address}
+    onChange={(e) => setAddress(e.target.value)}
+    className="border p-4 rounded mt-4 w-full"
+  />
+
+  {/* Auto-filled market value */}
+  {marketValue && (
+    <input
+      value={marketValue}
+      onChange={(e) => setMarketValue(e.target.value)}
+      className="border p-4 rounded mt-3 w-full"
+    />
+  )}
+
+  {/* Savings display */}
+  {savings > 0 && (
+    <div className="bg-green-50 p-4 rounded mt-4 border">
+
+      <p className="text-green-800 font-semibold text-lg">
+        You may be overpaying ${savings}/year
+      </p>
+
+      <p className="text-sm text-green-700">
+        Based on your property and county data
+      </p>
+
+    </div>
+  )}
+
+  {/* CTA */}
+  {savings > 0 && (
+    <button
+      onClick={() => setShowStep2(true)}
+      className="bg-blue-600 text-white px-6 py-3 rounded mt-4 w-full"
+    >
+      Continue Filing
+    </button>
+  )}
+
+</div>
+🚀 STEP 2 — MINIMAL FORM + PAYMENT
+
+👉 Only show this AFTER Step 1
+
+UI
+{showStep2 && (
+  <div className="bg-white p-6 rounded-xl shadow-md max-w-xl mx-auto mt-6">
+
+    <h2 className="text-xl font-bold">
+      Complete Your Appeal
+    </h2>
+
+    <input
+      placeholder="Full Name"
+      className="border p-3 rounded mt-4 w-full"
+    />
+
+    <input
+      placeholder="Email"
+      className="border p-3 rounded mt-3 w-full"
+    />
+
+    {/* Reminder of value */}
+    <div className="bg-green-50 p-4 rounded mt-4 border">
+      <p className="text-green-800 font-semibold">
+        Estimated Savings: ${savings}/year
+      </p>
+    </div>
+
+    {/* Payment CTA */}
+    <button
+      onClick={handleCheckout}
+      className="bg-blue-600 text-white px-6 py-3 rounded mt-5 w-full text-lg"
+    >
+      Generate My Appeal ($99)
+    </button>
+
+    <p className="text-sm text-gray-500 mt-3 text-center">
+      Instant download after payment
+    </p>
+
+  </div>
+)}
+💥 WHAT CHANGED (IMPORTANT)
+BEFORE
+Long form → confusion → drop-off
+AFTER
+Address → Savings → Payment → Done
+🧠 WHY THIS WORKS
+✔ Immediate value (savings)
+✔ Minimal typing
+✔ Clear outcome
+✔ Fast path to payment
+🚀 OPTIONAL BOOST (HIGH IMPACT)
+
+Add this above payment:
+
+<p className="text-red-600 text-sm mt-2 text-center">
+  Filing deadline approaching — don’t wait
+</p>
+🎯 FINAL USER EXPERIENCE
+User lands
+ ↓
+Types address
+ ↓
+Sees $1,200 savings
+ ↓
+Clicks continue
+ ↓
+Enters name/email
+ ↓
+Pays
+ ↓
+Downloads appeal
+💰 THIS IS YOUR MONEY FLOW
+
+You’ve now built:
+
+Emotion → Action → Payment → Delivery
