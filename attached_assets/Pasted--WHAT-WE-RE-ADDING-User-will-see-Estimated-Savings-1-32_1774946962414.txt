@@ -1,0 +1,126 @@
+🎯 WHAT WE’RE ADDING
+
+User will see:
+
+Estimated Savings: $1,320/year  
+Approval Likelihood: 78%  
+Confidence Score: High  
+
+👉 This increases:
+
+urgency
+trust
+conversion
+🧠 HOW IT WORKS (SIMPLE + EFFECTIVE)
+
+We calculate based on:
+
+1. Over-assessment gap  
+2. Number of comps  
+3. Strength of comps vs assessment  
+🚀 STEP 1 — CREATE CALC FUNCTION
+
+In frontend (or backend if you prefer):
+
+const calculateConfidence = (marketValue: number, assessedValue: number, comps: any[]) => {
+  if (!marketValue || !assessedValue) return { score: 0, label: "Low" };
+
+  const gap = assessedValue - marketValue;
+
+  // % over-assessment
+  const percentDiff = gap / marketValue;
+
+  let score = 0;
+
+  if (percentDiff > 0.2) score += 40;
+  else if (percentDiff > 0.1) score += 25;
+  else if (percentDiff > 0.05) score += 10;
+
+  // comps strength
+  if (comps.length >= 3) score += 30;
+  else if (comps.length >= 1) score += 15;
+
+  // base score
+  score += 20;
+
+  // cap at 95%
+  score = Math.min(score, 95);
+
+  let label = "Low";
+
+  if (score > 70) label = "High";
+  else if (score > 40) label = "Moderate";
+
+  return { score, label };
+};
+🚀 STEP 2 — STORE RESULT
+const [confidence, setConfidence] = useState({ score: 0, label: "Low" });
+🚀 STEP 3 — UPDATE WHEN DATA CHANGES
+useEffect(() => {
+  const result = calculateConfidence(
+    Number(marketValue),
+    Number(assessedValue),
+    comps
+  );
+
+  setConfidence(result);
+}, [marketValue, assessedValue, comps]);
+🚀 STEP 4 — DISPLAY (THIS IS THE MAGIC)
+<div className="bg-blue-50 p-4 rounded mt-4 border">
+
+  <p className="text-blue-800 font-semibold text-lg">
+    Approval Likelihood: {confidence.score}%
+  </p>
+
+  <p className="text-sm text-blue-700">
+    Confidence Level: {confidence.label}
+  </p>
+
+</div>
+💥 STEP 5 — STACK WITH SAVINGS
+
+Put together:
+
+<div className="bg-green-50 p-4 rounded border mt-4">
+
+  <p className="text-green-800 font-bold text-lg">
+    Estimated Savings: ${savings}/year
+  </p>
+
+  <p className="text-sm text-green-700">
+    Approval Likelihood: {confidence.score}% ({confidence.label})
+  </p>
+
+</div>
+🧠 WHY THIS WORKS
+
+User now sees:
+
+“I can save money”  
+AND  
+“I have a high chance of winning”
+
+👉 That removes hesitation.
+
+🚀 STEP 6 — ADD URGENCY TEXT
+<p className="text-red-600 text-sm mt-2">
+  High-confidence cases are best filed before the deadline
+</p>
+💥 FINAL USER EXPERIENCE
+Enter address
+ ↓
+See savings
+ ↓
+See comps
+ ↓
+See argument
+ ↓
+See approval likelihood
+ ↓
+Feels confident
+ ↓
+Pays
+🔥 WHAT YOU JUST BUILT
+Decision engine + financial justification + legal argument
+
+👉 This is VERY strong.

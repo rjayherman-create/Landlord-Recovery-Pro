@@ -1,0 +1,128 @@
+🧠 WHAT WE’RE DOING
+
+Different states expect different language:
+
+New York → “over-assessed vs market value”
+New Jersey → “true market value / Chapter 123 ratio”
+Texas → “unequal appraisal”
+Florida → “just value / comparable sales”
+
+👉 We adapt automatically.
+
+🚀 STEP 1 — CREATE TEMPLATE SYSTEM
+
+Update your generator:
+
+src/utils/generateArgument.ts
+🔥 Replace with THIS:
+export function generateAppealArgument(data: any, comps: any[]) {
+  const avgPrice =
+    comps.length > 0
+      ? comps.reduce((sum, c) => sum + (c.price || 0), 0) / comps.length
+      : data.marketValue;
+
+  const assessed = Number(data.assessedValue);
+  const address = data.address;
+  const state = data.state;
+
+  const avg = Math.round(avgPrice).toLocaleString();
+  const assessedFormatted = assessed.toLocaleString();
+
+  // 🟦 NEW YORK
+  if (state === "NY") {
+    return `The property located at ${address} appears to be over-assessed. 
+Comparable properties in the area indicate an estimated market value of approximately $${avg}, 
+while the current assessed value is $${assessedFormatted}. 
+This suggests the property exceeds its fair market value and warrants a reduction 
+in assessment based on comparable sales and prevailing market conditions.`;
+  }
+
+  // 🟩 NEW JERSEY
+  if (state === "NJ") {
+    return `The subject property at ${address} exceeds its true market value based on recent comparable sales. 
+The average value of similar properties is approximately $${avg}, 
+while the assessed value is $${assessedFormatted}. 
+This discrepancy indicates the assessment may not comply with New Jersey’s equalization standards 
+and should be adjusted accordingly.`;
+  }
+
+  // 🟧 TEXAS
+  if (state === "TX") {
+    return `The property located at ${address} appears to be unequally appraised compared to similar properties. 
+Comparable homes indicate a market value of approximately $${avg}, 
+while the current appraisal is $${assessedFormatted}. 
+This difference supports a claim of unequal appraisal under Texas property tax law 
+and justifies a reduction in value.`;
+  }
+
+  // 🟨 FLORIDA
+  if (state === "FL") {
+    return `The just value of the property at ${address} appears to be overstated. 
+Comparable properties suggest a market value of approximately $${avg}, 
+while the assessed value is $${assessedFormatted}. 
+Based on Florida’s just value standard and comparable sales data, 
+a reduction in assessed value is warranted.`;
+  }
+
+  // DEFAULT
+  return `The property located at ${address} appears to be over-assessed compared to similar properties. 
+Comparable sales indicate a value near $${avg}, while the assessed value is $${assessedFormatted}. 
+A reduction in assessment is supported by current market data.`;
+}
+🚀 STEP 2 — MAKE SURE STATE IS PASSED
+
+Your case data must include:
+
+data.state
+
+👉 You already have this from:
+
+county detection
+user selection
+🚀 STEP 3 — SHOW STATE CONTEXT IN UI
+
+Under argument:
+
+<p className="text-sm text-gray-500 mt-2">
+  Generated based on {selectedState} property tax standards
+</p>
+💥 RESULT
+
+User sees:
+
+NY:
+
+“over-assessed… fair market value…”
+
+TX:
+
+“unequal appraisal…”
+
+FL:
+
+“just value…”
+
+👉 Feels tailored → increases trust
+
+🧠 WHY THIS IS HUGE
+
+Before:
+
+Generic → feels like a tool
+
+After:
+
+State-specific → feels like a service
+🚀 STEP 4 — OPTIONAL (POWER BOOST)
+
+Add this above argument:
+
+<div className="bg-blue-50 p-3 rounded mt-3">
+  <p className="text-blue-800 font-semibold">
+    Appeal Strategy: {selectedState}-specific valuation challenge
+  </p>
+</div>
+💰 WHAT YOU JUST BUILT
+Localized legal argument generator
+
+👉 That’s what people pay for.

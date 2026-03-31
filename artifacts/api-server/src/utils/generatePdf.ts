@@ -222,6 +222,30 @@ export async function generateAppealPDF(data: {
     line(doc, 72, y, 540); y += 8;
   }
 
+  // ── APPEAL JUSTIFICATION ───────────────────────────────────────────────────
+  {
+    const { generateAppealArgument } = await import("./generateArgument.js");
+    const argument = generateAppealArgument(
+      {
+        address: g.propertyAddress,
+        assessedValue: g.currentAssessment,
+        estimatedMarketValue: g.estimatedMarketValue,
+        county: g.county,
+        state,
+      },
+      comps.map((c) => ({ address: c.address, salePrice: c.salePrice }))
+    );
+    if (y > 640) { doc.addPage(); y = 72; }
+    sectionHeader(doc, "Appeal Justification", y);
+    y += 26;
+    doc.font("Helvetica").fontSize(9).fill("#1e293b").text(argument, 72, y, { width: 468 });
+    y += doc.heightOfString(argument, { width: 468 }) + 12;
+    doc.font("Helvetica-Oblique").fontSize(8).fill("#64748b")
+      .text("✔ Professionally generated based on local market data and comparable sales", 72, y);
+    y += 20;
+    line(doc, 72, y, 540); y += 8;
+  }
+
   // ── DECLARATION / SIGNATURE ────────────────────────────────────────────────
   if (y > 620) { doc.addPage(); y = 72; }
   sectionHeader(doc, "Complainant Declaration", y);
