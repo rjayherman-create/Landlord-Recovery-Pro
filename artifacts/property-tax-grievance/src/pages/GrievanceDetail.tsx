@@ -911,6 +911,108 @@ export function GrievanceDetail() {
                     )}
                   </div>
                 )}
+
+                {/* ── Property Comparison Table ── */}
+                {comparables.length > 0 && (
+                  <div className="mt-6">
+                    <h4 className="font-serif font-bold text-base mb-3 flex items-center gap-2">
+                      <TrendingDown className="w-4 h-4 text-primary" /> Your Property vs. Comparable Homes
+                    </h4>
+                    <div className="overflow-x-auto rounded-xl border border-border">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-secondary/60 text-muted-foreground text-xs">
+                          <tr>
+                            <th className="px-4 py-2.5 font-semibold">Feature</th>
+                            <th className="px-4 py-2.5 font-semibold text-center">Your Property</th>
+                            {comparables.slice(0, 3).map((_, i) => (
+                              <th key={i} className="px-4 py-2.5 font-semibold text-center">Comp {i + 1}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border/50">
+                          {/* Assessment / Price row */}
+                          <tr className="hover:bg-secondary/20 transition-colors">
+                            <td className="px-4 py-3 font-medium text-muted-foreground">Assessed Value</td>
+                            <td className="px-4 py-3 text-center font-bold text-red-700 bg-red-50/40">
+                              ${grievance.currentAssessment.toLocaleString()}
+                            </td>
+                            {comparables.slice(0, 3).map((comp) => (
+                              <td key={comp.id} className={`px-4 py-3 text-center font-semibold ${comp.salePrice < grievance.currentAssessment ? "text-emerald-700" : "text-foreground"}`}>
+                                ${comp.salePrice.toLocaleString()}
+                              </td>
+                            ))}
+                          </tr>
+                          {/* Square footage */}
+                          {(grievance.livingArea || comparables.some(c => c.squareFeet)) && (
+                            <tr className="hover:bg-secondary/20 transition-colors">
+                              <td className="px-4 py-3 font-medium text-muted-foreground">Sq Ft</td>
+                              <td className="px-4 py-3 text-center font-semibold">
+                                {grievance.livingArea ? Number(grievance.livingArea).toLocaleString() : "—"}
+                              </td>
+                              {comparables.slice(0, 3).map((comp) => (
+                                <td key={comp.id} className="px-4 py-3 text-center text-muted-foreground">
+                                  {comp.squareFeet ? comp.squareFeet.toLocaleString() : "—"}
+                                </td>
+                              ))}
+                            </tr>
+                          )}
+                          {/* Year Built */}
+                          {(grievance.yearBuilt || comparables.some(c => c.yearBuilt)) && (
+                            <tr className="hover:bg-secondary/20 transition-colors">
+                              <td className="px-4 py-3 font-medium text-muted-foreground">Year Built</td>
+                              <td className="px-4 py-3 text-center font-semibold">
+                                {grievance.yearBuilt ?? "—"}
+                              </td>
+                              {comparables.slice(0, 3).map((comp) => (
+                                <td key={comp.id} className="px-4 py-3 text-center text-muted-foreground">
+                                  {comp.yearBuilt ?? "—"}
+                                </td>
+                              ))}
+                            </tr>
+                          )}
+                          {/* Beds/Baths */}
+                          {comparables.some(c => c.bedrooms) && (
+                            <tr className="hover:bg-secondary/20 transition-colors">
+                              <td className="px-4 py-3 font-medium text-muted-foreground">Beds / Baths</td>
+                              <td className="px-4 py-3 text-center text-muted-foreground">—</td>
+                              {comparables.slice(0, 3).map((comp) => (
+                                <td key={comp.id} className="px-4 py-3 text-center text-muted-foreground">
+                                  {comp.bedrooms ? `${comp.bedrooms}bd` : ""}{comp.bathrooms ? `/${comp.bathrooms}ba` : ""}
+                                </td>
+                              ))}
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Visual signal */}
+                    {avgCompPrice && avgCompPrice < grievance.currentAssessment && (
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-4 mt-4">
+                        <p className="text-sm font-semibold text-red-700 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                          Your property is assessed higher than these comparable homes.
+                        </p>
+                        <p className="text-xs text-red-600 mt-1">
+                          Similar properties sold for an average of ${avgCompPrice.toLocaleString()} — ${(grievance.currentAssessment - avgCompPrice).toLocaleString()} less than your current assessment. This strengthens your case for a reduced assessment.
+                        </p>
+                      </div>
+                    )}
+
+                    {!userHasPaid && (
+                      <Button
+                        onClick={handleCheckout}
+                        disabled={checkoutLoading}
+                        className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold gap-2"
+                      >
+                        {checkoutLoading
+                          ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening Checkout…</>
+                          : <><Lock className="w-4 h-4" /> Generate My Appeal ($99) — Keep 100% of Savings</>
+                        }
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             </TabsContent>
 
@@ -1098,6 +1200,31 @@ export function GrievanceDetail() {
                         <p className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> Comparable sales report PDF</p>
                         <p className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" /> County filing instructions &amp; portal link</p>
                       </div>
+
+                      {/* Conversion: vs lawyer */}
+                      <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-left">
+                        <p className="text-xs font-bold text-blue-800 mb-1.5">Why use this instead of a lawyer?</p>
+                        <ul className="space-y-1 text-xs text-blue-700">
+                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" /> File in minutes — not months</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" /> No waiting for callbacks</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" /> Full control of your appeal</li>
+                          <li className="flex items-center gap-1.5"><CheckCircle2 className="w-3 h-3 text-blue-500 shrink-0" /> Same official forms used by professionals</li>
+                        </ul>
+                      </div>
+
+                      {/* Math: savings vs commission */}
+                      <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-left">
+                        <p className="text-xs font-bold text-emerald-800 mb-1">The math is clear:</p>
+                        <div className="flex items-center justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">Lawyer (30–50% of savings)</span>
+                          <span className="font-semibold text-red-600">You lose $600+/yr</span>
+                        </div>
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">TaxAppeal DIY — one-time fee</span>
+                          <span className="font-bold text-emerald-700">You keep 100%</span>
+                        </div>
+                      </div>
+
                       <Button
                         onClick={handleCheckout}
                         disabled={checkoutLoading}
@@ -1105,9 +1232,10 @@ export function GrievanceDetail() {
                       >
                         {checkoutLoading
                           ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening Checkout…</>
-                          : <><Lock className="w-4 h-4" /> Unlock for $99</>
+                          : <><Lock className="w-4 h-4" /> Unlock for $99 — Keep 100% of Savings</>
                         }
                       </Button>
+                      <p className="text-xs text-emerald-700 font-semibold">Keep 100% of your savings — no commissions, ever</p>
                       <p className="text-xs text-muted-foreground">One-time · No subscription · Secured by Stripe</p>
                     </div>
                   </div>
