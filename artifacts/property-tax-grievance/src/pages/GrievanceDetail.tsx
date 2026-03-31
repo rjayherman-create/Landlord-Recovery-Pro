@@ -171,6 +171,7 @@ export function GrievanceDetail() {
   });
 
   const [activeTab, setActiveTab] = useState("comps");
+  const [tabOverridden, setTabOverridden] = useState(false);
   const [isAttested, setIsAttested] = useState(false);
 
   const compForm = useForm<CompFormValues>({ resolver: zodResolver(compSchema) });
@@ -184,6 +185,14 @@ export function GrievanceDetail() {
       .catch(() => {})
       .finally(() => setPriorYearLoading(false));
   }, [id]);
+
+  // Auto-land on "Find Comps" tab if no comps exist yet (only on first load, not if user manually switched)
+  useEffect(() => {
+    if (!tabOverridden && comparables.length === 0) {
+      setActiveTab("suggest");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [comparables.length]);
 
   const fetchAutoComps = async () => {
     setIsLoadingAutoComps(true);
@@ -645,6 +654,40 @@ export function GrievanceDetail() {
         </div>
       </div>
 
+      {/* ── Comps call-to-action (shown when no comps yet) ── */}
+      {comparables.length === 0 && (
+        <div className="mb-6 bg-blue-50 border-2 border-blue-300 rounded-2xl p-5">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="bg-blue-600 text-white text-xs font-bold px-2.5 py-0.5 rounded-full">Step 2</span>
+                <h3 className="font-serif font-bold text-blue-900 text-base">Add Comparable Sales</h3>
+              </div>
+              <p className="text-sm text-blue-800 leading-relaxed">
+                Comparable sales are the <strong>core evidence</strong> for your appeal. They show the board that similar homes in your area sold for less than your assessed value implies.
+                Aim for <strong>3–6 comparables</strong> — they will be printed directly on your appeal package.
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+              <Button
+                onClick={() => { setTabOverridden(true); setActiveTab("suggest"); }}
+                className="gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-md"
+              >
+                <Sparkles className="w-4 h-4" />
+                {grievanceState === "NY" ? "Find Comps Automatically" : "Find Comps"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => { setTabOverridden(true); setActiveTab("comps"); setIsAddCompOpen(true); }}
+                className="gap-2 border-blue-300 text-blue-800 hover:bg-blue-100"
+              >
+                <Plus className="w-4 h-4" /> Add Manually
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── Main grid ── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left: property details */}
@@ -776,7 +819,7 @@ export function GrievanceDetail() {
 
         {/* Right: tabs */}
         <div className="lg:col-span-2 space-y-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={(t) => { setTabOverridden(true); setActiveTab(t); }}>
             <TabsList className="mb-4">
               <TabsTrigger value="comps" className="gap-2">
                 <MapPin className="w-4 h-4" />
@@ -817,7 +860,14 @@ export function GrievanceDetail() {
               <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="font-serif font-bold text-lg">Comparable Sales</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-serif font-bold text-lg">Comparable Sales</h3>
+                      {comparables.length > 0 && (
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3 h-3" /> Included in your appeal package
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground mt-0.5">Nearby properties that sold recently for less than your assessment implies. Aim for 3–6.</p>
                   </div>
                   <Dialog open={isAddCompOpen} onOpenChange={setIsAddCompOpen}>
@@ -1038,59 +1088,199 @@ export function GrievanceDetail() {
 
             {/* Tab: Auto-suggest Comps */}
             <TabsContent value="suggest">
-              <div className="bg-card rounded-2xl border border-border shadow-sm p-6">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <h3 className="font-serif font-bold text-lg flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" /> Auto-Find Comparable Sales</h3>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      We'll search the NYS public sales database for recent sales in <strong>{grievance.municipality}</strong> that are similar in size to your property.
-                    </p>
-                  </div>
+              <div className="bg-card rounded-2xl border border-border shadow-sm p-6 space-y-5">
+                <div>
+                  <h3 className="font-serif font-bold text-lg flex items-center gap-2"><Sparkles className="w-5 h-5 text-primary" /> Find Comparable Sales</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Comps you add here are <strong className="text-foreground">printed directly in your appeal package</strong> as supporting evidence. Aim for 3–6 properties similar to yours.
+                  </p>
                 </div>
 
-                {!autoCompsLoaded ? (
-                  <div className="text-center py-10 border-2 border-dashed border-border rounded-xl mt-4">
-                    <Sparkles className="w-8 h-8 text-primary mx-auto mb-3 opacity-60" />
-                    <p className="text-sm font-medium text-foreground mb-1">Ready to pull public sales data</p>
-                    <p className="text-xs text-muted-foreground mb-5 max-w-xs mx-auto">Searches NYS Assessment Roll sales database — real transactions, no Zillow estimates.</p>
-                    <Button onClick={fetchAutoComps} disabled={isLoadingAutoComps} className="gap-2">
-                      {isLoadingAutoComps ? <><Loader2 className="w-4 h-4 animate-spin" /> Searching…</> : <><Search className="w-4 h-4" /> Find Comparable Sales</>}
-                    </Button>
-                  </div>
-                ) : autoComps.length === 0 ? (
-                  <div className="text-center py-8 mt-4 bg-secondary/20 rounded-xl">
-                    <p className="text-sm font-medium text-muted-foreground">No matching sales found in public records</p>
-                    <p className="text-xs text-muted-foreground mt-1">Try the Research tab to search manually on Zillow or county portals.</p>
-                    <Button variant="outline" size="sm" className="mt-4" onClick={fetchAutoComps}>Try again</Button>
-                  </div>
-                ) : (
-                  <div className="space-y-3 mt-4">
-                    <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                      <Info className="w-3.5 h-3.5" />
-                      {autoComps.length} comparable sale{autoComps.length !== 1 ? "s" : ""} found — click <strong>Add</strong> to include in your case
-                    </p>
-                    {autoComps.map((comp, i) => (
-                      <div key={i} className="flex items-start gap-3 p-4 border border-border rounded-xl hover:border-primary/30 hover:bg-primary/5 transition-all">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{comp.address}</p>
-                          <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
-                            <span className="font-semibold text-emerald-700">${comp.salePrice.toLocaleString()}</span>
-                            <span>{comp.saleDate}</span>
-                            {comp.squareFeet && <span>{comp.squareFeet.toLocaleString()} sq ft</span>}
-                            {comp.yearBuilt && <span>Built {comp.yearBuilt}</span>}
-                          </div>
-                          {comp.notes && <p className="text-xs text-muted-foreground mt-1">{comp.notes}</p>}
-                        </div>
-                        <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => addAutoComp(comp)} disabled={addCompMutation.isPending}>
-                          <Plus className="w-3.5 h-3.5" /> Add
+                {/* NY — pull from NYS ORPS database automatically */}
+                {grievanceState === "NY" && (
+                  <>
+                    {!autoCompsLoaded ? (
+                      <div className="text-center py-10 border-2 border-dashed border-border rounded-xl">
+                        <Sparkles className="w-8 h-8 text-primary mx-auto mb-3 opacity-60" />
+                        <p className="text-sm font-medium text-foreground mb-1">Search NYS Public Sales Database</p>
+                        <p className="text-xs text-muted-foreground mb-5 max-w-xs mx-auto">Searches the NYS Assessment Roll — real transactions for <strong>{grievance.municipality}</strong>, no Zillow estimates.</p>
+                        <Button onClick={fetchAutoComps} disabled={isLoadingAutoComps} className="gap-2">
+                          {isLoadingAutoComps ? <><Loader2 className="w-4 h-4 animate-spin" /> Searching…</> : <><Search className="w-4 h-4" /> Find Comparable Sales Automatically</>}
                         </Button>
                       </div>
+                    ) : autoComps.length === 0 ? (
+                      <div className="text-center py-8 bg-secondary/20 rounded-xl">
+                        <p className="text-sm font-medium text-muted-foreground">No matching sales found in public records</p>
+                        <p className="text-xs text-muted-foreground mt-1">Try the Research tab to search manually on Zillow or county portals.</p>
+                        <Button variant="outline" size="sm" className="mt-4" onClick={fetchAutoComps}>Try again</Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                            <Info className="w-3.5 h-3.5" />
+                            {autoComps.length} sale{autoComps.length !== 1 ? "s" : ""} found — click <strong>Add</strong> to include in your case
+                          </p>
+                          {autoComps.length > 1 && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="gap-1.5 text-xs"
+                              disabled={addCompMutation.isPending}
+                              onClick={async () => {
+                                for (const comp of autoComps.slice(0, 6)) {
+                                  await addAutoComp(comp);
+                                }
+                              }}
+                            >
+                              <Plus className="w-3 h-3" /> Add All ({Math.min(autoComps.length, 6)})
+                            </Button>
+                          )}
+                        </div>
+                        {autoComps.map((comp, i) => (
+                          <div key={i} className="flex items-start gap-3 p-4 border border-border rounded-xl hover:border-primary/30 hover:bg-primary/5 transition-all">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm truncate">{comp.address}</p>
+                              <div className="flex flex-wrap gap-3 mt-1 text-xs text-muted-foreground">
+                                <span className="font-semibold text-emerald-700">${comp.salePrice.toLocaleString()}</span>
+                                <span>{comp.saleDate}</span>
+                                {comp.squareFeet && <span>{comp.squareFeet.toLocaleString()} sq ft</span>}
+                                {comp.yearBuilt && <span>Built {comp.yearBuilt}</span>}
+                              </div>
+                              {comp.notes && <p className="text-xs text-muted-foreground mt-1">{comp.notes}</p>}
+                            </div>
+                            <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => addAutoComp(comp)} disabled={addCompMutation.isPending}>
+                              <Plus className="w-3.5 h-3.5" /> Add
+                            </Button>
+                          </div>
+                        ))}
+                        <Button variant="ghost" size="sm" onClick={fetchAutoComps} disabled={isLoadingAutoComps} className="gap-2 text-muted-foreground">
+                          <Search className="w-3.5 h-3.5" /> Refresh results
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* NJ — county-specific public portals */}
+                {isNJ && (
+                  <div className="space-y-4">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+                      <p className="font-semibold mb-1">How to find NJ comparables</p>
+                      <p className="text-xs leading-relaxed">NJ does not have one central sales database — you'll search your county assessor or public records portals below. Look for homes that sold in the last 1–2 years that are similar in size, style, and location to yours, and sold for less than your assessed value.</p>
+                    </div>
+                    {[
+                      { name: "NJ Property Records (MOD-IV)", url: "https://taxrecords.nj.gov/pub/cgi-bin/prc6.cgi?&ms_user=monmouth&passwd=&srch_type=0&adv=0", description: "Statewide NJ public records — search by county and municipality for assessed values and recent sale prices.", primary: true },
+                      { name: "NJ Treasury — Property Records Search", url: "https://www.nj.gov/treasury/taxation/njit15.shtml", description: "NJ Division of Taxation property data including sales and assessments by municipality." },
+                      { name: "Zillow — Recent NJ Sales", url: `https://www.zillow.com/new-jersey/sold/`, description: "Filter by your town, property type, and size to find comparable recent sales." },
+                      { name: "Realtor.com — NJ Sold Homes", url: "https://www.realtor.com/realestateandhomes-search/New-Jersey/show-recently-sold", description: "Another source for recent NJ sales — includes sale price, size, and days on market." },
+                    ].map((src, i) => (
+                      <a key={i} href={src.url} target="_blank" rel="noopener noreferrer"
+                        className={`flex items-start gap-3 p-4 rounded-xl border transition-all hover:border-primary/40 hover:bg-primary/5 ${src.primary ? "border-primary/30 bg-primary/5" : "border-border"}`}>
+                        <ExternalLink className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm flex items-center gap-2">
+                            {src.name}
+                            {src.primary && <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-bold">BEST SOURCE</span>}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{src.description}</p>
+                        </div>
+                      </a>
                     ))}
-                    <Button variant="ghost" size="sm" onClick={fetchAutoComps} disabled={isLoadingAutoComps} className="gap-2 text-muted-foreground">
-                      <Search className="w-3.5 h-3.5" /> Refresh results
-                    </Button>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 text-sm">
+                      <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-blue-900 mb-0.5">After finding a comp</p>
+                        <p className="text-xs text-blue-800">Note the address, sale price, sale date, and square footage — then click <strong>My Comparables → Add Comp</strong> to enter it. Your comps are automatically included in your A-1 appeal package.</p>
+                      </div>
+                    </div>
                   </div>
                 )}
+
+                {/* TX — county CAD portals */}
+                {isTX && (
+                  <div className="space-y-4">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+                      <p className="font-semibold mb-1">How to find TX comparables</p>
+                      <p className="text-xs leading-relaxed">In Texas, comparables are pulled from your County Appraisal District (CAD). Search for properties similar to yours — same property class, similar size — that sold for less than your appraised value. The CAD portals below have searchable comparable sales tools.</p>
+                    </div>
+                    {[
+                      { name: "HCAD Sales Data (Harris County)", url: "https://www.hcad.org/records/details.asp", description: "Harris County (Houston) — search comparable sales by neighborhood, size, and year built.", primary: grievance.county?.toLowerCase().includes("harris") },
+                      { name: "DCAD Property Search (Dallas County)", url: "https://www.dallascad.org/SearchAddr.aspx", description: "Dallas County — search property records and comparable sales." , primary: grievance.county?.toLowerCase().includes("dallas") },
+                      { name: "BCAD Comparable Sales (Bexar County)", url: "https://www.bcad.org/", description: "Bexar County (San Antonio) — comparable sales search tool available on the property details page.", primary: grievance.county?.toLowerCase().includes("bexar") },
+                      { name: "Travis CAD (Austin Area)", url: "https://www.traviscad.org/", description: "Travis County (Austin) — property search and recent sales data.", primary: grievance.county?.toLowerCase().includes("travis") },
+                      { name: "Zillow — TX Sold Homes", url: "https://www.zillow.com/texas/sold/", description: "Filter by your city and property type for recent comparable sales statewide." },
+                    ].map((src, i) => (
+                      <a key={i} href={src.url} target="_blank" rel="noopener noreferrer"
+                        className={`flex items-start gap-3 p-4 rounded-xl border transition-all hover:border-primary/40 hover:bg-primary/5 ${src.primary ? "border-primary/30 bg-primary/5" : "border-border"}`}>
+                        <ExternalLink className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm flex items-center gap-2">
+                            {src.name}
+                            {src.primary && <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-bold">YOUR COUNTY</span>}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{src.description}</p>
+                        </div>
+                      </a>
+                    ))}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 text-sm">
+                      <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-blue-900 mb-0.5">After finding a comp</p>
+                        <p className="text-xs text-blue-800">Note the address, sale price, sale date, and square footage — then click <strong>My Comparables → Add Comp</strong> to enter it. Your comps are automatically included in your Notice of Protest package.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* FL — county property appraiser portals */}
+                {isFL && (
+                  <div className="space-y-4">
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
+                      <p className="font-semibold mb-1">How to find FL comparables</p>
+                      <p className="text-xs leading-relaxed">Florida comparable sales come from county Property Appraiser portals. Search for homes sold in the last 1–2 years that are similar in size and style to yours, and sold for less than your assessed Just Value. Each county has its own portal below.</p>
+                    </div>
+                    {[
+                      { name: "Broward County Property Appraiser (BCPA)", url: "https://www.bcpa.net/RecInfo.asp", description: "Broward County — property search with comparable sales data built in.", primary: grievance.county?.toLowerCase().includes("broward") },
+                      { name: "Miami-Dade Property Appraiser", url: "https://www.miamidade.gov/pa/", description: "Miami-Dade County — comparable sales search and just value lookup.", primary: grievance.county?.toLowerCase().includes("miami") || grievance.county?.toLowerCase().includes("dade") },
+                      { name: "Palm Beach County Property Appraiser", url: "https://www.pbcgov.com/papa/", description: "Palm Beach County property records and sales search.", primary: grievance.county?.toLowerCase().includes("palm beach") },
+                      { name: "Orange County Property Appraiser (Orlando)", url: "https://www.ocpafl.org/", description: "Orange County (Orlando) — property details and comparable sales.", primary: grievance.county?.toLowerCase().includes("orange") },
+                      { name: "Hillsborough County Property Appraiser (Tampa)", url: "https://www.hcpafl.org/", description: "Hillsborough County (Tampa) — property search and sales data.", primary: grievance.county?.toLowerCase().includes("hillsborough") },
+                      { name: "Zillow — FL Sold Homes", url: "https://www.zillow.com/florida/sold/", description: "Filter by your city and property type for recent comparable sales statewide." },
+                    ].map((src, i) => (
+                      <a key={i} href={src.url} target="_blank" rel="noopener noreferrer"
+                        className={`flex items-start gap-3 p-4 rounded-xl border transition-all hover:border-primary/40 hover:bg-primary/5 ${src.primary ? "border-primary/30 bg-primary/5" : "border-border"}`}>
+                        <ExternalLink className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm flex items-center gap-2">
+                            {src.name}
+                            {src.primary && <span className="text-[10px] bg-primary text-primary-foreground px-1.5 py-0.5 rounded font-bold">YOUR COUNTY</span>}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{src.description}</p>
+                        </div>
+                      </a>
+                    ))}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex items-start gap-3 text-sm">
+                      <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-semibold text-blue-900 mb-0.5">After finding a comp</p>
+                        <p className="text-xs text-blue-800">Note the address, sale price, sale date, and square footage — then click <strong>My Comparables → Add Comp</strong> to enter it. Your comps are automatically included in your DR-486 petition.</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Always-visible manual add reminder */}
+                <div className="flex items-center gap-3 pt-2 border-t border-border">
+                  <p className="text-xs text-muted-foreground flex-1">Found a comp in any of these sources? Add it to your case using the button below.</p>
+                  <Button
+                    size="sm"
+                    onClick={() => { setTabOverridden(true); setActiveTab("comps"); setIsAddCompOpen(true); }}
+                    className="gap-1.5 shrink-0"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Add Comp Manually
+                  </Button>
+                </div>
               </div>
             </TabsContent>
 
