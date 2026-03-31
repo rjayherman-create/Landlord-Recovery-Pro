@@ -1,0 +1,102 @@
+🚀 STEP 1 — FIX YOUR TOP SECTION (MOST IMPORTANT)
+
+Right now your page probably starts with info.
+
+👉 That’s wrong.
+
+🔥 Replace your top section with THIS:
+<div className="bg-blue-50 p-6 rounded mb-6">
+
+  <h1 className="text-3xl font-bold">
+    Lower Your Property Taxes
+  </h1>
+
+  <p className="mt-2 text-lg">
+    File your property tax appeal step-by-step in minutes.
+  </p>
+
+  <button className="bg-blue-600 text-white px-6 py-3 rounded mt-4 text-lg">
+    Start Filing ($99)
+  </button>
+
+  <p className="text-sm mt-3 text-gray-600">
+    ✔ Step-by-step guidance  
+    ✔ Avoid costly mistakes  
+    ✔ Works for NY, NJ, TX, FL  
+  </p>
+
+</div>
+🧠 WHY THIS WORKS
+
+You are telling the user:
+
+👉 “You don’t need to figure this out — I’ll do it with you”
+
+🚀 STEP 2 — MOVE YOUR LINKS DOWN
+
+Your database links are valuable…
+
+👉 But they should NOT be first.
+
+Rename section:
+File Directly (Advanced Users)
+Add this above links:
+<p className="text-sm text-gray-500 mb-3">
+  Prefer to file on your own? Use official county portals below.
+</p>
+🚀 STEP 3 — ADD “START FILING” BUTTON TO EACH COUNTY
+
+Inside your map:
+
+<button className="bg-green-600 text-white px-4 py-2 rounded mt-2">
+  Start Filing for {item.county}
+</button>
+💥 NOW USER HAS 2 PATHS
+Easy (your flow) → $$$
+Hard (county links) → backup
+🚀 STEP 4 — ADD SIMPLE TRUST BLOCK
+
+Right under your main button:
+
+<div className="mt-4 text-sm text-gray-600">
+  <p>✔ Thousands of dollars in potential savings</p>
+  <p>✔ No legal knowledge required</p>
+  <p>✔ Takes less than 10 minutes</p>
+</div>
+🚀 STEP 5 — ADD DEADLINE PRESSURE
+<p className="text-red-600 mt-3">
+  Filing deadlines are strict — don’t miss your chance.
+</p>
+💥 STEP 6 — CONNECT BUTTON TO YOUR FLOW
+
+Your button should go to:
+
+navigate("/start-filing");
+
+OR
+
+<a href="/start-filing">Start Filing</a>
+🧠 BIG SHIFT (THIS IS EVERYTHING)
+
+Before:
+
+User → Reads → Leaves
+
+After:
+
+User → Clicks → Starts → Pays
+🚀 STEP 7 — OPTIONAL (HIGH IMPACT)
+
+Add this line:
+
+<p className="mt-2 text-green-700 font-semibold">
+  You could save $500–$2,000/year
+</p>
+🎯 WHAT YOU NOW HAVE
+Hook ✅
+CTA ✅
+Trust ✅
+Urgency ✅
+Fallback links ✅
+
+👉 That’s a real funnel.
