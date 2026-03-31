@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useCounties } from "@/hooks/use-counties";
-import { Map, ExternalLink, CalendarDays, FileCheck, Phone, Building2 } from "lucide-react";
+import { Map, ExternalLink, CalendarDays, FileCheck, Phone, Building2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TX_COUNTY_FILING } from "@/data/texas-filing-instructions";
 import { NJ_COUNTY_FILING } from "@/data/nj-filing-instructions";
@@ -147,6 +147,17 @@ export function CountyGuide() {
               <p className="text-muted-foreground">{meta.deadline}</p>
             </div>
           </div>
+        </div>
+
+        {/* Advanced Users — county-by-county direct filing */}
+        <div className="flex items-center justify-between mb-6 mt-2">
+          <div>
+            <h3 className="text-xl font-serif font-bold text-foreground">File Directly (Advanced Users)</h3>
+            <p className="text-sm text-muted-foreground mt-0.5">Prefer to file manually? Use official county portals and forms below.</p>
+          </div>
+          <a href="/pricing" className="hidden sm:flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:bg-primary/90 transition-colors">
+            <Plus className="w-4 h-4" /> Let us prepare your form →
+          </a>
         </div>
 
         {/* NY Counties */}

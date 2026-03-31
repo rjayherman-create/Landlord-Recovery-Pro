@@ -437,6 +437,32 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY", onS
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 py-2">
 
+      {/* ── Step Progress Bar ── */}
+      {!isEditing && (
+        <div className="flex items-center gap-0 rounded-xl overflow-hidden border border-border bg-secondary/30 text-xs font-semibold">
+          {[
+            { n: 1, label: "Property" },
+            { n: 2, label: "Values" },
+            { n: 3, label: "Review" },
+            { n: 4, label: "Submit & Pay" },
+          ].map(({ n, label }, i, arr) => (
+            <div
+              key={n}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 ${
+                n === 4
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground"
+              } ${i < arr.length - 1 ? "border-r border-border" : ""}`}
+            >
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0 ${
+                n === 4 ? "bg-white/20 text-white" : "bg-secondary border border-border text-foreground"
+              }`}>{n}</span>
+              <span className="hidden sm:inline">{label}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── State Selector — always first ── */}
       {!isEditing && (
         <div>

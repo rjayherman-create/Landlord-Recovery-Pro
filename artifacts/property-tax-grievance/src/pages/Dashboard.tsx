@@ -60,13 +60,13 @@ export function Dashboard() {
           <div className="relative z-10 p-8 md:p-12 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-sm font-medium mb-6 backdrop-blur-sm">
               <ShieldCheck className="w-4 h-4 text-accent" />
-              <span>File your own {meta.verb} and save 50% commission</span>
+              <span>Save 50% vs. hiring a professional — file it yourself</span>
             </div>
             <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4 leading-tight text-white">
-              Take Control of Your <br/><span className="text-accent">Property Taxes</span>
+              Lower Your Property Taxes <br/><span className="text-accent">in Minutes</span>
             </h1>
-            <p className="text-lg text-primary-foreground/80 mb-8 max-w-xl leading-relaxed">
-              Filing a {meta.verb} is your legal right and cannot increase your taxes. Build your case, track comparables, and submit with confidence.
+            <p className="text-lg text-primary-foreground/80 mb-6 max-w-xl leading-relaxed">
+              We prepare your official {meta.form} for you — no guesswork, no lawyers, no 50% commission. Your case is saved and ready to print.
             </p>
 
             <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if (!open) setDialogState(preferredState); }}>
@@ -105,6 +105,13 @@ export function Dashboard() {
                 )}
               </DialogContent>
             </Dialog>
+
+            {/* Trust signals under CTA */}
+            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-1.5 text-sm text-primary-foreground/70">
+              <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-accent shrink-0" /> Takes less than 10 minutes</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" /> No legal experience required</span>
+              <span className="flex items-center gap-1.5"><DollarSign className="w-3.5 h-3.5 text-accent shrink-0" /> Instant PDF download after payment</span>
+            </div>
           </div>
 
           {/* State selector strip */}
