@@ -73,6 +73,27 @@ export function CountyGuide() {
   return (
     <AppLayout>
       <div className="max-w-5xl mx-auto">
+        {/* Hero CTA Banner */}
+        <div className="bg-blue-50 border border-blue-200 p-6 rounded-2xl mb-8">
+          <h2 className="text-2xl font-bold text-blue-900">
+            File Your Property Tax Appeal
+          </h2>
+          <p className="mt-2 text-blue-800">
+            We guide you step-by-step and help you avoid costly mistakes — so you keep more of what you save.
+          </p>
+          <a href="/pricing">
+            <button className="bg-blue-600 text-white px-6 py-3 rounded-lg mt-4 font-semibold hover:bg-blue-700 transition-colors">
+              Start Filing ($99)
+            </button>
+          </a>
+          <p className="text-sm mt-3 text-blue-700">
+            ✔ Used by NY, NJ, TX &amp; FL homeowners &nbsp;·&nbsp; ✔ Step-by-step guidance &nbsp;·&nbsp; ✔ Avoid common filing mistakes
+          </p>
+          <p className="text-red-600 mt-2 text-sm font-medium">
+            ⚠ Filing deadlines are strict — don't miss your window.
+          </p>
+        </div>
+
         <div className="text-center mb-8">
           <h1 className="text-4xl font-serif font-bold text-foreground mb-3">{meta.flag} {meta.headline}</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">{meta.subhead}</p>
@@ -366,7 +387,8 @@ export function CountyGuide() {
         {/* Filing Portals — live from database */}
         {links.length > 0 && (
           <div className="mt-10">
-            <h2 className="text-xl font-semibold mb-4">Filing Portals</h2>
+            <h2 className="text-xl font-semibold mb-1">File Directly (Advanced Users)</h2>
+            <p className="text-sm text-muted-foreground mb-4">These are the official government portals. Filing on your own without guidance increases your risk of errors.</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {links.map((item) => (
                 <div key={item.id} className="mb-2 p-4 border border-border rounded-xl bg-card flex items-center justify-between gap-4">
