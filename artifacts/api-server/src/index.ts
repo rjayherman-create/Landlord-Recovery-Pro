@@ -1,3 +1,13 @@
+process.on("uncaughtException", (err) => {
+  console.error("❌ UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("❌ UNHANDLED REJECTION:", err);
+});
+
+console.log("🚀 SERVER FILE STARTED");
+
 import app from "./app";
 import { logger } from "./lib/logger";
 import { runMigrations } from 'stripe-replit-sync';
