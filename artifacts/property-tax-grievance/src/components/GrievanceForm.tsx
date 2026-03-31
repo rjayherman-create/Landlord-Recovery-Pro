@@ -104,6 +104,7 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY" }: G
   // Payment gate
   const [userPlan, setUserPlan] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     fetch("/api/stripe/me")
@@ -112,7 +113,55 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY" }: G
       .catch(() => {});
   }, []);
 
+  // Restore any form data saved before Stripe redirect
+  useEffect(() => {
+    if (isEditing) return;
+    try {
+      const saved = localStorage.getItem("pendingCase");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        form.reset(parsed, { keepErrors: false });
+        localStorage.removeItem("pendingCase");
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const userHasPaid = !!userPlan;
+
+  const handleCheckout = async () => {
+    setCheckoutLoading(true);
+    try {
+      const productsRes = await fetch("/api/stripe/products");
+      if (!productsRes.ok) throw new Error("Could not load products");
+      const { data: products } = await productsRes.json() as { data: any[] };
+
+      const product = products.find((p: any) =>
+        p.metadata?.plan === "basic" || p.name?.toLowerCase().includes("basic")
+      );
+
+      if (!product || !product.prices?.[0]?.id) {
+        toast({ title: "Plan unavailable", description: "Please try again shortly.", variant: "destructive" });
+        return;
+      }
+
+      const checkoutRes = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId: product.prices[0].id }),
+      });
+
+      if (!checkoutRes.ok) throw new Error("Checkout failed");
+      const { url } = await checkoutRes.json();
+      // Save form data so it can be restored after returning from Stripe
+      try { localStorage.setItem("pendingCase", JSON.stringify(form.getValues())); } catch {}
+      window.location.href = url;
+    } catch (err) {
+      toast({ title: "Checkout error", description: "Could not start checkout. Please try again.", variant: "destructive" });
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
 
   // Lookup state
   const [lookupAddress, setLookupAddress] = useState("");
@@ -1051,13 +1100,21 @@ export function GrievanceForm({ initialData, onSuccess, initialState = "NY" }: G
               <p>✔ County-specific filing instructions &amp; portal link</p>
               <p>✔ Step-by-step guidance to avoid common mistakes</p>
             </div>
-            <a href="/pricing" className="block">
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base py-6">
-                Pay $99 — Generate My Appeal
-              </Button>
-            </a>
+            <Button
+              onClick={handleCheckout}
+              disabled={checkoutLoading}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-base py-6 gap-2"
+            >
+              {checkoutLoading
+                ? <><Loader2 className="w-5 h-5 animate-spin" /> Opening Checkout…</>
+                : "Pay $99 — Generate My Appeal"
+              }
+            </Button>
             <p className="text-xs text-center text-muted-foreground">
-              One-time payment · No subscription · If you don't save, you don't pay again next year.
+              One-time payment · No subscription · Secured by Stripe.
+            </p>
+            <p className="text-xs text-center text-muted-foreground">
+              If you don't save, you don't pay again next year.
             </p>
           </div>
         </DialogContent>

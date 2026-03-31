@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { useGrievances } from "@/hooks/use-grievances";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -5,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { GrievanceForm } from "@/components/GrievanceForm";
 import { FileText, Plus, ArrowRight, TrendingDown, Clock, ShieldCheck, DollarSign, AlertTriangle, Award, ChevronRight } from "lucide-react";
-import { useState } from "react";
 import { format, parseISO, isValid, isFuture } from "date-fns";
 import { getComputedDeadline } from "@/data/county-filing-instructions";
 import { usePreferredState, STATE_META, type AppState } from "@/hooks/use-preferred-state";
@@ -21,7 +21,9 @@ const STATUS_COLORS = {
 
 export function Dashboard() {
   const { data: grievances, isLoading } = useGrievances();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(() => {
+    try { return !!localStorage.getItem("pendingCase"); } catch { return false; }
+  });
   const { preferredState, setPreferredState, meta } = usePreferredState();
   const { isAuthenticated, login } = useAuth();
 
