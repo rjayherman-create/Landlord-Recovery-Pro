@@ -24,7 +24,8 @@ TaxAppeal DIY (formerly NY Property Tax Grievance Assistant) — a full-stack we
 artifacts-monorepo/
 ├── artifacts/
 │   ├── api-server/                  # Express API server (port 8080)
-│   └── property-tax-grievance/      # React + Vite frontend (port 19972)
+│   ├── property-tax-grievance/      # React + Vite frontend (port 19972)
+│   └── taxappeal-mobile/            # Expo React Native mobile app (iOS/Android)
 ├── lib/
 │   ├── api-spec/                    # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/            # Generated React Query hooks

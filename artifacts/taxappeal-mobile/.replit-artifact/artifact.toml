@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/taxappeal-mobile/"
+title = "TaxAppeal DIY Mobile"
+version = "1.0.0"
+id = "artifacts/taxappeal-mobile"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/taxappeal-mobile/" ]
+localPort = 19394
+
+[services.development]
+run = "pnpm --filter @workspace/taxappeal-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/taxappeal-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/taxappeal-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "19394"
+BASE_PATH = "/taxappeal-mobile/"

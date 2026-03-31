@@ -1,0 +1,148 @@
+import { BlurView } from "expo-blur";
+import { isLiquidGlassAvailable } from "expo-glass-effect";
+import { Tabs } from "expo-router";
+import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
+import { SymbolView } from "expo-symbols";
+import { Feather } from "@expo/vector-icons";
+import React from "react";
+import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+
+import { useColors } from "@/hooks/useColors";
+
+function NativeTabLayout() {
+  return (
+    <NativeTabs>
+      <NativeTabs.Trigger name="index">
+        <Icon sf={{ default: "house", selected: "house.fill" }} />
+        <Label>Home</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="cases">
+        <Icon sf={{ default: "folder", selected: "folder.fill" }} />
+        <Label>Cases</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="new-case">
+        <Icon sf={{ default: "plus.circle", selected: "plus.circle.fill" }} />
+        <Label>New Case</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="estimator">
+        <Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
+        <Label>Estimator</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="settings">
+        <Icon sf={{ default: "gear", selected: "gear" }} />
+        <Label>Settings</Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
+  );
+}
+
+function ClassicTabLayout() {
+  const colors = useColors();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const isIOS = Platform.OS === "ios";
+  const isWeb = Platform.OS === "web";
+
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.mutedForeground,
+        headerShown: false,
+        tabBarStyle: {
+          position: "absolute",
+          backgroundColor: isIOS ? "transparent" : colors.card,
+          borderTopWidth: 1,
+          borderTopColor: colors.border,
+          elevation: 0,
+          height: isWeb ? 84 : 60,
+        },
+        tabBarBackground: () =>
+          isIOS ? (
+            <BlurView
+              intensity={100}
+              tint={isDark ? "dark" : "light"}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : isWeb ? (
+            <View
+              style={[StyleSheet.absoluteFill, { backgroundColor: colors.card }]}
+            />
+          ) : null,
+        tabBarLabelStyle: {
+          fontFamily: "Inter_500Medium",
+          fontSize: 11,
+          marginBottom: isWeb ? 12 : 4,
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "Home",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="house" tintColor={color} size={22} />
+            ) : (
+              <Feather name="home" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="cases"
+        options={{
+          title: "Cases",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="folder" tintColor={color} size={22} />
+            ) : (
+              <Feather name="folder" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="new-case"
+        options={{
+          title: "New Case",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="plus.circle" tintColor={color} size={22} />
+            ) : (
+              <Feather name="plus-circle" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="estimator"
+        options={{
+          title: "Estimator",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="chart.bar" tintColor={color} size={22} />
+            ) : (
+              <Feather name="bar-chart-2" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="gear" tintColor={color} size={22} />
+            ) : (
+              <Feather name="settings" size={22} color={color} />
+            ),
+        }}
+      />
+    </Tabs>
+  );
+}
+
+export default function TabLayout() {
+  if (isLiquidGlassAvailable()) {
+    return <NativeTabLayout />;
+  }
+  return <ClassicTabLayout />;
+}
