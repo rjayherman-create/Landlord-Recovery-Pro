@@ -1,0 +1,27 @@
+FROM node:20 AS builder
+
+RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY lib/ lib/
+COPY artifacts/property-tax-grievance/package.json artifacts/property-tax-grievance/
+
+RUN pnpm install --frozen-lockfile
+
+COPY artifacts/property-tax-grievance/ artifacts/property-tax-grievance/
+
+RUN pnpm --filter @workspace/api-zod run build 2>/dev/null || true
+RUN pnpm --filter @workspace/api-client-react run build 2>/dev/null || true
+
+RUN BASE_PATH=/ NODE_ENV=production \
+    pnpm --filter @workspace/property-tax-grievance run build
+
+FROM node:20 AS runner
+WORKDIR /app
+RUN npm install -g serve
+COPY --from=builder /app/artifacts/property-tax-grievance/dist ./dist
+ENV PORT=8080
+EXPOSE 8080
+CMD ["sh", "-c", "serve -s dist -l ${PORT:-8080}"]
