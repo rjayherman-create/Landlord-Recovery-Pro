@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:20 AS base
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 
 FROM base AS builder
@@ -23,7 +23,7 @@ RUN BASE_PATH=/ PORT=3000 NODE_ENV=production \
 
 RUN pnpm --filter @workspace/api-server run build
 
-FROM node:20-alpine AS runner
+FROM node:20 AS runner
 WORKDIR /app
 
 COPY --from=builder /app/artifacts/api-server/dist ./dist
