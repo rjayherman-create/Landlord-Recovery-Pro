@@ -14,6 +14,7 @@ app.get("/api/health", (req, res) => {
 
 const port = process.env.PORT || 3000;
 
-app.listen(port, "0.0.0.0", () => {
+const PORT = process.env.PORT || 8080;
+app.listen(PORT) => {
   console.log("RUNNING ON PORT", port);
 });

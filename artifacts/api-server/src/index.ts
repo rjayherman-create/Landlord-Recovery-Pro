@@ -16,7 +16,8 @@ process.on("unhandledRejection", (err) => {
 const port = process.env.PORT || 3000;
 
 try {
-  app.listen(port, "0.0.0.0", () => {
+  const PORT = process.env.PORT || 8080;
+app.listen(PORT) => {
     console.log(`🚀 Server running on port ${port}`);
   });
 } catch (err) {
