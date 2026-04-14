@@ -41,7 +41,7 @@ router.post('/stripe/checkout', async (req: any, res) => {
 
     const customerId = await stripeService.createOrGetCustomer(req.user.id, req.user.email);
 
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const baseUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
     const session = await stripeService.createCheckoutSession({
       customerId,
       priceId,

@@ -67,6 +67,7 @@ router.post("/grievances", async (req, res) => {
       equalizationRate: body.equalizationRate != null ? String(body.equalizationRate) : null,
       estimatedMarketValue: String(body.estimatedMarketValue),
       requestedAssessment: String(body.requestedAssessment),
+      state: body.state ?? "NY",
       basisOfComplaint: body.basisOfComplaint ?? null,
       status: "draft",
       filingDeadline: body.filingDeadline ?? null,
@@ -129,6 +130,7 @@ router.put("/grievances/:id", async (req, res) => {
     if (body.equalizationRate !== undefined) updateData.equalizationRate = body.equalizationRate != null ? String(body.equalizationRate) : null;
     if (body.estimatedMarketValue !== undefined) updateData.estimatedMarketValue = String(body.estimatedMarketValue);
     if (body.requestedAssessment !== undefined) updateData.requestedAssessment = String(body.requestedAssessment);
+    if ((body as any).state !== undefined) updateData.state = (body as any).state;
     if (body.basisOfComplaint !== undefined) updateData.basisOfComplaint = body.basisOfComplaint;
     if (body.status !== undefined) updateData.status = body.status;
     if (body.filingDeadline !== undefined) updateData.filingDeadline = body.filingDeadline;

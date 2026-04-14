@@ -60,6 +60,9 @@ app.use(authMiddleware);
 
 app.use("/api", router);
 
+// Root-level health checks for Railway / load balancers
+app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });

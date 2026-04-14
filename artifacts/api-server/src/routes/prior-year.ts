@@ -12,6 +12,12 @@ router.get("/prior-year/:grievanceId", async (req, res) => {
     const [grievance] = await db.select().from(grievancesTable).where(eq(grievancesTable.id, grievanceId));
     if (!grievance) return res.status(404).json({ error: "Grievance not found" });
 
+    // Prior-year data from NYS ORPS only available for NY
+    const state = (grievance as any).state ?? "NY";
+    if (state !== "NY") {
+      return res.json({ priorYear: null, message: `Prior-year lookup not available for ${state} yet` });
+    }
+
     const { parcelId, county, municipality } = grievance;
     if (!parcelId && !(county && municipality)) {
       return res.json({ priorYear: null, message: "Insufficient property info for prior-year lookup" });

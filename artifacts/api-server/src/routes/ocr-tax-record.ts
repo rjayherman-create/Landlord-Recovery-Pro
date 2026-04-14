@@ -1,8 +1,9 @@
+import { createRequire } from "module";
 import { Router, type IRouter } from "express";
 import multer from "multer";
 import OpenAI from "openai";
-// Import from lib directly to avoid the test-file read that happens in index.js at startup
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+// Use createRequire to import CJS module from pdf-parse without triggering its test-file side effect
+const require = createRequire(import.meta.url);
 const pdfParse: (buf: Buffer) => Promise<{ text: string }> = require("pdf-parse/lib/pdf-parse.js");
 
 const router: IRouter = Router();

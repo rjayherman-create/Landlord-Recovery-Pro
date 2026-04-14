@@ -28,6 +28,12 @@ router.get("/auto-comparables", async (req, res) => {
     const [grievance] = await db.select().from(grievancesTable).where(eq(grievancesTable.id, grievanceId));
     if (!grievance) return res.status(404).json({ error: "Grievance not found" });
 
+    // Auto-comparables from NYS open data only works for NY
+    const state = (grievance as any).state ?? "NY";
+    if (state !== "NY") {
+      return res.json([]);
+    }
+
     const { municipality, county, livingArea, taxYear } = grievance;
     const sqft = livingArea ? Number(livingArea) : null;
 
