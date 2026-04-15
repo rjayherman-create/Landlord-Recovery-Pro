@@ -1,0 +1,144 @@
+OUR MASTER “FIX ANY APP” SYSTEM (REPLIT → GITHUB → RAILWAY)
+🔥 STEP 1 — FIX YOUR SERVER (THIS IS NON-NEGOTIABLE)
+
+Open:
+
+artifacts/api-server/src/index.ts
+
+Make sure you have:
+
+const PORT = process.env.PORT || 8080;
+
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
+
+✅ This fixes:
+
+Railway not detecting your app
+App not opening in browser
+🔥 STEP 2 — ROOT package.json (CRITICAL)
+
+At your ROOT (not inside folders):
+
+{
+  "name": "app",
+  "private": true,
+  "scripts": {
+    "start": "pnpm --filter @workspace/api-server start",
+    "build": "pnpm --filter @workspace/api-server build"
+  }
+}
+
+✅ This fixes:
+
+“No start command detected”
+Railway confusion
+🔥 STEP 3 — API SERVER package.json
+
+Open:
+
+artifacts/api-server/package.json
+
+Make sure:
+
+{
+  "scripts": {
+    "build": "node build.mjs",
+    "start": "node dist/index.mjs"
+  }
+}
+🔥 STEP 4 — INSTALL FIX (VERY IMPORTANT)
+
+In Replit shell run:
+
+pnpm install --no-frozen-lockfile
+
+Then:
+
+git add pnpm-lock.yaml
+git commit -m "fix: lockfile sync"
+git push
+
+✅ This fixes:
+
+90% of Railway build failures
+🔥 STEP 5 — DELETE DOCKERFILE (IMPORTANT)
+
+At root:
+
+❌ DELETE this if it exists:
+
+Dockerfile
+
+✅ Let Railway auto-detect (much more reliable)
+
+🔥 STEP 6 — STATIC FRONTEND SERVE (THIS FIXES “APP DOESN’T OPEN”)
+
+Inside your Express app:
+
+import path from "path";
+import express from "express";
+
+const app = express();
+
+const staticDir = path.join(
+  process.cwd(),
+  "artifacts/property-tax-grievance/dist"
+);
+
+app.use(express.static(staticDir));
+
+app.get("*", (_, res) => {
+  res.sendFile(path.join(staticDir, "index.html"));
+});
+
+✅ This fixes:
+
+Blank page
+Railway URL loads nothing
+🔥 STEP 7 — ENV VARIABLES (RAILWAY)
+
+In Railway → Variables:
+
+PORT=8080
+NODE_ENV=production
+🔥 STEP 8 — PUSH TO GITHUB (YOUR STANDARD BLOCK)
+
+Use this EVERY TIME:
+
+git add .
+git commit -m "deploy: ready for railway"
+git push origin main
+🔥 STEP 9 — FORCE CLEAN DEPLOY (THIS MATTERS)
+
+In Railway:
+
+Go to Deployments
+Click latest deploy
+Click Redeploy
+⚠️ TURN ON:
+👉 “Clear build cache”
+✅ FINAL VERIFICATION (DO THIS EVERY TIME)
+
+Open browser:
+
+https://your-app.up.railway.app/api/health
+
+You should see:
+
+OK
+
+Then open root:
+
+https://your-app.up.railway.app
+⚠️ WHY THIS SYSTEM WORKS (NO MORE GUESSING)
+
+This setup guarantees:
+
+✔ Railway detects Node correctly
+✔ pnpm installs correctly
+✔ Start command always exists
+✔ Frontend actually loads
+✔ No Docker conflicts
+✔ No lockfile crashes
