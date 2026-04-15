@@ -68,10 +68,13 @@ app.get("/api/health", (_req, res) => {
 });
 
 if (process.env.NODE_ENV === "production") {
-  const publicDir = path.resolve(__dirname, "../public");
-  app.use(express.static(publicDir));
+  const staticDir = path.join(
+    process.cwd(),
+    "artifacts/property-tax-grievance/dist"
+  );
+  app.use(express.static(staticDir));
   app.get("*", (_req, res) => {
-    res.sendFile(path.join(publicDir, "index.html"));
+    res.sendFile(path.join(staticDir, "index.html"));
   });
 }
 
