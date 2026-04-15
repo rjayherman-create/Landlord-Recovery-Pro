@@ -42,7 +42,7 @@ export function Dashboard() {
   const { preferredState, setPreferredState, meta } = usePreferredState();
   const [dialogState, setDialogState] = useState(preferredState);
   const dialogMeta = STATE_META[dialogState as keyof typeof STATE_META] ?? meta;
-  const { isAuthenticated, login } = useAuth();
+  useAuth();
 
   const totalCases = grievances?.length || 0;
   const reducedCases = grievances?.filter(g => g.status === 'reduced').length || 0;
@@ -162,26 +162,7 @@ export function Dashboard() {
                     Select your state, then enter your property details to build your {dialogMeta.verb} case using {dialogMeta.form}.
                   </DialogDescription>
                 </DialogHeader>
-                {isAuthenticated ? (
-                  <GrievanceForm onSuccess={() => setIsDialogOpen(false)} initialState={prefillData?.state ?? preferredState} onStateChange={setDialogState} prefill={prefillData} />
-                ) : (
-                  <div className="py-8 text-center space-y-4">
-                    <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-                      <ShieldCheck className="w-7 h-7 text-primary" />
-                    </div>
-                    <div>
-                      <h3 className="font-serif font-bold text-lg text-foreground">Sign in to create a case</h3>
-                      <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
-                        Your cases, comparables, and forms are saved to your account so you can access them anytime.
-                        Sign in with your Replit account — it's free.
-                      </p>
-                    </div>
-                    <Button onClick={login} size="lg" className="gap-2 px-8">
-                      <Plus className="w-4 h-4" /> Sign in and Start Free
-                    </Button>
-                    <p className="text-xs text-muted-foreground">No credit card required</p>
-                  </div>
-                )}
+                <GrievanceForm onSuccess={() => setIsDialogOpen(false)} initialState={prefillData?.state ?? preferredState} onStateChange={setDialogState} prefill={prefillData} />
               </DialogContent>
             </Dialog>
 

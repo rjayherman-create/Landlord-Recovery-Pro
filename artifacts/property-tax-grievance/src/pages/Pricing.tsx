@@ -67,11 +67,6 @@ export function Pricing() {
   const [loading, setLoading] = useState<string | null>(null);
 
   async function handleCheckout(planKey: string) {
-    if (!isAuthenticated) {
-      login();
-      return;
-    }
-
     setLoading(planKey);
     try {
       const res = await fetch("/api/stripe/products");
