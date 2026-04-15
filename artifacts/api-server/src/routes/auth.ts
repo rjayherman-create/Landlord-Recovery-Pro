@@ -18,10 +18,11 @@ const OIDC_COOKIE_TTL = 10 * 60 * 1000;
 
 const router: IRouter = Router();
 
+// When BYPASS_AUTH=true, skip all OIDC and return a guest user.
+// Set this in Railway env vars while testing without Replit auth configured.
+const BYPASS_AUTH = process.env.BYPASS_AUTH === "true";
+
 function getOrigin(req: Request): string {
-  // REPLIT_DEV_DOMAIN is the authoritative host when running inside Replit.
-  // Vite's changeOrigin proxy replaces the Host header with localhost:8080,
-  // so we cannot rely on req.headers.host to build the correct callback URL.
   if (process.env.REPLIT_DEV_DOMAIN) {
     return `https://${process.env.REPLIT_DEV_DOMAIN}`;
   }
@@ -82,109 +83,139 @@ router.get("/auth/user", (req: Request, res: Response) => {
 });
 
 router.get("/login", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
-  const callbackUrl = `${getOrigin(req)}/api/callback`;
-  const returnTo = getSafeReturnTo(req.query.returnTo);
+  // If auth is bypassed or REPL_ID is not configured, just redirect home
+  if (BYPASS_AUTH || !process.env.REPL_ID) {
+    const returnTo = getSafeReturnTo(req.query.returnTo);
+    res.redirect(returnTo);
+    return;
+  }
 
-  const state = oidc.randomState();
-  const nonce = oidc.randomNonce();
-  const codeVerifier = oidc.randomPKCECodeVerifier();
-  const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
+  try {
+    const config = await getOidcConfig();
+    const callbackUrl = `${getOrigin(req)}/api/callback`;
+    const returnTo = getSafeReturnTo(req.query.returnTo);
 
-  const redirectTo = oidc.buildAuthorizationUrl(config, {
-    redirect_uri: callbackUrl,
-    scope: "openid email profile offline_access",
-    code_challenge: codeChallenge,
-    code_challenge_method: "S256",
-    prompt: "login consent",
-    state,
-    nonce,
-  });
+    const state = oidc.randomState();
+    const nonce = oidc.randomNonce();
+    const codeVerifier = oidc.randomPKCECodeVerifier();
+    const codeChallenge = await oidc.calculatePKCECodeChallenge(codeVerifier);
 
-  setOidcCookie(res, "code_verifier", codeVerifier);
-  setOidcCookie(res, "nonce", nonce);
-  setOidcCookie(res, "state", state);
-  setOidcCookie(res, "return_to", returnTo);
+    const redirectTo = oidc.buildAuthorizationUrl(config, {
+      redirect_uri: callbackUrl,
+      scope: "openid email profile offline_access",
+      code_challenge: codeChallenge,
+      code_challenge_method: "S256",
+      prompt: "login consent",
+      state,
+      nonce,
+    });
 
-  res.redirect(redirectTo.href);
+    setOidcCookie(res, "code_verifier", codeVerifier);
+    setOidcCookie(res, "nonce", nonce);
+    setOidcCookie(res, "state", state);
+    setOidcCookie(res, "return_to", returnTo);
+
+    res.redirect(redirectTo.href);
+  } catch (err) {
+    console.error("Login failed — REPL_ID may not be configured:", err);
+    res.redirect("/");
+  }
 });
 
 router.get("/callback", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
-  const callbackUrl = `${getOrigin(req)}/api/callback`;
-
-  const codeVerifier = req.cookies?.code_verifier;
-  const nonce = req.cookies?.nonce;
-  const expectedState = req.cookies?.state;
-
-  if (!codeVerifier || !expectedState) {
-    res.redirect("/api/login");
+  if (BYPASS_AUTH || !process.env.REPL_ID) {
+    res.redirect("/");
     return;
   }
 
-  const currentUrl = new URL(
-    `${callbackUrl}?${new URL(req.url, `http://${req.headers.host}`).searchParams}`,
-  );
-
-  let tokens: oidc.TokenEndpointResponse & oidc.TokenEndpointResponseHelpers;
   try {
-    tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
-      pkceCodeVerifier: codeVerifier,
-      expectedNonce: nonce,
-      expectedState,
-      idTokenExpected: true,
-    });
-  } catch {
-    res.redirect("/api/login");
-    return;
+    const config = await getOidcConfig();
+    const callbackUrl = `${getOrigin(req)}/api/callback`;
+
+    const codeVerifier = req.cookies?.code_verifier;
+    const nonce = req.cookies?.nonce;
+    const expectedState = req.cookies?.state;
+
+    if (!codeVerifier || !expectedState) {
+      res.redirect("/");
+      return;
+    }
+
+    const currentUrl = new URL(
+      `${callbackUrl}?${new URL(req.url, `http://${req.headers.host}`).searchParams}`,
+    );
+
+    let tokens: oidc.TokenEndpointResponse & oidc.TokenEndpointResponseHelpers;
+    try {
+      tokens = await oidc.authorizationCodeGrant(config, currentUrl, {
+        pkceCodeVerifier: codeVerifier,
+        expectedNonce: nonce,
+        expectedState,
+        idTokenExpected: true,
+      });
+    } catch {
+      res.redirect("/");
+      return;
+    }
+
+    const returnTo = getSafeReturnTo(req.cookies?.return_to);
+
+    res.clearCookie("code_verifier", { path: "/" });
+    res.clearCookie("nonce", { path: "/" });
+    res.clearCookie("state", { path: "/" });
+    res.clearCookie("return_to", { path: "/" });
+
+    const claims = tokens.claims();
+    if (!claims) {
+      res.redirect("/");
+      return;
+    }
+
+    const dbUser = await upsertUser(claims as unknown as Record<string, unknown>);
+
+    const now = Math.floor(Date.now() / 1000);
+    const sessionData: SessionData = {
+      user: {
+        id: dbUser.id,
+        email: dbUser.email,
+        firstName: dbUser.firstName,
+        lastName: dbUser.lastName,
+        profileImageUrl: dbUser.profileImageUrl,
+      },
+      access_token: tokens.access_token,
+      refresh_token: tokens.refresh_token,
+      expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : claims.exp,
+    };
+
+    const sid = await createSession(sessionData);
+    setSessionCookie(res, sid);
+    res.redirect(returnTo);
+  } catch (err) {
+    console.error("Auth callback error:", err);
+    res.redirect("/");
   }
-
-  const returnTo = getSafeReturnTo(req.cookies?.return_to);
-
-  res.clearCookie("code_verifier", { path: "/" });
-  res.clearCookie("nonce", { path: "/" });
-  res.clearCookie("state", { path: "/" });
-  res.clearCookie("return_to", { path: "/" });
-
-  const claims = tokens.claims();
-  if (!claims) {
-    res.redirect("/api/login");
-    return;
-  }
-
-  const dbUser = await upsertUser(claims as unknown as Record<string, unknown>);
-
-  const now = Math.floor(Date.now() / 1000);
-  const sessionData: SessionData = {
-    user: {
-      id: dbUser.id,
-      email: dbUser.email,
-      firstName: dbUser.firstName,
-      lastName: dbUser.lastName,
-      profileImageUrl: dbUser.profileImageUrl,
-    },
-    access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
-    expires_at: tokens.expiresIn() ? now + tokens.expiresIn()! : claims.exp,
-  };
-
-  const sid = await createSession(sessionData);
-  setSessionCookie(res, sid);
-  res.redirect(returnTo);
 });
 
 router.get("/logout", async (req: Request, res: Response) => {
-  const config = await getOidcConfig();
-  const origin = getOrigin(req);
   const sid = getSessionId(req);
-  await clearSession(res, sid);
+  if (sid) await clearSession(res, sid);
 
-  const endSessionUrl = oidc.buildEndSessionUrl(config, {
-    client_id: process.env.REPL_ID!,
-    post_logout_redirect_uri: origin,
-  });
+  if (BYPASS_AUTH || !process.env.REPL_ID) {
+    res.redirect("/");
+    return;
+  }
 
-  res.redirect(endSessionUrl.href);
+  try {
+    const config = await getOidcConfig();
+    const origin = getOrigin(req);
+    const endSessionUrl = oidc.buildEndSessionUrl(config, {
+      client_id: process.env.REPL_ID!,
+      post_logout_redirect_uri: origin,
+    });
+    res.redirect(endSessionUrl.href);
+  } catch {
+    res.redirect("/");
+  }
 });
 
 export default router;
