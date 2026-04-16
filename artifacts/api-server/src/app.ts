@@ -15,6 +15,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app: Express = express();
 
+// ── Healthcheck routes registered FIRST — before any middleware ──────────────
+// Railway, load balancers, and uptime monitors hit these with no cookies/auth.
+app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
+app.get("/health", (_req, res) => res.json({ status: "ok" }));
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Stripe webhook MUST be registered before express.json() — needs raw Buffer body
 app.post(
   '/api/stripe/webhook',
@@ -60,9 +66,6 @@ app.use(authMiddleware);
 
 app.use("/api", router);
 
-// Root-level health checks for Railway / load balancers
-app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
-app.get("/health", (_req, res) => res.json({ status: "ok" }));
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
