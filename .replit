@@ -29,3 +29,8 @@ timeoutMs = 20000
 [nix]
 channel = "stable-25_05"
 packages = ["connect"]
+
+[userenv]
+
+[userenv.development]
+BYPASS_AUTH = "true"
