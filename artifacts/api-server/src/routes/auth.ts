@@ -79,6 +79,18 @@ async function upsertUser(claims: Record<string, unknown>) {
 }
 
 router.get("/auth/user", (req: Request, res: Response) => {
+  if (BYPASS_AUTH) {
+    // Return a synthetic guest user so the frontend treats the session as authenticated
+    return res.json({
+      user: {
+        id: "guest",
+        email: "guest@taxappealdiy.local",
+        firstName: "Guest",
+        lastName: "User",
+        profileImageUrl: null,
+      },
+    });
+  }
   res.json({ user: req.isAuthenticated() ? req.user : null });
 });
 
