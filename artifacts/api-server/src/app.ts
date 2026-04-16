@@ -70,7 +70,7 @@ app.get("/api/health", (_req, res) => {
 if (process.env.NODE_ENV === "production") {
   const staticDir = path.join(
     process.cwd(),
-    "artifacts/property-tax-grievance/dist"
+    "artifacts/property-tax-grievance/dist/public"
   );
   app.use(express.static(staticDir));
   app.get("*", (_req, res) => {
