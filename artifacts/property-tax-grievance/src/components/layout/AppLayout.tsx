@@ -1,17 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { Scale, Home, Map, Info, Calendar, LogIn, LogOut, User, Loader2, CreditCard } from "lucide-react";
+import { Scale, Home, Map, Info, Calendar, CreditCard } from "lucide-react";
 import { motion } from "framer-motion";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { useAuth } from "@workspace/replit-auth-web";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -19,7 +10,6 @@ function cn(...inputs: ClassValue[]) {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
-  const { user, isLoading, isAuthenticated, login, logout } = useAuth();
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: Home },
@@ -72,45 +62,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-3">
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
-            ) : isAuthenticated && user ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2 font-medium">
-                    {user.profileImageUrl ? (
-                      <img src={user.profileImageUrl} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
-                    ) : (
-                      <div className="w-6 h-6 rounded-full bg-primary/20 flex items-center justify-center">
-                        <User className="w-3 h-3 text-primary" />
-                      </div>
-                    )}
-                    <span className="hidden sm:inline max-w-[120px] truncate">
-                      {user.firstName ?? user.email ?? "Account"}
-                    </span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <div className="px-3 py-2">
-                    <p className="text-sm font-medium truncate">
-                      {[user.firstName, user.lastName].filter(Boolean).join(" ") || "My Account"}
-                    </p>
-                    {user.email && (
-                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                    )}
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={logout} className="gap-2 text-muted-foreground cursor-pointer">
-                    <LogOut className="w-4 h-4" /> Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <Button size="sm" onClick={login} className="gap-2 font-medium">
-                <LogIn className="w-4 h-4" />
-                Sign in
-              </Button>
-            )}
+            <span className="text-xs text-muted-foreground hidden sm:inline px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-200 font-medium">
+              Free Access
+            </span>
           </div>
         </div>
       </header>

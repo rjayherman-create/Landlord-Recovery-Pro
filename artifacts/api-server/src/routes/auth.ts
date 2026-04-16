@@ -78,20 +78,22 @@ async function upsertUser(claims: Record<string, unknown>) {
   return user;
 }
 
+// Demo user returned for all unauthenticated requests.
+// Auth is intentionally bypassed — the app works without accounts.
+const DEMO_USER = {
+  id: "demo-user",
+  email: "demo@taxappealdiy.com",
+  firstName: "Demo",
+  lastName: "User",
+  profileImageUrl: null,
+};
+
 router.get("/auth/user", (req: Request, res: Response) => {
-  if (BYPASS_AUTH) {
-    // Return a synthetic guest user so the frontend treats the session as authenticated
-    return res.json({
-      user: {
-        id: "guest",
-        email: "guest@taxappealdiy.local",
-        firstName: "Guest",
-        lastName: "User",
-        profileImageUrl: null,
-      },
-    });
+  // Always return demo user — real OIDC sessions will override this if present
+  if (BYPASS_AUTH || !req.isAuthenticated()) {
+    return res.json({ user: DEMO_USER });
   }
-  res.json({ user: req.isAuthenticated() ? req.user : null });
+  res.json({ user: req.user });
 });
 
 router.get("/login", async (req: Request, res: Response) => {

@@ -56,18 +56,9 @@ router.post('/stripe/checkout', async (req: any, res) => {
   }
 });
 
-router.get('/stripe/me', async (req: any, res) => {
-  try {
-    // When BYPASS_AUTH is active (Railway demo mode), treat user as having basic plan
-    if (process.env.BYPASS_AUTH === 'true') {
-      return res.json({ plan: 'basic' });
-    }
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    const user = await stripeStorage.getUser(req.user.id);
-    res.json({ plan: user?.plan ?? null });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
+router.get('/stripe/me', async (_req, res) => {
+  // Auth removed — all users have the basic plan included
+  res.json({ plan: 'basic' });
 });
 
 export default router;

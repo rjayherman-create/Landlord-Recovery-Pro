@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@workspace/replit-auth-web";
 import { CheckCircle2, Star, ArrowRight, ShieldCheck, Zap, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +62,6 @@ const GUARANTEE = [
 ];
 
 export function Pricing() {
-  const { isAuthenticated, login } = useAuth();
   const [loading, setLoading] = useState<string | null>(null);
 
   async function handleCheckout(planKey: string) {
