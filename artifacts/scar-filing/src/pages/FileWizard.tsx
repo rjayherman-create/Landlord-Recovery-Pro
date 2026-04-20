@@ -228,9 +228,16 @@ function Step1ClaimType({ form, setForm, onNext }: { form: FormData; setForm: (f
 
 type EvidenceFile = { id: number; fileName: string; fileUrl: string; mimeType: string | null; fileSize: number | null };
 
-function EvidenceUpload({ caseId }: { caseId: number | null }) {
+function EvidenceUpload({
+  caseId,
+  onTextExtracted,
+}: {
+  caseId: number | null;
+  onTextExtracted?: (text: string, fileName: string) => void;
+}) {
   const [files, setFiles] = useState<EvidenceFile[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [parsing, setParsing] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -252,7 +259,23 @@ function EvidenceUpload({ caseId }: { caseId: number | null }) {
       const fd = new FormData();
       fd.append("file", file);
       const res = await fetch(`${baseUrl}/api/cases/${caseId}/evidence`, { method: "POST", body: fd });
-      if (res.ok) await loadFiles();
+      if (res.ok) {
+        await loadFiles();
+        if (onTextExtracted && (file.type.startsWith("image/") || file.type === "application/pdf" || file.type.startsWith("text/"))) {
+          setParsing(file.name);
+          try {
+            const parseFormData = new FormData();
+            parseFormData.append("file", file);
+            const parseRes = await fetch(`${baseUrl}/api/parse`, { method: "POST", body: parseFormData });
+            if (parseRes.ok) {
+              const { text } = await parseRes.json();
+              if (text) onTextExtracted(text, file.name);
+            }
+          } catch {} finally {
+            setParsing(null);
+          }
+        }
+      }
     } catch {} finally {
       setUploading(false);
     }
@@ -318,9 +341,10 @@ function EvidenceUpload({ caseId }: { caseId: number | null }) {
               accept="image/*,.pdf,.doc,.docx,.txt"
               onChange={(e) => handleFiles(e.target.files)}
             />
-            {uploading ? (
+            {uploading || parsing ? (
               <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                <Loader2 className="w-4 h-4 animate-spin" />
+                {parsing ? `Reading "${parsing}"…` : "Uploading…"}
               </div>
             ) : (
               <>
@@ -377,6 +401,7 @@ function Step2Details({ form, setForm, onNext, onBack, saving, caseId }: {
   const limit = STATE_LIMITS[form.state] ?? 10000;
   const claimType = CLAIM_TYPES.find((c) => c.value === form.claimType);
   const [improving, setImproving] = useState(false);
+  const [extractedTexts, setExtractedTexts] = useState<{ text: string; fileName: string }[]>([]);
   const canProceed =
     form.claimantName && form.defendantName && form.claimAmount > 0 && form.claimDescription;
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -495,11 +520,17 @@ function Step2Details({ form, setForm, onNext, onBack, saving, caseId }: {
           </FieldRow>
         </div>
 
-        <EvidenceUpload caseId={caseId} />
+        <EvidenceUpload
+          caseId={caseId}
+          onTextExtracted={(text, fileName) =>
+            setExtractedTexts((prev) => [...prev.filter((e) => e.fileName !== fileName), { text, fileName }])
+          }
+        />
 
         <CaseAnalysisPanel
           form={form}
           caseId={caseId}
+          autoTexts={extractedTexts}
           onUseNarrative={(narrative) => setForm({ ...form, claimDescription: narrative })}
         />
       </div>
@@ -528,18 +559,28 @@ type AnalysisResult = {
 function CaseAnalysisPanel({
   form,
   caseId,
+  autoTexts = [],
   onUseNarrative,
 }: {
   form: FormData;
   caseId: number | null;
+  autoTexts?: { text: string; fileName: string }[];
   onUseNarrative: (narrative: string) => void;
 }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [autoLabel, setAutoLabel] = useState<string | null>(null);
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-  const analyze = async () => {
+  useEffect(() => {
+    if (autoTexts.length === 0) return;
+    const latestFile = autoTexts[autoTexts.length - 1].fileName;
+    setAutoLabel(latestFile);
+    analyze(autoTexts.map((e) => e.text));
+  }, [autoTexts.length]);
+
+  const analyze = async (extraTexts?: string[]) => {
     setAnalyzing(true);
     setError(null);
     setResult(null);
@@ -549,6 +590,7 @@ function CaseAnalysisPanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           caseId: caseId ?? undefined,
+          evidenceTexts: extraTexts ?? [],
           description: form.claimDescription,
           supportingFacts: form.supportingFacts,
           amount: form.claimAmount,
@@ -592,7 +634,10 @@ function CaseAnalysisPanel({
 
       {!result && !analyzing && !error && (
         <div className="px-4 py-4 text-sm text-muted-foreground">
-          Paste or type your description and supporting facts above, then click <strong>Analyze Case</strong> to extract a timeline, key facts, and a draft court statement from your evidence.
+          {autoLabel
+            ? <>Extracted text from <strong>{autoLabel}</strong>. Click <strong>Analyze Case</strong> to build your timeline and court statement.</>
+            : <>Paste or type your description and supporting facts above, then click <strong>Analyze Case</strong> to extract a timeline, key facts, and a draft court statement.</>
+          }
         </div>
       )}
 
