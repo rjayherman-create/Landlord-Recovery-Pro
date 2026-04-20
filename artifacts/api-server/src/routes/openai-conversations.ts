@@ -9,7 +9,7 @@ import {
   SendOpenaiMessageParams,
   SendOpenaiMessageBody,
 } from "@workspace/api-zod";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { chatWithAssistant } from "../services/ai";
 
 const router: IRouter = Router();
 
@@ -135,19 +135,12 @@ router.post("/openai/conversations/:id/messages", async (req, res) => {
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
 
-    const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: chatMessages,
-      stream: true,
-    });
+    const stream = await chatWithAssistant({ messages: chatMessages });
 
     let fullContent = "";
     for await (const chunk of stream) {
-      const delta = chunk.choices[0]?.delta?.content ?? "";
-      if (delta) {
-        fullContent += delta;
-        res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
-      }
+      fullContent += chunk.content;
+      res.write(`data: ${JSON.stringify({ content: chunk.content })}\n\n`);
     }
 
     await db.insert(messages).values({

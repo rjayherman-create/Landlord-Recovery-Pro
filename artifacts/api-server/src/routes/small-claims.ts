@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, smallClaimsCasesTable, conversations, messages } from "@workspace/db";
+import { db, smallClaimsCasesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
   CreateSmallClaimBody,
@@ -8,7 +8,7 @@ import {
   UpdateSmallClaimParams,
   DeleteSmallClaimParams,
 } from "@workspace/api-zod";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { generateStatement } from "../services/ai";
 
 const router: IRouter = Router();
 
@@ -161,38 +161,19 @@ router.post("/small-claims/:id/generate-statement", async (req, res) => {
       return;
     }
 
-    const systemPrompt = `You are a legal writing assistant specializing in small claims court.
-Generate a clear, concise, and persuasive statement of claim for a small claims court filing.
-The statement should:
-- Clearly state the facts in chronological order
-- Identify the legal basis for the claim
-- State the specific amount being sought and why
-- Be written in plain English appropriate for a judge to read
-- Be approximately 200-400 words`;
-
-    const userPrompt = `Generate a statement of claim for a ${found.claimType} case.
-
-Claimant: ${found.claimantName}
-Defendant: ${found.defendantName}
-State: ${found.state}${found.county ? `, ${found.county} County` : ""}
-Claim Amount: $${Number(found.claimAmount).toFixed(2)}
-Incident Date: ${found.incidentDate ?? "Not specified"}
-
-Description: ${found.claimDescription}
-
-${found.claimBasis ? `Legal Basis: ${found.claimBasis}` : ""}
-${found.supportingFacts ? `Supporting Facts: ${found.supportingFacts}` : ""}
-${found.desiredOutcome ? `Desired Outcome: ${found.desiredOutcome}` : ""}`;
-
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+    const statement = await generateStatement({
+      claimType: found.claimType,
+      state: found.state,
+      county: found.county,
+      claimantName: found.claimantName,
+      defendantName: found.defendantName,
+      claimAmount: Number(found.claimAmount),
+      claimDescription: found.claimDescription,
+      incidentDate: found.incidentDate,
+      claimBasis: found.claimBasis,
+      supportingFacts: found.supportingFacts,
+      desiredOutcome: found.desiredOutcome,
     });
-
-    const statement = completion.choices[0]?.message?.content ?? "";
 
     const [updated] = await db
       .update(smallClaimsCasesTable)
