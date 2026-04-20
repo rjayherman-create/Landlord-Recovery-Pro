@@ -60,6 +60,87 @@ const STATE_LIMITS: Record<string, number> = {
   NY: 10000, NJ: 3000, FL: 8000, TX: 20000, CA: 12500, PA: 12000, IL: 10000, OH: 6000, GA: 15000, NC: 10000,
 };
 
+type CourtEntry = {
+  filingFee: string;
+  serviceFee: string;
+  methods: ("online" | "in_person" | "mail")[];
+  courtName: string;
+  filingNote: string;
+};
+
+const COURT_DATA: Record<string, CourtEntry> = {
+  NY: {
+    filingFee: "$15–$20",
+    serviceFee: "$10–$50",
+    methods: ["in_person", "mail"],
+    courtName: "Small Claims Part, Civil Court",
+    filingNote: "File at your county's Civil Court clerk. NYC residents can file at the nearest borough courthouse.",
+  },
+  NJ: {
+    filingFee: "$35–$75",
+    serviceFee: "$30–$50",
+    methods: ["in_person"],
+    courtName: "Special Civil Part, Superior Court",
+    filingNote: "File at the Special Civil Part clerk in the county where the defendant lives or does business.",
+  },
+  FL: {
+    filingFee: "$55–$100",
+    serviceFee: "$40–$60",
+    methods: ["in_person", "mail"],
+    courtName: "Small Claims Court, County Court",
+    filingNote: "File at the County Court clerk. Some counties accept online filing — check your county clerk's website.",
+  },
+  TX: {
+    filingFee: "$46–$100",
+    serviceFee: "$75–$100",
+    methods: ["in_person"],
+    courtName: "Justice of the Peace Court",
+    filingNote: "File at your local Justice of the Peace (JP) court in the precinct where the defendant lives or where the dispute occurred.",
+  },
+  CA: {
+    filingFee: "$30–$75",
+    serviceFee: "$40–$75",
+    methods: ["in_person", "online"],
+    courtName: "Small Claims Court, Superior Court",
+    filingNote: "Many California courts offer online filing at www.courts.ca.gov. Otherwise file at the courthouse in the county where the defendant is located.",
+  },
+  PA: {
+    filingFee: "$35–$75",
+    serviceFee: "$25–$60",
+    methods: ["in_person", "mail"],
+    courtName: "Magisterial District Court",
+    filingNote: "File at your local Magisterial District Court. Find your district at the Pennsylvania Courts website.",
+  },
+  IL: {
+    filingFee: "$50–$100",
+    serviceFee: "$30–$55",
+    methods: ["in_person"],
+    courtName: "Small Claims Division, Circuit Court",
+    filingNote: "File at the Circuit Court clerk's office in the county where the defendant lives or the dispute occurred.",
+  },
+  OH: {
+    filingFee: "$35–$65",
+    serviceFee: "$25–$50",
+    methods: ["in_person", "mail"],
+    courtName: "Small Claims Division, Municipal Court",
+    filingNote: "File at your local Municipal or County Court's small claims division.",
+  },
+  GA: {
+    filingFee: "$45–$75",
+    serviceFee: "$25–$50",
+    methods: ["in_person"],
+    courtName: "Magistrate Court",
+    filingNote: "File at the Magistrate Court in the county where the defendant lives or the business is located.",
+  },
+  NC: {
+    filingFee: "$36–$50",
+    serviceFee: "$30–$50",
+    methods: ["in_person"],
+    courtName: "Small Claims Court, Magistrate Court",
+    filingNote: "File at the magistrate's office in the county where the defendant lives. A magistrate will hear your case, usually within 30 days.",
+  },
+};
+
 const STEPS = [
   { id: 1, label: "Claim Type", icon: Scale },
   { id: 2, label: "Details", icon: FileText },
@@ -1214,6 +1295,82 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
           </label>
         </div>
       )}
+
+      {generated && (() => {
+        const court = COURT_DATA[form.state] ?? COURT_DATA.NY;
+        const METHOD_LABELS = {
+          online: { label: "Online", icon: "🌐", tip: "Fastest option" },
+          in_person: { label: "At courthouse", icon: "🏛️", tip: "Bring 2 copies" },
+          mail: { label: "By mail", icon: "📬", tip: "Send certified mail" },
+        };
+        return (
+          <div className="mb-4 rounded-xl border border-border overflow-hidden">
+            {/* Cost breakdown */}
+            <div className="bg-muted/30 px-4 py-3 border-b border-border">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Total Cost Breakdown</p>
+              <div className="space-y-1.5">
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-foreground">SmallClaims AI — document generation</span>
+                  <span className="font-semibold text-foreground">$29.00</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Court filing fee ({form.state})</span>
+                  <span className="text-muted-foreground">{court.filingFee}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-muted-foreground">Service of process (sheriff/process server)</span>
+                  <span className="text-muted-foreground">{court.serviceFee}</span>
+                </div>
+                <div className="border-t border-border/60 pt-1.5 flex justify-between items-center text-sm font-semibold">
+                  <span>Estimated total (all fees)</span>
+                  <span className="text-primary">$29 + {court.filingFee} + {court.serviceFee}</span>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">
+                Court and service fees are paid separately to the court — <strong>not</strong> to us.
+              </p>
+            </div>
+
+            {/* Filing court */}
+            <div className="px-4 py-3 border-b border-border">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Where to File in {form.state}</p>
+              <p className="text-sm font-medium text-foreground mb-1">{court.courtName}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">{court.filingNote}</p>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {court.methods.map(m => {
+                  const ml = METHOD_LABELS[m];
+                  return (
+                    <span key={m} className="inline-flex items-center gap-1 text-xs bg-green-50 border border-green-200 text-green-700 px-2 py-0.5 rounded-full">
+                      {ml.icon} {ml.label}
+                      <span className="text-green-500">· {ml.tip}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Next steps */}
+            <div className="px-4 py-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Your Next Steps After Payment</p>
+              <ol className="space-y-1.5">
+                {[
+                  "Download your completed court filing document",
+                  `Go to ${court.courtName} and pay the ${court.filingFee} filing fee`,
+                  "Submit your documents — ask the clerk for a case number",
+                  "Have the defendant officially served (court arranges this or you hire a process server)",
+                  "Wait for your hearing date in the mail (usually 30–60 days)",
+                  "Show up prepared with your evidence and this document",
+                ].map((step, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-sm text-foreground">
+                    <span className="shrink-0 w-5 h-5 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center mt-0.5">{i + 1}</span>
+                    <span className="leading-snug">{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="flex gap-3">
         <button onClick={onBack}
