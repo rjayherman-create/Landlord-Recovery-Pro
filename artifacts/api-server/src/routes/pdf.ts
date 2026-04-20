@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { db, smallClaimsCasesTable, evidenceTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { generateCourtPDF, getStateConfig, getSupportedStates } from "../services/pdfFill";
-import { improveClaim } from "../services/ai";
+import { improveClaim, buildCaseFromInputs } from "../services/ai";
 import { getUncachableStripeClient } from "../stripeClient";
 import { PDFDocument, rgb, degrees } from "pdf-lib";
 
@@ -46,7 +46,27 @@ router.post("/ai-improve", async (req, res) => {
 
 
 // ==========================
-// 2. WATERMARKED PREVIEW PDF
+// 2. BUILD CASE FROM GUIDED INPUTS
+// ==========================
+router.post("/build-case", async (req: any, res: any) => {
+  try {
+    const { caseType, agreement, problem, date, amount, state } = req.body as {
+      caseType: string; agreement: string; problem: string; date: string; amount: string | number; state?: string;
+    };
+    if (!agreement || !problem) {
+      res.status(400).json({ error: "agreement and problem are required" });
+      return;
+    }
+    const text = await buildCaseFromInputs({ caseType, agreement, problem, date, amount, state });
+    res.json({ text });
+  } catch (err: any) {
+    req.log.error({ err }, "Build case failed");
+    res.status(500).json({ error: "AI failed", message: err.message });
+  }
+});
+
+// ==========================
+// 3. WATERMARKED PREVIEW PDF
 // ==========================
 router.post("/cases/:id/preview", async (req, res) => {
   try {

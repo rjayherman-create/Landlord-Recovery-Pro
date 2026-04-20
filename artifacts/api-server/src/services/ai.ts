@@ -47,6 +47,39 @@ ${params.desiredOutcome ? `Desired outcome: ${params.desiredOutcome}` : ""}
   return improveClaim(rawText);
 }
 
+export async function buildCaseFromInputs(data: {
+  caseType: string;
+  agreement: string;
+  problem: string;
+  date: string;
+  amount: string | number;
+  state?: string;
+}): Promise<string> {
+  const prompt = `Build a concise small claims court statement (150-250 words) from these facts.
+
+Case Type: ${data.caseType}
+State: ${data.state ?? ""}
+Agreement/Background: ${data.agreement}
+What went wrong: ${data.problem}
+When it happened: ${data.date}
+Amount owed: $${data.amount}
+
+Rules:
+- Write in first person (I, me, my)
+- Present in chronological order
+- State only facts, no emotion or speculation
+- Clearly tie the facts to the dollar amount claimed
+- Court-ready, professional tone
+- Return only the statement text, no preamble or labels`;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  return response.choices[0].message.content?.trim() ?? "";
+}
+
 export async function chatWithAssistant(params: {
   messages: { role: "system" | "user" | "assistant"; content: string }[];
 }): Promise<AsyncIterable<{ content: string }>> {

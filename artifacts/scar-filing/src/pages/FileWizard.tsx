@@ -84,6 +84,8 @@ type FormData = {
   incidentDate: string;
   desiredOutcome: string;
   supportingFacts: string;
+  agreement: string;
+  problem: string;
 };
 
 const defaultForm: FormData = {
@@ -103,6 +105,8 @@ const defaultForm: FormData = {
   incidentDate: "",
   desiredOutcome: "",
   supportingFacts: "",
+  agreement: "",
+  problem: "",
 };
 
 type ChatMessage = {
@@ -400,26 +404,36 @@ function Step2Details({ form, setForm, onNext, onBack, saving, caseId }: {
 }) {
   const limit = STATE_LIMITS[form.state] ?? 10000;
   const claimType = CLAIM_TYPES.find((c) => c.value === form.claimType);
-  const [improving, setImproving] = useState(false);
+  const [building, setBuilding] = useState(false);
   const [extractedTexts, setExtractedTexts] = useState<{ text: string; fileName: string }[]>([]);
+  const [showManualEdit, setShowManualEdit] = useState(false);
+  const guidedReady = (form.agreement ?? "").trim().length > 0 && (form.problem ?? "").trim().length > 0;
   const canProceed =
     form.claimantName && form.defendantName && form.claimAmount > 0 && form.claimDescription;
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-  const improveWithAI = async () => {
-    if (!form.claimDescription.trim()) return;
-    setImproving(true);
+  const buildStatement = async () => {
+    if (!guidedReady) return;
+    setBuilding(true);
     try {
-      const res = await fetch(`${baseUrl}/api/ai-improve`, {
+      const claimTypeLabel = CLAIM_TYPES.find((c) => c.value === form.claimType)?.label ?? form.claimType;
+      const res = await fetch(`${baseUrl}/api/build-case`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: form.claimDescription, amount: form.claimAmount }),
+        body: JSON.stringify({
+          caseType: claimTypeLabel,
+          agreement: form.agreement,
+          problem: form.problem,
+          date: form.incidentDate,
+          amount: form.claimAmount,
+          state: form.state,
+        }),
       });
       const data = await res.json();
       if (data.text) setForm({ ...form, claimDescription: data.text });
     } catch {
     } finally {
-      setImproving(false);
+      setBuilding(false);
     }
   };
 
@@ -488,26 +502,85 @@ function Step2Details({ form, setForm, onNext, onBack, saving, caseId }: {
                 onChange={(e) => setForm({ ...form, incidentDate: e.target.value })} />
             </FieldRow>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-foreground mb-1.5">
-              Describe what happened <span className="text-destructive ml-0.5">*</span>
-            </label>
-            <textarea className={`${inputClass} h-28 resize-none`}
-              placeholder={`Briefly describe your ${claimType?.label.toLowerCase()} claim...`}
-              value={form.claimDescription} onChange={(e) => setForm({ ...form, claimDescription: e.target.value })} />
-            <div className="flex items-center justify-between mt-1.5">
-              <p className="text-xs text-muted-foreground">Explain clearly — who, what, when, and how much</p>
+          {/* Guided inputs */}
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">
+                Tell us what happened — we'll write your statement
+              </p>
+              <p className="text-sm text-muted-foreground mb-3">Answer a few quick questions and we'll build your court-ready case.</p>
+            </div>
+            <FieldRow label="What was the agreement or situation?" required>
+              <input
+                type="text"
+                className={inputClass}
+                placeholder={claimType?.value === "unpaid_rent" ? "e.g. Tenant agreed to pay $1,000/month rent" : "e.g. I agreed to pay for web design services in full"}
+                value={form.agreement ?? ""}
+                onChange={(e) => setForm({ ...form, agreement: e.target.value })}
+              />
+            </FieldRow>
+            <FieldRow label="What went wrong?" required>
+              <input
+                type="text"
+                className={inputClass}
+                placeholder="e.g. They never delivered the work and stopped responding"
+                value={form.problem ?? ""}
+                onChange={(e) => setForm({ ...form, problem: e.target.value })}
+              />
+            </FieldRow>
+            <div className="flex justify-end">
               <button
                 type="button"
-                onClick={improveWithAI}
-                disabled={improving || !form.claimDescription.trim()}
-                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline disabled:opacity-40 disabled:no-underline font-medium"
+                onClick={buildStatement}
+                disabled={building || !guidedReady}
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {improving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
-                {improving ? "Improving..." : "Improve with AI"}
+                {building ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Building your statement…</>
+                ) : (
+                  <><Sparkles className="w-4 h-4" /> Build My Statement</>
+                )}
               </button>
             </div>
           </div>
+
+          {/* Generated / manual statement */}
+          {(form.claimDescription || showManualEdit) ? (
+            <div className="border border-primary/30 rounded-lg overflow-hidden">
+              <div className="bg-primary/5 px-3 py-2 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-semibold text-primary">Court Statement Generated</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowManualEdit((v) => !v)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  {showManualEdit ? "Collapse" : "Edit manually"}
+                </button>
+              </div>
+              {showManualEdit ? (
+                <textarea
+                  className={`${inputClass} h-36 resize-none rounded-none border-0 border-t border-border`}
+                  value={form.claimDescription}
+                  onChange={(e) => setForm({ ...form, claimDescription: e.target.value })}
+                />
+              ) : (
+                <p className="px-3 py-3 text-sm text-foreground leading-relaxed">{form.claimDescription}</p>
+              )}
+            </div>
+          ) : (
+            !guidedReady && (
+              <p className="text-xs text-muted-foreground">
+                Fill the two fields above and click <strong>Build My Statement</strong>, or{" "}
+                <button type="button" onClick={() => setShowManualEdit(true)} className="text-primary underline">
+                  type it yourself
+                </button>
+                .
+              </p>
+            )
+          )}
           <FieldRow label="What outcome do you want?">
             <input type="text" className={inputClass}
               placeholder="e.g. Repayment of $2,500 security deposit plus interest"
