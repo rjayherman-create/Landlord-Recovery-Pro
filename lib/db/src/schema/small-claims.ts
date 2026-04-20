@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, timestamp, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -41,8 +41,20 @@ export const smallClaimsCasesTable = pgTable("small_claims_cases", {
   stripeSessionId: text("stripe_session_id"),
   paidAt: timestamp("paid_at"),
 
+  emailReminders: text("email_reminders").default("true"),
+  smsReminders: text("sms_reminders").default("false"),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const remindersTable = pgTable("reminders", {
+  id: serial("id").primaryKey(),
+  caseId: integer("case_id").references(() => smallClaimsCasesTable.id, { onDelete: "cascade" }),
+  message: text("message"),
+  sendAt: timestamp("send_at"),
+  sent: text("sent").default("false"),
+  type: text("type"), // "email" | "sms"
 });
 
 export const insertSmallClaimsSchema = createInsertSchema(smallClaimsCasesTable).omit({

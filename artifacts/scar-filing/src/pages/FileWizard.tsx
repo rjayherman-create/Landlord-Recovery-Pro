@@ -86,6 +86,8 @@ type FormData = {
   supportingFacts: string;
   agreement: string;
   problem: string;
+  emailReminders: boolean;
+  smsReminders: boolean;
 };
 
 const defaultForm: FormData = {
@@ -107,6 +109,8 @@ const defaultForm: FormData = {
   supportingFacts: "",
   agreement: "",
   problem: "",
+  emailReminders: true,
+  smsReminders: false,
 };
 
 type ChatMessage = {
@@ -465,6 +469,34 @@ function Step2Details({ form, setForm, onNext, onBack, saving, caseId }: {
               <input type="text" className={inputClass} placeholder="123 Main St, City, ST 12345" value={form.claimantAddress}
                 onChange={(e) => setForm({ ...form, claimantAddress: e.target.value })} />
             </FieldRow>
+          </div>
+          <div className="border-t border-border/50 pt-3 mt-1">
+            <p className="text-xs font-medium text-muted-foreground mb-2">Case update reminders</p>
+            <div className="flex flex-col gap-2">
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.emailReminders}
+                  onChange={(e) => setForm({ ...form, emailReminders: e.target.checked })}
+                  className="mt-0.5 accent-primary"
+                />
+                <span className="text-sm text-foreground">
+                  Email reminders — follow-up tips at 3, 10, and 30 days after filing
+                  <span className="text-xs text-muted-foreground ml-1">(recommended)</span>
+                </span>
+              </label>
+              <label className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.smsReminders}
+                  onChange={(e) => setForm({ ...form, smsReminders: e.target.checked })}
+                  className="mt-0.5 accent-primary"
+                />
+                <span className="text-sm text-foreground">
+                  SMS reminders — text updates to your phone number above
+                </span>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -1253,6 +1285,8 @@ export function FileWizard() {
           incidentDate: form.incidentDate || undefined,
           desiredOutcome: form.desiredOutcome || undefined,
           supportingFacts: form.supportingFacts || undefined,
+          emailReminders: form.emailReminders ? "true" : "false",
+          smsReminders: form.smsReminders ? "true" : "false",
         });
         setCaseId(created.id);
       } else {
@@ -1275,6 +1309,8 @@ export function FileWizard() {
             incidentDate: form.incidentDate || undefined,
             desiredOutcome: form.desiredOutcome || undefined,
             supportingFacts: form.supportingFacts || undefined,
+            emailReminders: form.emailReminders ? "true" : "false",
+            smsReminders: form.smsReminders ? "true" : "false",
           },
         });
       }

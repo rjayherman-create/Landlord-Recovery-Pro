@@ -132,6 +132,8 @@ async function handleUpdate(req: any, res: any, paramSchema: typeof UpdateCasePa
     if ("hearingDate" in body && body.hearingDate !== undefined) updateData.hearingDate = body.hearingDate;
     if ("caseNumber" in body && body.caseNumber !== undefined) updateData.caseNumber = body.caseNumber;
     if (body.notes !== undefined) updateData.notes = body.notes;
+    if ("emailReminders" in body && body.emailReminders !== undefined) updateData.emailReminders = body.emailReminders;
+    if ("smsReminders" in body && body.smsReminders !== undefined) updateData.smsReminders = body.smsReminders;
 
     updateData.updatedAt = new Date();
 
@@ -238,6 +240,14 @@ router.patch("/cases/:id/status", async (req, res) => {
       .where(eq(smallClaimsCasesTable.id, id))
       .returning();
     if (!updated) { res.status(404).json({ error: "not_found" }); return; }
+
+    // Schedule a served follow-up reminder when the defendant is marked as served
+    if (status === "served") {
+      import("../services/reminders.js").then(({ scheduleServedReminder }) => {
+        scheduleServedReminder(id).catch((err) => console.error("[reminders] Failed to schedule served reminder:", err));
+      });
+    }
+
     res.json(formatCase(updated));
   } catch (err) {
     req.log?.error({ err }, "Failed to update status");

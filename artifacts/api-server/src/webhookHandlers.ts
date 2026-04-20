@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { generateCourtPDF } from "./services/pdfFill";
 import { Resend } from "resend";
 import { logger } from "./lib/logger";
+import { scheduleFilingReminders } from "./services/reminders";
 
 export class WebhookHandlers {
   static async processWebhook(payload: Buffer, signature: string): Promise<void> {
@@ -105,6 +106,13 @@ export class WebhookHandlers {
     const email = found.claimantEmail;
     if (email && pdfBytes) {
       await WebhookHandlers.sendFilingEmail(email, found, pdfBytes);
+    }
+
+    // Schedule follow-up reminders
+    try {
+      await scheduleFilingReminders(caseId);
+    } catch (err) {
+      logger.error({ err, caseId }, "Webhook: failed to schedule reminders");
     }
   }
 
