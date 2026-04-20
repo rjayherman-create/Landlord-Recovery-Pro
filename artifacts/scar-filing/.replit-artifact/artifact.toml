@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/scar-filing/"
+title = "SCAR Small Claims Filing Assistant"
+version = "1.0.0"
+id = "artifacts/scar-filing"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/scar-filing/" ]
+localPort = 18404
+
+[services.development]
+run = "pnpm --filter @workspace/scar-filing run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/scar-filing", "run", "build" ]
+publicDir = "artifacts/scar-filing/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18404"
+BASE_PATH = "/scar-filing/"
