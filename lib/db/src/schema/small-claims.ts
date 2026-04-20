@@ -36,6 +36,9 @@ export const smallClaimsCasesTable = pgTable("small_claims_cases", {
   caseNumber: text("case_number"),
   notes: text("notes"),
 
+  stripeSessionId: text("stripe_session_id"),
+  paidAt: timestamp("paid_at"),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

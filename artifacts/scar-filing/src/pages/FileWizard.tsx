@@ -6,7 +6,6 @@ import {
   useUpdateCase,
   useCreateOpenaiConversation,
   generateCaseStatement,
-  getDownloadCasePdfUrl,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,7 +13,9 @@ import {
   ArrowRight,
   ArrowLeft,
   Download,
+  Eye,
   Loader2,
+  Lock,
   Scale,
   MessageSquare,
   FileText,
@@ -23,6 +24,7 @@ import {
   User,
   Bot,
   ChevronRight,
+  Wand2,
 } from "lucide-react";
 
 const CLAIM_TYPES = [
@@ -224,8 +226,27 @@ function Step2Details({ form, setForm, onNext, onBack, saving }: {
 }) {
   const limit = STATE_LIMITS[form.state] ?? 10000;
   const claimType = CLAIM_TYPES.find((c) => c.value === form.claimType);
+  const [improving, setImproving] = useState(false);
   const canProceed =
     form.claimantName && form.defendantName && form.claimAmount > 0 && form.claimDescription;
+  const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+  const improveWithAI = async () => {
+    if (!form.claimDescription.trim()) return;
+    setImproving(true);
+    try {
+      const res = await fetch(`${baseUrl}/api/ai-improve`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: form.claimDescription, amount: form.claimAmount }),
+      });
+      const data = await res.json();
+      if (data.text) setForm({ ...form, claimDescription: data.text });
+    } catch {
+    } finally {
+      setImproving(false);
+    }
+  };
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
@@ -292,11 +313,26 @@ function Step2Details({ form, setForm, onNext, onBack, saving }: {
                 onChange={(e) => setForm({ ...form, incidentDate: e.target.value })} />
             </FieldRow>
           </div>
-          <FieldRow label="Describe what happened" required hint="Explain the situation clearly — who, what, when, and how much">
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1.5">
+              Describe what happened <span className="text-destructive ml-0.5">*</span>
+            </label>
             <textarea className={`${inputClass} h-28 resize-none`}
               placeholder={`Briefly describe your ${claimType?.label.toLowerCase()} claim...`}
               value={form.claimDescription} onChange={(e) => setForm({ ...form, claimDescription: e.target.value })} />
-          </FieldRow>
+            <div className="flex items-center justify-between mt-1.5">
+              <p className="text-xs text-muted-foreground">Explain clearly — who, what, when, and how much</p>
+              <button
+                type="button"
+                onClick={improveWithAI}
+                disabled={improving || !form.claimDescription.trim()}
+                className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline disabled:opacity-40 disabled:no-underline font-medium"
+              >
+                {improving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Wand2 className="w-3 h-3" />}
+                {improving ? "Improving..." : "Improve with AI"}
+              </button>
+            </div>
+          </div>
           <FieldRow label="What outcome do you want?">
             <input type="text" className={inputClass}
               placeholder="e.g. Repayment of $2,500 security deposit plus interest"
@@ -537,6 +573,7 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const updateCase = useUpdateCase();
+  const [checkingOut, setCheckingOut] = useState(false);
 
   const generate = async () => {
     if (!caseId) return;
@@ -549,6 +586,28 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
       setStatement("Error generating statement. Please try again.");
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const previewPDF = () => {
+    if (!caseId) return;
+    window.open(`${WIZARD_API_BASE}/api/cases/${caseId}/preview`, "_blank");
+  };
+
+  const checkout = async () => {
+    if (!caseId) return;
+    setCheckingOut(true);
+    try {
+      const res = await fetch(`${WIZARD_API_BASE}/api/cases/${caseId}/checkout`, { method: "POST" });
+      const data = await res.json();
+      if (data.alreadyPaid) {
+        window.open(`${WIZARD_API_BASE}/api/download/${caseId}`, "_blank");
+        return;
+      }
+      if (data.url) window.location.href = data.url;
+    } catch {
+    } finally {
+      setCheckingOut(false);
     }
   };
 
@@ -678,13 +737,37 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
           className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors">
           <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <button
-          onClick={submit}
-          disabled={!generated || submitting || !statement.trim()}
-          className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {submitting ? (<><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>) : (<><CheckCircle className="w-4 h-4" /> Mark as Ready to File</>)}
-        </button>
+        {generated && (
+          <button
+            onClick={previewPDF}
+            disabled={!caseId}
+            className="flex items-center gap-1.5 px-4 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors disabled:opacity-40"
+            title="Open a watermarked preview"
+          >
+            <Eye className="w-4 h-4" /> Preview
+          </button>
+        )}
+        {generated ? (
+          <button
+            onClick={checkout}
+            disabled={checkingOut || !caseId}
+            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {checkingOut ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
+            ) : (
+              <><Lock className="w-4 h-4" /> Unlock & Download — $29</>
+            )}
+          </button>
+        ) : (
+          <button
+            onClick={submit}
+            disabled={!generated || submitting || !statement.trim()}
+            className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {submitting ? (<><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>) : (<><CheckCircle className="w-4 h-4" /> Mark as Ready to File</>)}
+          </button>
+        )}
       </div>
     </motion.div>
   );
