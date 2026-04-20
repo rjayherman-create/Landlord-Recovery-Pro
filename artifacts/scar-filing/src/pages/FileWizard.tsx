@@ -601,7 +601,7 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
       const res = await fetch(`${WIZARD_API_BASE}/api/cases/${caseId}/checkout`, { method: "POST" });
       const data = await res.json();
       if (data.alreadyPaid) {
-        window.open(`${WIZARD_API_BASE}/api/download/${caseId}`, "_blank");
+        window.open(`${WIZARD_API_BASE}/api/small-claims/download/${caseId}`, "_blank");
         return;
       }
       if (data.url) window.location.href = data.url;

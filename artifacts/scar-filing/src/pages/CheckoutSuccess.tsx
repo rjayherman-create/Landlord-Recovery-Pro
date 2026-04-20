@@ -21,7 +21,7 @@ export function CheckoutSuccess() {
   const handleDownload = () => {
     if (!caseId || !sessionId) return;
     setDownloading(true);
-    const url = `${API_BASE}/api/download/${caseId}?session_id=${sessionId}`;
+    const url = `${API_BASE}/api/small-claims/download/${caseId}?session_id=${sessionId}`;
     const a = document.createElement("a");
     a.href = url;
     a.download = `small-claims-case-${caseId}.pdf`;

@@ -1,0 +1,108 @@
+NEW INPUT MODEL (THIS IS THE UPGRADE)
+Replace this:
+
+❌ One textarea
+
+With this:
+1. What type of case is this?
+<select>
+  <option>Unpaid Rent</option>
+  <option>Property Damage</option>
+  <option>Loan Not Repaid</option>
+  <option>Breach of Agreement</option>
+</select>
+2. What happened? (guided prompts)
+<input placeholder="What was the agreement?" />
+<input placeholder="What went wrong?" />
+<input placeholder="When did this happen?" />
+<input placeholder="How much are you owed?" />
+3. Upload proof (you already built this)
+
+👉 screenshots, PDFs, messages
+
+🧠 THEN YOU DO THE WORK (THIS IS YOUR EDGE)
+
+You turn this:
+
+Agreement: Tenant agreed to pay rent  
+Problem: Didn’t pay for 3 months  
+Date: Jan–Mar  
+Amount: 3000
+
+👉 into:
+
+Defendant entered into a rental agreement...
+🔥 DROP-IN UPGRADED UI BLOCK
+<div className="space-y-4">
+
+  <select
+    className="input"
+    onChange={(e) => update("caseType", e.target.value)}
+  >
+    <option value="">Select case type</option>
+    <option>Unpaid Rent</option>
+    <option>Property Damage</option>
+    <option>Loan Not Repaid</option>
+    <option>Breach of Agreement</option>
+  </select>
+
+  <input
+    className="input"
+    placeholder="What was the agreement?"
+    onChange={(e) => update("agreement", e.target.value)}
+  />
+
+  <input
+    className="input"
+    placeholder="What went wrong?"
+    onChange={(e) => update("problem", e.target.value)}
+  />
+
+  <input
+    className="input"
+    placeholder="When did this happen?"
+    onChange={(e) => update("date", e.target.value)}
+  />
+
+  <input
+    className="input"
+    placeholder="How much are you owed?"
+    onChange={(e) => update("amount", e.target.value)}
+  />
+
+</div>
+🚀 AI BUILDER (THIS REPLACES TEXTAREA)
+export async function buildCaseFromInputs(data: any) {
+  const prompt = `
+Build a small claims court statement from:
+
+Case Type: ${data.caseType}
+Agreement: ${data.agreement}
+Problem: ${data.problem}
+Date: ${data.date}
+Amount: $${data.amount}
+
+Make it:
+- clear
+- chronological
+- court appropriate
+`;
+
+  const res = await openai.chat.completions.create({
+    model: "gpt-4.1-mini",
+    messages: [{ role: "user", content: prompt }],
+  });
+
+  return res.choices[0].message.content;
+}
+💎 UX UPGRADE (THIS IS HUGE)
+
+Instead of:
+
+❌ “Describe what happened”
+
+Use:
+
+<p className="text-sm text-gray-500">
+Answer a few quick questions — we’ll build your case for you.
+</p>

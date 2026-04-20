@@ -142,7 +142,7 @@ router.post("/cases/:id/checkout", async (req, res) => {
         },
       ],
       metadata: { caseId: String(id) },
-      success_url: `${base}/scar-filing/checkout/success?caseId=${id}&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${base}/scar-filing/checkout/success?caseId=${id}&session_id={CHECKOUT_SESSION_ID}&apiBase=${encodeURIComponent(base)}`,
       cancel_url: `${base}/scar-filing/checkout/cancel`,
     });
 
@@ -162,7 +162,7 @@ router.post("/cases/:id/checkout", async (req, res) => {
 // ==========================
 // 4. FINAL PDF DOWNLOAD (after payment)
 // ==========================
-router.get("/download/:id", async (req, res) => {
+router.get("/small-claims/download/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
     const sessionId = req.query.session_id as string | undefined;
