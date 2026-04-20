@@ -307,6 +307,10 @@ export type ListComparablesParams = {
   grievanceId: number;
 };
 
+export type GenerateCaseStatement200 = {
+  statement: string;
+};
+
 export type GenerateClaimStatement200 = {
   statement: string;
 };

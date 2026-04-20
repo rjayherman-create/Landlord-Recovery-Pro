@@ -13,7 +13,7 @@ import stripeRouter from "./stripe";
 import linksRouter from "./links";
 import downloadRouter from "./download";
 import countyDataRouter from "./county-data";
-import smallClaimsRouter from "./small-claims";
+import casesRouter from "./cases";
 import openaiConversationsRouter from "./openai-conversations";
 
 const router: IRouter = Router();
@@ -32,7 +32,7 @@ router.use(stripeRouter);
 router.use("/links", linksRouter);
 router.use(downloadRouter);
 router.use(countyDataRouter);
-router.use(smallClaimsRouter);
+router.use(casesRouter);
 router.use(openaiConversationsRouter);
 
 export default router;

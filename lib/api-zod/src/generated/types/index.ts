@@ -13,6 +13,7 @@ export * from "./createGrievanceRequest";
 export * from "./createOpenaiConversationBody";
 export * from "./createSmallClaimRequest";
 export * from "./errorResponse";
+export * from "./generateCaseStatement200";
 export * from "./generateClaimStatement200";
 export * from "./grievance";
 export * from "./grievanceStatus";

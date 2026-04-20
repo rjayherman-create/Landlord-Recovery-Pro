@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { useListSmallClaims, useDeleteSmallClaim, getListSmallClaimsQueryKey } from "@workspace/api-client-react";
+import { useListCases, useDeleteCase, getListCasesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, FileText, Plus, Scale, Trash2, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
@@ -38,14 +38,14 @@ const STATUS_CONFIG: Record<string, { label: string; icon: typeof CheckCircle; c
 export function Cases() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
-  const { data: cases, isLoading, error } = useListSmallClaims();
-  const deleteCase = useDeleteSmallClaim();
+  const { data: cases, isLoading, error } = useListCases();
+  const deleteCase = useDeleteCase();
 
   const handleDelete = async (id: number, e: React.MouseEvent) => {
     e.preventDefault();
     if (!confirm("Delete this case? This cannot be undone.")) return;
     await deleteCase.mutateAsync({ id });
-    queryClient.invalidateQueries({ queryKey: getListSmallClaimsQueryKey() });
+    queryClient.invalidateQueries({ queryKey: getListCasesQueryKey() });
   };
 
   if (isLoading) {

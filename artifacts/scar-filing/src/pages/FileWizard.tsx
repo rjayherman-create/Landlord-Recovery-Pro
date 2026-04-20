@@ -2,10 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  useCreateSmallClaim,
-  useUpdateSmallClaim,
+  useCreateCase,
+  useUpdateCase,
   useCreateOpenaiConversation,
-  generateClaimStatement,
+  generateCaseStatement,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -532,13 +532,13 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
   const [generated, setGenerated] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
-  const updateCase = useUpdateSmallClaim();
+  const updateCase = useUpdateCase();
 
   const generate = async () => {
     if (!caseId) return;
     setGenerating(true);
     try {
-      const result = await generateClaimStatement(caseId);
+      const result = await generateCaseStatement(caseId);
       setStatement(result.statement);
       setGenerated(true);
     } catch {
@@ -681,8 +681,8 @@ export function FileWizard() {
   const [form, setForm] = useState<FormData>(defaultForm);
   const [caseId, setCaseId] = useState<number | null>(null);
   const [conversationId, setConversationId] = useState<number | null>(null);
-  const createCase = useCreateSmallClaim();
-  const updateCase = useUpdateSmallClaim();
+  const createCase = useCreateCase();
+  const updateCase = useUpdateCase();
 
   const saveCase = async (): Promise<boolean> => {
     try {

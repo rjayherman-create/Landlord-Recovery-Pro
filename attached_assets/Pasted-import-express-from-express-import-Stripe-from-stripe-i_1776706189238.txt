@@ -1,0 +1,177 @@
+import express from "express";
+import Stripe from "stripe";
+import { PDFDocument, rgb } from "pdf-lib";
+import fs from "fs";
+import path from "path";
+import OpenAI from "openai";
+import { db } from "../db";
+import { cases } from "../db/schema";
+
+const router = express.Router();
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2023-10-16",
+});
+
+const openai = new OpenAI({
+  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
+});
+
+const FRONTEND_URL = process.env.APP_URL || "http://localhost:5173";
+
+
+// ==========================
+// 1. AI IMPROVE CLAIM
+// ==========================
+router.post("/ai-improve", async (req, res) => {
+  try {
+    const { description, amount } = req.body;
+
+    const prompt = `
+Rewrite this into a strong small claims court statement:
+- clear facts
+- chronological
+- include amount
+
+${description}
+Amount: $${amount}
+`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    res.json({ text: response.choices[0].message.content });
+  } catch (err) {
+    res.status(500).json({ error: "AI failed" });
+  }
+});
+
+
+// ==========================
+// 2. GENERATE PREVIEW PDF (WATERMARK)
+// ==========================
+router.post("/preview", async (req, res) => {
+  try {
+    const data = req.body;
+
+    const template = fs.readFileSync(
+      path.join(process.cwd(), "templates/ny-small-claims.pdf")
+    );
+
+    const pdfDoc = await PDFDocument.load(template);
+    const page = pdfDoc.getPages()[0];
+
+    // Fill basic text (simplified)
+    page.drawText(`Plaintiff: ${data.plaintiffFirst} ${data.plaintiffLast}`, {
+      x: 50,
+      y: 700,
+      size: 12,
+    });
+
+    page.drawText(`Defendant: ${data.defendantFirst} ${data.defendantLast}`, {
+      x: 50,
+      y: 680,
+      size: 12,
+    });
+
+    page.drawText(`Amount: $${data.amount}`, {
+      x: 50,
+      y: 660,
+      size: 12,
+    });
+
+    page.drawText(data.description, {
+      x: 50,
+      y: 620,
+      size: 10,
+      maxWidth: 500,
+    });
+
+    // WATERMARK
+    page.drawText("PREVIEW - UNLOCK TO DOWNLOAD", {
+      x: 120,
+      y: 400,
+      size: 24,
+      color: rgb(0.8, 0.8, 0.8),
+      rotate: { type: "degrees", angle: 30 },
+    });
+
+    const pdfBytes = await pdfDoc.save();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.send(Buffer.from(pdfBytes));
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Preview failed");
+  }
+});
+
+
+// ==========================
+// 3. SAVE CASE + CREATE STRIPE SESSION
+// ==========================
+router.post("/checkout", async (req, res) => {
+  try {
+    const data = req.body;
+
+    const [saved] = await db.insert(cases).values(data).returning();
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: { name: "Small Claims Filing" },
+            unit_amount: 2900,
+          },
+          quantity: 1,
+        },
+      ],
+      success_url: `${FRONTEND_URL}/success?caseId=${saved.id}`,
+      cancel_url: `${FRONTEND_URL}/form`,
+    });
+
+    res.json({ url: session.url });
+  } catch (err) {
+    res.status(500).json({ error: "Checkout failed" });
+  }
+});
+
+
+// ==========================
+// 4. FINAL PDF (NO WATERMARK)
+// ==========================
+router.get("/download/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    const data = await db.query.cases.findFirst({
+      where: (c, { eq }) => eq(c.id, id),
+    });
+
+    if (!data) return res.status(404).send("Not found");
+
+    const pdfDoc = await PDFDocument.create();
+    const page = pdfDoc.addPage();
+
+    page.drawText(`Plaintiff: ${data.plaintiffFirst} ${data.plaintiffLast}`);
+    page.drawText(`Defendant: ${data.defendantFirst} ${data.defendantLast}`, {
+      y: 700,
+    });
+    page.drawText(`Amount: $${data.amount}`, { y: 680 });
+    page.drawText(data.description, { y: 640 });
+
+    const bytes = await pdfDoc.save();
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.send(Buffer.from(bytes));
+  } catch (err) {
+    res.status(500).send("Download failed");
+  }
+});
+
+export default router;

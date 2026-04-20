@@ -24,6 +24,7 @@ import type {
   CreateOpenaiConversationBody,
   CreateSmallClaimRequest,
   ErrorResponse,
+  GenerateCaseStatement200,
   GenerateClaimStatement200,
   Grievance,
   HealthStatus,
@@ -879,6 +880,494 @@ export function useListCounties<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List all small claims cases
+ */
+export const getListCasesUrl = () => {
+  return `/api/cases`;
+};
+
+export const listCases = async (
+  options?: RequestInit,
+): Promise<SmallClaimsCase[]> => {
+  return customFetch<SmallClaimsCase[]>(getListCasesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListCasesQueryKey = () => {
+  return [`/api/cases`] as const;
+};
+
+export const getListCasesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listCases>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof listCases>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListCasesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listCases>>> = ({
+    signal,
+  }) => listCases({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listCases>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListCasesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listCases>>
+>;
+export type ListCasesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all small claims cases
+ */
+
+export function useListCases<
+  TData = Awaited<ReturnType<typeof listCases>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof listCases>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListCasesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a new small claims case
+ */
+export const getCreateCaseUrl = () => {
+  return `/api/cases`;
+};
+
+export const createCase = async (
+  createSmallClaimRequest: CreateSmallClaimRequest,
+  options?: RequestInit,
+): Promise<SmallClaimsCase> => {
+  return customFetch<SmallClaimsCase>(getCreateCaseUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createSmallClaimRequest),
+  });
+};
+
+export const getCreateCaseMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCase>>,
+    TError,
+    { data: BodyType<CreateSmallClaimRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createCase>>,
+  TError,
+  { data: BodyType<CreateSmallClaimRequest> },
+  TContext
+> => {
+  const mutationKey = ["createCase"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createCase>>,
+    { data: BodyType<CreateSmallClaimRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createCase(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateCaseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createCase>>
+>;
+export type CreateCaseMutationBody = BodyType<CreateSmallClaimRequest>;
+export type CreateCaseMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new small claims case
+ */
+export const useCreateCase = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createCase>>,
+    TError,
+    { data: BodyType<CreateSmallClaimRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createCase>>,
+  TError,
+  { data: BodyType<CreateSmallClaimRequest> },
+  TContext
+> => {
+  return useMutation(getCreateCaseMutationOptions(options));
+};
+
+/**
+ * @summary Get a case by ID
+ */
+export const getGetCaseUrl = (id: number) => {
+  return `/api/cases/${id}`;
+};
+
+export const getCase = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SmallClaimsCase> => {
+  return customFetch<SmallClaimsCase>(getGetCaseUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCaseQueryKey = (id: number) => {
+  return [`/api/cases/${id}`] as const;
+};
+
+export const getGetCaseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCase>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCase>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCaseQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getCase>>> = ({
+    signal,
+  }) => getCase(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getCase>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetCaseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCase>>
+>;
+export type GetCaseQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a case by ID
+ */
+
+export function useGetCase<
+  TData = Awaited<ReturnType<typeof getCase>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<Awaited<ReturnType<typeof getCase>>, TError, TData>;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCaseQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update a case
+ */
+export const getUpdateCaseUrl = (id: number) => {
+  return `/api/cases/${id}`;
+};
+
+export const updateCase = async (
+  id: number,
+  updateSmallClaimRequest: UpdateSmallClaimRequest,
+  options?: RequestInit,
+): Promise<SmallClaimsCase> => {
+  return customFetch<SmallClaimsCase>(getUpdateCaseUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateSmallClaimRequest),
+  });
+};
+
+export const getUpdateCaseMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCase>>,
+    TError,
+    { id: number; data: BodyType<UpdateSmallClaimRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateCase>>,
+  TError,
+  { id: number; data: BodyType<UpdateSmallClaimRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateCase"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateCase>>,
+    { id: number; data: BodyType<UpdateSmallClaimRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateCase(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateCaseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateCase>>
+>;
+export type UpdateCaseMutationBody = BodyType<UpdateSmallClaimRequest>;
+export type UpdateCaseMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update a case
+ */
+export const useUpdateCase = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateCase>>,
+    TError,
+    { id: number; data: BodyType<UpdateSmallClaimRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateCase>>,
+  TError,
+  { id: number; data: BodyType<UpdateSmallClaimRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateCaseMutationOptions(options));
+};
+
+/**
+ * @summary Delete a case
+ */
+export const getDeleteCaseUrl = (id: number) => {
+  return `/api/cases/${id}`;
+};
+
+export const deleteCase = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteCaseUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteCaseMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCase>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteCase>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteCase"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteCase>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteCase(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteCaseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteCase>>
+>;
+
+export type DeleteCaseMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a case
+ */
+export const useDeleteCase = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteCase>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteCase>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteCaseMutationOptions(options));
+};
+
+/**
+ * @summary Generate an AI-powered statement of claim
+ */
+export const getGenerateCaseStatementUrl = (id: number) => {
+  return `/api/cases/${id}/generate-statement`;
+};
+
+export const generateCaseStatement = async (
+  id: number,
+  options?: RequestInit,
+): Promise<GenerateCaseStatement200> => {
+  return customFetch<GenerateCaseStatement200>(
+    getGenerateCaseStatementUrl(id),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getGenerateCaseStatementMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCaseStatement>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateCaseStatement>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["generateCaseStatement"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateCaseStatement>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return generateCaseStatement(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateCaseStatementMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateCaseStatement>>
+>;
+
+export type GenerateCaseStatementMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate an AI-powered statement of claim
+ */
+export const useGenerateCaseStatement = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateCaseStatement>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateCaseStatement>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getGenerateCaseStatementMutationOptions(options));
+};
 
 /**
  * @summary List all small claims cases

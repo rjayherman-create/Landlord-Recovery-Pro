@@ -15,8 +15,10 @@ tags:
     description: Comparable property sales operations
   - name: counties
     description: County-specific information
+  - name: cases
+    description: Small claims court case operations
   - name: small-claims
-    description: General small claims court case operations
+    description: Small claims court case operations (alias for /cases)
   - name: openai
     description: OpenAI AI chat operations
 paths:
@@ -199,6 +201,129 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/County"
+
+  /cases:
+    get:
+      operationId: listCases
+      tags: [cases]
+      summary: List all small claims cases
+      responses:
+        "200":
+          description: List of cases
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SmallClaimsCase"
+    post:
+      operationId: createCase
+      tags: [cases]
+      summary: Create a new small claims case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSmallClaimRequest"
+      responses:
+        "201":
+          description: Created case
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmallClaimsCase"
+
+  /cases/{id}:
+    get:
+      operationId: getCase
+      tags: [cases]
+      summary: Get a case by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Case details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmallClaimsCase"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateCase
+      tags: [cases]
+      summary: Update a case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSmallClaimRequest"
+      responses:
+        "200":
+          description: Updated case
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmallClaimsCase"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteCase
+      tags: [cases]
+      summary: Delete a case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /cases/{id}/generate-statement:
+    post:
+      operationId: generateCaseStatement
+      tags: [cases]
+      summary: Generate an AI-powered statement of claim
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Generated statement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statement:
+                    type: string
+                required:
+                  - statement
 
   /small-claims:
     get:
