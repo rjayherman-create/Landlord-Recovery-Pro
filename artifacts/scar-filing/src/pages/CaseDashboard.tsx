@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
+const CollectionToolkit = lazy(() => import("./CollectionToolkit").then(m => ({ default: m.CollectionToolkit })));
 import { useLocation, useRoute } from "wouter";
 import {
   CheckCircle, Clock, AlertCircle, Download, FileText, ArrowLeft,
@@ -363,6 +364,9 @@ export function CaseDashboard() {
       {/* Main sections */}
       <StatusCard caseData={c} onStatusUpdate={load} />
       <NextSteps status={c.status} />
+      <Suspense fallback={null}>
+        <CollectionToolkit caseData={c} />
+      </Suspense>
       <Timeline events={timeline} />
       <EvidenceList files={evidence} />
       <DownloadSection caseData={c} />
