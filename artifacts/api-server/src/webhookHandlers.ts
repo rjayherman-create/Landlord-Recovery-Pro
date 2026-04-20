@@ -1,15 +1,151 @@
-import { getStripeSync } from './stripeClient';
+import Stripe from "stripe";
+import { getStripeSync, getStripeSecretKey } from "./stripeClient";
+import { db, smallClaimsCasesTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
+import { generateCourtPDF } from "./services/pdfFill";
+import { Resend } from "resend";
+import { logger } from "./lib/logger";
 
 export class WebhookHandlers {
   static async processWebhook(payload: Buffer, signature: string): Promise<void> {
     if (!Buffer.isBuffer(payload)) {
       throw new Error(
-        'STRIPE WEBHOOK ERROR: Payload must be a Buffer. ' +
-        'Received type: ' + typeof payload + '. ' +
-        'Ensure webhook route is registered BEFORE app.use(express.json()).'
+        "STRIPE WEBHOOK ERROR: Payload must be a Buffer. " +
+          "Received type: " +
+          typeof payload +
+          ". " +
+          "Ensure webhook route is registered BEFORE app.use(express.json())."
       );
     }
-    const sync = await getStripeSync();
-    await sync.processWebhook(payload, signature);
+
+    // ── 1. Parse and verify the Stripe event ────────────────────────────────
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    let event: Stripe.Event | null = null;
+
+    if (webhookSecret) {
+      const secretKey = await getStripeSecretKey();
+      const stripe = new Stripe(secretKey, { apiVersion: "2025-01-27.acacia" as any });
+      event = stripe.webhooks.constructEvent(payload, signature, webhookSecret);
+    } else {
+      // No webhook secret configured — parse without verification (dev only)
+      logger.warn("STRIPE_WEBHOOK_SECRET not set; skipping signature verification");
+      event = JSON.parse(payload.toString()) as Stripe.Event;
+    }
+
+    // ── 2. Handle small claims payment ──────────────────────────────────────
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const caseId = session.metadata?.caseId;
+
+      if (caseId && session.payment_status === "paid") {
+        await WebhookHandlers.handleSmallClaimsPayment(Number(caseId), session.id);
+      }
+    }
+
+    // ── 3. Let the Replit Stripe sync handle its own events ──────────────────
+    try {
+      const sync = await getStripeSync();
+      await sync.processWebhook(payload, signature);
+    } catch (err: any) {
+      // Stripe sync may reject events it doesn't own — that's OK
+      logger.debug({ err }, "StripeSync ignored event (expected for small-claims events)");
+    }
+  }
+
+  private static async handleSmallClaimsPayment(caseId: number, sessionId: string): Promise<void> {
+    const [found] = await db
+      .select()
+      .from(smallClaimsCasesTable)
+      .where(eq(smallClaimsCasesTable.id, caseId));
+
+    if (!found) {
+      logger.warn({ caseId }, "Webhook: small claims case not found");
+      return;
+    }
+
+    if (found.paidAt) {
+      logger.info({ caseId }, "Webhook: case already marked paid, skipping");
+      return;
+    }
+
+    // Mark as paid
+    await db
+      .update(smallClaimsCasesTable)
+      .set({
+        paidAt: new Date(),
+        status: "ready",
+        stripeSessionId: sessionId,
+        updatedAt: new Date(),
+      })
+      .where(eq(smallClaimsCasesTable.id, caseId));
+
+    logger.info({ caseId }, "Webhook: case marked as paid");
+
+    // Generate PDF
+    let pdfBytes: Uint8Array | null = null;
+    try {
+      pdfBytes = await generateCourtPDF({
+        state: found.state,
+        claimantName: found.claimantName,
+        claimantAddress: found.claimantAddress,
+        defendantName: found.defendantName,
+        defendantAddress: found.defendantAddress,
+        claimAmount: Number(found.claimAmount),
+        claimDescription: found.generatedStatement ?? found.claimDescription,
+        incidentDate: found.incidentDate,
+        desiredOutcome: found.desiredOutcome,
+      });
+    } catch (err) {
+      logger.error({ err, caseId }, "Webhook: PDF generation failed");
+    }
+
+    // Send email if we have an address and a PDF
+    const email = found.claimantEmail;
+    if (email && pdfBytes) {
+      await WebhookHandlers.sendFilingEmail(email, found, pdfBytes);
+    }
+  }
+
+  private static async sendFilingEmail(
+    to: string,
+    found: typeof smallClaimsCasesTable.$inferSelect,
+    pdfBytes: Uint8Array
+  ): Promise<void> {
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      logger.warn("RESEND_API_KEY not set — skipping email");
+      return;
+    }
+
+    const resend = new Resend(apiKey);
+    const safeDefendant = found.defendantName.replace(/[^a-z0-9]/gi, "_").slice(0, 30);
+    const filename = `small-claims-${found.state.toLowerCase()}-vs-${safeDefendant}.pdf`;
+
+    try {
+      await resend.emails.send({
+        from: "SmallClaims AI <filings@smallclaimsai.com>",
+        to,
+        subject: `Your ${found.state} Small Claims Filing — ${found.claimantName} v. ${found.defendantName}`,
+        html: `
+          <p>Hi ${found.claimantName},</p>
+          <p>Your payment was successful! Attached is your completed small claims court form for <strong>${found.state}</strong>.</p>
+          <p><strong>Case:</strong> ${found.claimantName} v. ${found.defendantName}<br/>
+          <strong>Amount:</strong> $${found.claimAmount}<br/>
+          <strong>Claim type:</strong> ${found.claimType}</p>
+          <p>Print this form, sign it, and bring it to your local small claims court to file. You can also <a href="https://smallclaimsai.com/scar-filing/cases">log in to your account</a> to download it again at any time.</p>
+          <p>Good luck with your case!</p>
+          <p>— The SmallClaims AI Team</p>
+        `,
+        attachments: [
+          {
+            filename,
+            content: Buffer.from(pdfBytes).toString("base64"),
+          },
+        ],
+      });
+      logger.info({ to }, "Webhook: filing email sent");
+    } catch (err) {
+      logger.error({ err, to }, "Webhook: email sending failed");
+    }
   }
 }
