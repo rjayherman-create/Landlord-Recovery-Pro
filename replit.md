@@ -25,6 +25,7 @@ artifacts-monorepo/
 ├── artifacts/
 │   ├── api-server/                  # Express API server (port 8080)
 │   ├── property-tax-grievance/      # React + Vite frontend (port 19972)
+│   ├── scar-filing/                 # SmallClaims AI — general small claims filing assistant
 │   └── taxappeal-mobile/            # Expo React Native mobile app (iOS/Android)
 ├── lib/
 │   ├── api-spec/                    # OpenAPI spec + Orval codegen config

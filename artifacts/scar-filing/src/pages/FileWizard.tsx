@@ -1,260 +1,111 @@
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  useCreateGrievance,
-  useUpdateGrievance,
-  useGetGrievance,
-  useListComparables,
-  getGetGrievanceQueryKey,
-  getListComparablesQueryKey,
+  useCreateSmallClaim,
+  useUpdateSmallClaim,
+  useCreateOpenaiConversation,
+  generateClaimStatement,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle,
-  XCircle,
-  AlertCircle,
   ArrowRight,
   ArrowLeft,
-  Download,
-  ExternalLink,
   Loader2,
+  Scale,
+  MessageSquare,
+  FileText,
+  Send,
+  Sparkles,
+  User,
+  Bot,
+  ChevronRight,
 } from "lucide-react";
 
-const NY_COUNTIES = [
-  "Albany", "Allegany", "Bronx", "Broome", "Cattaraugus", "Cayuga",
-  "Chautauqua", "Chemung", "Chenango", "Clinton", "Columbia", "Cortland",
-  "Delaware", "Dutchess", "Erie", "Essex", "Franklin", "Fulton", "Genesee",
-  "Greene", "Hamilton", "Herkimer", "Jefferson", "Kings", "Lewis", "Livingston",
-  "Madison", "Monroe", "Montgomery", "Nassau", "New York", "Niagara", "Oneida",
-  "Onondaga", "Ontario", "Orange", "Orleans", "Oswego", "Otsego", "Putnam",
-  "Queens", "Rensselaer", "Richmond", "Rockland", "St. Lawrence", "Saratoga",
-  "Schenectady", "Schoharie", "Schuyler", "Seneca", "Steuben", "Suffolk",
-  "Sullivan", "Tioga", "Tompkins", "Ulster", "Warren", "Washington", "Wayne",
-  "Westchester", "Wyoming", "Yates",
+const CLAIM_TYPES = [
+  { value: "breach_of_contract", label: "Breach of Contract", description: "Someone didn't fulfill their end of an agreement", icon: "📄" },
+  { value: "security_deposit", label: "Security Deposit", description: "Landlord withheld your security deposit", icon: "🏠" },
+  { value: "property_damage", label: "Property Damage", description: "Your property was damaged by another party", icon: "🔨" },
+  { value: "unpaid_wages", label: "Unpaid Wages", description: "Your employer didn't pay wages owed", icon: "💼" },
+  { value: "consumer_dispute", label: "Consumer Dispute", description: "Defective product or service not rendered", icon: "🛒" },
+  { value: "landlord_tenant", label: "Landlord / Tenant", description: "Disputes over rent, repairs, or lease terms", icon: "🔑" },
+  { value: "negligence", label: "Negligence", description: "Someone's carelessness caused you harm or loss", icon: "⚖️" },
+  { value: "personal_property", label: "Personal Property", description: "Lost or stolen personal belongings", icon: "📦" },
 ];
 
-const BASIS_OPTIONS = [
-  { value: "overvalued", label: "Overvalued — property assessed above market value" },
-  { value: "unequal", label: "Unequal — assessed at higher ratio than comparable properties" },
-  { value: "exempt", label: "Exempt — property should be fully or partially exempt" },
-  { value: "unlawfully_assessed", label: "Unlawfully assessed — procedural or legal error" },
+const STATES = [
+  { value: "NY", label: "New York" },
+  { value: "NJ", label: "New Jersey" },
+  { value: "FL", label: "Florida" },
+  { value: "TX", label: "Texas" },
+  { value: "CA", label: "California" },
+  { value: "PA", label: "Pennsylvania" },
+  { value: "IL", label: "Illinois" },
+  { value: "OH", label: "Ohio" },
+  { value: "GA", label: "Georgia" },
+  { value: "NC", label: "North Carolina" },
 ];
 
-const STEPS = [
-  { id: 1, label: "Check" },
-  { id: 2, label: "Details" },
-  { id: 3, label: "Review" },
-  { id: 4, label: "Submit" },
-];
-
-type EligibilityAnswers = {
-  wasDenied: boolean | null;
-  isNY: boolean | null;
-  withinDeadline: boolean | null;
-  isResidential: boolean | null;
+const STATE_LIMITS: Record<string, number> = {
+  NY: 10000, NJ: 3000, FL: 8000, TX: 20000, CA: 12500, PA: 12000, IL: 10000, OH: 6000, GA: 15000, NC: 10000,
 };
 
+const STEPS = [
+  { id: 1, label: "Claim Type", icon: Scale },
+  { id: 2, label: "Details", icon: FileText },
+  { id: 3, label: "AI Assistant", icon: MessageSquare },
+  { id: 4, label: "Statement", icon: Sparkles },
+];
+
 type FormData = {
-  ownerName: string;
-  ownerEmail: string;
-  ownerPhone: string;
-  ownerMailingAddress: string;
-  propertyAddress: string;
-  county: string;
-  municipality: string;
-  parcelId: string;
-  taxYear: number;
-  currentAssessment: number;
-  estimatedMarketValue: number;
-  requestedAssessment: number;
-  basisOfComplaint: string;
-  notes: string;
+  claimType: string;
+  state: string;
+  claimantName: string;
+  claimantEmail: string;
+  claimantPhone: string;
+  claimantAddress: string;
+  defendantName: string;
+  defendantAddress: string;
+  defendantEmail: string;
+  defendantPhone: string;
+  claimAmount: number;
+  claimDescription: string;
+  claimBasis: string;
+  incidentDate: string;
+  desiredOutcome: string;
+  supportingFacts: string;
 };
 
 const defaultForm: FormData = {
-  ownerName: "",
-  ownerEmail: "",
-  ownerPhone: "",
-  ownerMailingAddress: "",
-  propertyAddress: "",
-  county: "",
-  municipality: "",
-  parcelId: "",
-  taxYear: new Date().getFullYear(),
-  currentAssessment: 0,
-  estimatedMarketValue: 0,
-  requestedAssessment: 0,
-  basisOfComplaint: "",
-  notes: "",
+  claimType: "",
+  state: "NY",
+  claimantName: "",
+  claimantEmail: "",
+  claimantPhone: "",
+  claimantAddress: "",
+  defendantName: "",
+  defendantAddress: "",
+  defendantEmail: "",
+  defendantPhone: "",
+  claimAmount: 0,
+  claimDescription: "",
+  claimBasis: "",
+  incidentDate: "",
+  desiredOutcome: "",
+  supportingFacts: "",
 };
 
-function StepIndicator({ current, total }: { current: number; total: number }) {
-  return (
-    <div className="flex items-center gap-0 mb-10">
-      {STEPS.map((step, i) => (
-        <div key={step.id} className="flex items-center">
-          <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-              step.id === current
-                ? "bg-primary text-primary-foreground"
-                : step.id < current
-                ? "text-primary"
-                : "text-muted-foreground"
-            }`}
-          >
-            {step.id < current ? (
-              <CheckCircle className="w-4 h-4" />
-            ) : (
-              <span className="w-4 h-4 flex items-center justify-center text-xs">{step.id}</span>
-            )}
-            {step.label}
-          </div>
-          {i < STEPS.length - 1 && (
-            <div
-              className={`h-px w-8 mx-1 transition-colors ${
-                step.id < current ? "bg-primary" : "bg-border"
-              }`}
-            />
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
+type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  streaming?: boolean;
+};
 
-function EligibilityQuestion({
-  question,
-  value,
-  onChange,
-}: {
-  question: string;
-  value: boolean | null;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="border border-border rounded-lg p-5">
-      <p className="font-medium text-foreground mb-4">{question}</p>
-      <div className="flex gap-3">
-        <button
-          onClick={() => onChange(true)}
-          className={`flex-1 py-2.5 rounded-md border text-sm font-medium transition-colors ${
-            value === true
-              ? "bg-primary text-primary-foreground border-primary"
-              : "border-border text-foreground hover:bg-secondary/50"
-          }`}
-        >
-          Yes
-        </button>
-        <button
-          onClick={() => onChange(false)}
-          className={`flex-1 py-2.5 rounded-md border text-sm font-medium transition-colors ${
-            value === false
-              ? "bg-destructive/10 text-destructive border-destructive/30"
-              : "border-border text-foreground hover:bg-secondary/50"
-          }`}
-        >
-          No
-        </button>
-      </div>
-    </div>
-  );
-}
+const inputClass =
+  "w-full border border-input rounded-md px-3 py-2 text-sm text-foreground bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow";
 
-function Step1Check({
-  answers,
-  setAnswers,
-  onNext,
-}: {
-  answers: EligibilityAnswers;
-  setAnswers: (a: EligibilityAnswers) => void;
-  onNext: () => void;
-}) {
-  const allAnswered = Object.values(answers).every((v) => v !== null);
-  const isEligible =
-    answers.wasDenied === true &&
-    answers.isNY === true &&
-    answers.withinDeadline === true &&
-    answers.isResidential === true;
-  const hasDisqualifier = Object.values(answers).some((v) => v === false);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-    >
-      <h2 className="font-serif text-2xl font-semibold text-foreground mb-2">Do you qualify to file?</h2>
-      <p className="text-muted-foreground mb-6 text-sm">
-        Answer four quick questions to check your eligibility.
-      </p>
-
-      <div className="space-y-4 mb-6">
-        <EligibilityQuestion
-          question="Was your property tax grievance denied by the Board of Assessment Review (BAR)?"
-          value={answers.wasDenied}
-          onChange={(v) => setAnswers({ ...answers, wasDenied: v })}
-        />
-        <EligibilityQuestion
-          question="Is your property located in New York State?"
-          value={answers.isNY}
-          onChange={(v) => setAnswers({ ...answers, isNY: v })}
-        />
-        <EligibilityQuestion
-          question="Are you within 30 days of the BAR's final determination?"
-          value={answers.withinDeadline}
-          onChange={(v) => setAnswers({ ...answers, withinDeadline: v })}
-        />
-        <EligibilityQuestion
-          question="Is your property a 1-3 family residential property (primary residence)?"
-          value={answers.isResidential}
-          onChange={(v) => setAnswers({ ...answers, isResidential: v })}
-        />
-      </div>
-
-      {allAnswered && hasDisqualifier && !isEligible && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex gap-3 mb-6">
-          <XCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
-          <div className="text-sm text-red-700">
-            <p className="font-medium mb-1">You may not be eligible for SCAR.</p>
-            <p>
-              SCAR is available only for NY residential properties within 30 days of a BAR denial. For commercial properties, Tax Certiorari may be an option. Consult an attorney for your situation.
-            </p>
-          </div>
-        </div>
-      )}
-
-      {isEligible && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 flex gap-3 mb-6">
-          <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-          <div className="text-sm text-green-700">
-            <p className="font-medium">You appear to qualify for SCAR.</p>
-            <p className="mt-0.5">Let's prepare your petition. It takes about 10 minutes.</p>
-          </div>
-        </div>
-      )}
-
-      <button
-        onClick={onNext}
-        disabled={!isEligible}
-        className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-medium py-3 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-      >
-        Continue to Property Details
-        <ArrowRight className="w-4 h-4" />
-      </button>
-    </motion.div>
-  );
-}
-
-function FieldRow({
-  label,
-  required,
-  children,
-}: {
-  label: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
+function FieldRow({ label, required, hint, children }: { label: string; required?: boolean; hint?: string; children: React.ReactNode }) {
   return (
     <div>
       <label className="block text-sm font-medium text-foreground mb-1.5">
@@ -262,505 +113,564 @@ function FieldRow({
         {required && <span className="text-destructive ml-0.5">*</span>}
       </label>
       {children}
+      {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
     </div>
   );
 }
 
-const inputClass =
-  "w-full border border-input rounded-md px-3 py-2 text-sm text-foreground bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow";
+function StepIndicator({ current }: { current: number }) {
+  return (
+    <div className="flex items-center gap-0 mb-10 overflow-x-auto pb-1">
+      {STEPS.map((step, i) => {
+        const Icon = step.icon;
+        return (
+          <div key={step.id} className="flex items-center shrink-0">
+            <div
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                step.id === current
+                  ? "bg-primary text-primary-foreground"
+                  : step.id < current
+                  ? "text-primary"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {step.id < current ? (
+                <CheckCircle className="w-3.5 h-3.5" />
+              ) : (
+                <Icon className="w-3.5 h-3.5" />
+              )}
+              {step.label}
+            </div>
+            {i < STEPS.length - 1 && (
+              <ChevronRight className={`w-4 h-4 mx-0.5 shrink-0 ${step.id < current ? "text-primary" : "text-muted-foreground/40"}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
-function Step2Details({
-  form,
-  setForm,
-  onNext,
-  onBack,
-  saving,
-}: {
-  form: FormData;
-  setForm: (f: FormData) => void;
-  onNext: () => void;
-  onBack: () => void;
-  saving: boolean;
-}) {
-  const canProceed =
-    form.ownerName &&
-    form.propertyAddress &&
-    form.county &&
-    form.municipality &&
-    form.currentAssessment > 0 &&
-    form.estimatedMarketValue > 0 &&
-    form.requestedAssessment > 0 &&
-    form.basisOfComplaint;
+function Step1ClaimType({ form, setForm, onNext }: { form: FormData; setForm: (f: FormData) => void; onNext: () => void }) {
+  const selectedState = STATES.find((s) => s.value === form.state);
+  const limit = STATE_LIMITS[form.state] ?? 10000;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-    >
-      <h2 className="font-serif text-2xl font-semibold text-foreground mb-2">Property & case details</h2>
-      <p className="text-muted-foreground text-sm mb-6">
-        This information will appear on your SCAR petition.
-      </p>
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+      <h2 className="font-serif text-2xl font-semibold text-foreground mb-1">What type of claim do you have?</h2>
+      <p className="text-muted-foreground text-sm mb-6">Select your claim type and state to get started.</p>
 
-      <div className="space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FieldRow label="Owner name" required>
-            <input
-              type="text"
-              className={inputClass}
-              placeholder="Full legal name"
-              value={form.ownerName}
-              onChange={(e) => setForm({ ...form, ownerName: e.target.value })}
-            />
-          </FieldRow>
-          <FieldRow label="Email address">
-            <input
-              type="email"
-              className={inputClass}
-              placeholder="you@example.com"
-              value={form.ownerEmail}
-              onChange={(e) => setForm({ ...form, ownerEmail: e.target.value })}
-            />
-          </FieldRow>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FieldRow label="Phone number">
-            <input
-              type="tel"
-              className={inputClass}
-              placeholder="(555) 555-5555"
-              value={form.ownerPhone}
-              onChange={(e) => setForm({ ...form, ownerPhone: e.target.value })}
-            />
-          </FieldRow>
-          <FieldRow label="Mailing address">
-            <input
-              type="text"
-              className={inputClass}
-              placeholder="If different from property"
-              value={form.ownerMailingAddress}
-              onChange={(e) => setForm({ ...form, ownerMailingAddress: e.target.value })}
-            />
-          </FieldRow>
-        </div>
-
-        <FieldRow label="Property address" required>
-          <input
-            type="text"
-            className={inputClass}
-            placeholder="123 Main St, Springfield, NY 12345"
-            value={form.propertyAddress}
-            onChange={(e) => setForm({ ...form, propertyAddress: e.target.value })}
-          />
-        </FieldRow>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FieldRow label="County" required>
-            <select
-              className={inputClass}
-              value={form.county}
-              onChange={(e) => setForm({ ...form, county: e.target.value })}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-foreground mb-2">State *</label>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+          {STATES.map((s) => (
+            <button
+              key={s.value}
+              onClick={() => setForm({ ...form, state: s.value })}
+              className={`px-3 py-2 rounded-md border text-sm font-medium transition-colors ${
+                form.state === s.value
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-foreground hover:bg-secondary/50"
+              }`}
             >
-              <option value="">Select county</option>
-              {NY_COUNTIES.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </FieldRow>
-          <FieldRow label="Municipality / Town" required>
-            <input
-              type="text"
-              className={inputClass}
-              placeholder="Town of Springfield"
-              value={form.municipality}
-              onChange={(e) => setForm({ ...form, municipality: e.target.value })}
-            />
-          </FieldRow>
+              {s.value}
+            </button>
+          ))}
         </div>
+        {selectedState && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Small claims limit in {selectedState.label}: <span className="font-semibold text-foreground">${limit.toLocaleString()}</span>
+          </p>
+        )}
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <FieldRow label="Parcel / Tax ID">
-            <input
-              type="text"
-              className={inputClass}
-              placeholder="e.g. 12-34-56-7.0"
-              value={form.parcelId}
-              onChange={(e) => setForm({ ...form, parcelId: e.target.value })}
-            />
-          </FieldRow>
-          <FieldRow label="Tax year" required>
-            <input
-              type="number"
-              className={inputClass}
-              value={form.taxYear}
-              onChange={(e) => setForm({ ...form, taxYear: Number(e.target.value) })}
-            />
-          </FieldRow>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+        {CLAIM_TYPES.map((ct) => (
+          <button
+            key={ct.value}
+            onClick={() => setForm({ ...form, claimType: ct.value })}
+            className={`flex items-start gap-3 p-4 rounded-lg border text-left transition-all ${
+              form.claimType === ct.value
+                ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                : "border-border hover:border-primary/40 hover:bg-secondary/30"
+            }`}
+          >
+            <span className="text-2xl shrink-0">{ct.icon}</span>
+            <div>
+              <div className="font-medium text-sm text-foreground">{ct.label}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{ct.description}</div>
+            </div>
+            {form.claimType === ct.value && <CheckCircle className="w-4 h-4 text-primary shrink-0 ml-auto mt-0.5" />}
+          </button>
+        ))}
+      </div>
+
+      <button
+        onClick={onNext}
+        disabled={!form.claimType || !form.state}
+        className="w-full flex items-center justify-center gap-2 bg-primary text-primary-foreground font-medium py-3 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Continue to Details
+        <ArrowRight className="w-4 h-4" />
+      </button>
+    </motion.div>
+  );
+}
+
+function Step2Details({ form, setForm, onNext, onBack, saving }: {
+  form: FormData; setForm: (f: FormData) => void; onNext: () => void; onBack: () => void; saving: boolean;
+}) {
+  const limit = STATE_LIMITS[form.state] ?? 10000;
+  const claimType = CLAIM_TYPES.find((c) => c.value === form.claimType);
+  const canProceed =
+    form.claimantName && form.defendantName && form.claimAmount > 0 && form.claimDescription;
+
+  return (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-xl">{claimType?.icon}</span>
+        <h2 className="font-serif text-2xl font-semibold text-foreground">{claimType?.label} — Case Details</h2>
+      </div>
+      <p className="text-muted-foreground text-sm mb-6">Fill in the parties and claim information.</p>
+
+      <div className="space-y-6">
+        <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Your Information (Claimant)</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FieldRow label="Your full name" required>
+              <input type="text" className={inputClass} placeholder="Jane Smith" value={form.claimantName}
+                onChange={(e) => setForm({ ...form, claimantName: e.target.value })} />
+            </FieldRow>
+            <FieldRow label="Your email">
+              <input type="email" className={inputClass} placeholder="jane@example.com" value={form.claimantEmail}
+                onChange={(e) => setForm({ ...form, claimantEmail: e.target.value })} />
+            </FieldRow>
+            <FieldRow label="Your phone">
+              <input type="tel" className={inputClass} placeholder="(555) 555-5555" value={form.claimantPhone}
+                onChange={(e) => setForm({ ...form, claimantPhone: e.target.value })} />
+            </FieldRow>
+            <FieldRow label="Your address">
+              <input type="text" className={inputClass} placeholder="123 Main St, City, ST 12345" value={form.claimantAddress}
+                onChange={(e) => setForm({ ...form, claimantAddress: e.target.value })} />
+            </FieldRow>
+          </div>
         </div>
 
         <div className="bg-muted/30 rounded-lg p-4 space-y-4">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Assessment information</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FieldRow label="Current assessment ($)" required>
-              <input
-                type="number"
-                className={inputClass}
-                placeholder="0"
-                value={form.currentAssessment || ""}
-                onChange={(e) => setForm({ ...form, currentAssessment: Number(e.target.value) })}
-              />
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Other Party (Defendant)</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FieldRow label="Defendant's full name or business" required>
+              <input type="text" className={inputClass} placeholder="John Doe or ACME Corp" value={form.defendantName}
+                onChange={(e) => setForm({ ...form, defendantName: e.target.value })} />
             </FieldRow>
-            <FieldRow label="Est. market value ($)" required>
-              <input
-                type="number"
-                className={inputClass}
-                placeholder="0"
-                value={form.estimatedMarketValue || ""}
-                onChange={(e) => setForm({ ...form, estimatedMarketValue: Number(e.target.value) })}
-              />
+            <FieldRow label="Defendant's email">
+              <input type="email" className={inputClass} placeholder="defendant@example.com" value={form.defendantEmail}
+                onChange={(e) => setForm({ ...form, defendantEmail: e.target.value })} />
             </FieldRow>
-            <FieldRow label="Requested assessment ($)" required>
-              <input
-                type="number"
-                className={inputClass}
-                placeholder="0"
-                value={form.requestedAssessment || ""}
-                onChange={(e) => setForm({ ...form, requestedAssessment: Number(e.target.value) })}
-              />
+            <FieldRow label="Defendant's address" hint="Required to serve the defendant">
+              <input type="text" className={inputClass} placeholder="456 Other St, City, ST 12345" value={form.defendantAddress}
+                onChange={(e) => setForm({ ...form, defendantAddress: e.target.value })} />
+            </FieldRow>
+            <FieldRow label="Defendant's phone">
+              <input type="tel" className={inputClass} placeholder="(555) 555-5555" value={form.defendantPhone}
+                onChange={(e) => setForm({ ...form, defendantPhone: e.target.value })} />
             </FieldRow>
           </div>
-          <p className="text-xs text-muted-foreground">
-            The requested assessment is what you believe the fair assessed value should be, based on comparable sales.
-          </p>
         </div>
 
-        <FieldRow label="Basis of complaint" required>
-          <select
-            className={inputClass}
-            value={form.basisOfComplaint}
-            onChange={(e) => setForm({ ...form, basisOfComplaint: e.target.value })}
-          >
-            <option value="">Select basis</option>
-            {BASIS_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </FieldRow>
-
-        <FieldRow label="Additional notes">
-          <textarea
-            className={`${inputClass} h-20 resize-none`}
-            placeholder="Any additional details about the property condition, recent sale, or other factors..."
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          />
-        </FieldRow>
+        <div className="bg-muted/30 rounded-lg p-4 space-y-4">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Claim Information</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FieldRow label="Amount claiming ($)" required hint={`Maximum in your state: $${limit.toLocaleString()}`}>
+              <input type="number" className={inputClass} placeholder="0.00" min={0} max={limit}
+                value={form.claimAmount || ""} onChange={(e) => setForm({ ...form, claimAmount: Number(e.target.value) })} />
+            </FieldRow>
+            <FieldRow label="Date of incident">
+              <input type="date" className={inputClass} value={form.incidentDate}
+                onChange={(e) => setForm({ ...form, incidentDate: e.target.value })} />
+            </FieldRow>
+          </div>
+          <FieldRow label="Describe what happened" required hint="Explain the situation clearly — who, what, when, and how much">
+            <textarea className={`${inputClass} h-28 resize-none`}
+              placeholder={`Briefly describe your ${claimType?.label.toLowerCase()} claim...`}
+              value={form.claimDescription} onChange={(e) => setForm({ ...form, claimDescription: e.target.value })} />
+          </FieldRow>
+          <FieldRow label="What outcome do you want?">
+            <input type="text" className={inputClass}
+              placeholder="e.g. Repayment of $2,500 security deposit plus interest"
+              value={form.desiredOutcome} onChange={(e) => setForm({ ...form, desiredOutcome: e.target.value })} />
+          </FieldRow>
+          <FieldRow label="Supporting facts or evidence">
+            <textarea className={`${inputClass} h-20 resize-none`}
+              placeholder="List any contracts, receipts, photos, text messages, or other evidence you have..."
+              value={form.supportingFacts} onChange={(e) => setForm({ ...form, supportingFacts: e.target.value })} />
+          </FieldRow>
+        </div>
       </div>
 
       <div className="flex gap-3 mt-8">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
+        <button onClick={onBack}
+          className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
         </button>
-        <button
-          onClick={onNext}
-          disabled={!canProceed || saving}
-          className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
-        >
-          {saving ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Saving...
-            </>
-          ) : (
-            <>
-              Save & Review
-              <ArrowRight className="w-4 h-4" />
-            </>
-          )}
+        <button onClick={onNext} disabled={!canProceed || saving}
+          className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed">
+          {saving ? (<><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>) : (<>Save & Continue <ArrowRight className="w-4 h-4" /></>)}
         </button>
       </div>
     </motion.div>
   );
 }
 
-function CaseStrength({ current, market, requested }: { current: number; market: number; requested: number }) {
-  if (!current || !market) return null;
-  const ratio = requested / market;
-  let strength = "Weak";
-  let color = "bg-red-400";
-  let width = "20%";
-  let description = "Your requested assessment is close to or above market value. Consider gathering stronger comparable sales.";
+function Step3Chat({ form, caseId, conversationId, setConversationId, onNext, onBack }: {
+  form: FormData; caseId: number | null; conversationId: number | null; setConversationId: (id: number) => void;
+  onNext: () => void; onBack: () => void;
+}) {
+  const claimType = CLAIM_TYPES.find((c) => c.value === form.claimType);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const [convoId, setConvoId] = useState<number | null>(conversationId);
+  const createConvo = useCreateOpenaiConversation();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-  if (ratio < 0.7) {
-    strength = "Strong";
-    color = "bg-green-500";
-    width = "85%";
-    description = "Your requested assessment is well below market value. You have a strong case if supported by comparable sales.";
-  } else if (ratio < 0.85) {
-    strength = "Moderate";
-    color = "bg-amber-500";
-    width = "55%";
-    description = "Your case is reasonable. Supporting it with recent comparable sales will strengthen your position.";
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    if (convoId === null && caseId !== null) {
+      createConvo.mutate(
+        { title: `${claimType?.label} case #${caseId}` },
+        {
+          onSuccess: (data) => {
+            setConvoId(data.id);
+            setConversationId(data.id);
+            const greeting = `Hello! I'm your AI legal assistant. I've reviewed your ${claimType?.label} case details.
+
+Here's a quick summary:
+- **Claimant**: ${form.claimantName}  
+- **Defendant**: ${form.defendantName}  
+- **Amount**: $${form.claimAmount.toLocaleString()}  
+- **State**: ${form.state}
+
+I'm here to help you prepare the strongest possible case. You can ask me things like:
+- "What evidence do I need for a ${claimType?.label?.toLowerCase()} case?"
+- "How do I serve the defendant?"
+- "What should I say to the judge?"
+- "What are the filing fees in ${form.state}?"
+
+What would you like to know?`;
+            setMessages([{ role: "assistant", content: greeting }]);
+          },
+        }
+      );
+    }
+  }, []);
+
+  const sendMessage = async () => {
+    if (!input.trim() || streaming || !convoId) return;
+    const userMsg = input.trim();
+    setInput("");
+    setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
+    setStreaming(true);
+
+    const systemPrompt = `You are a helpful legal assistant specializing in small claims court.
+The user has a ${claimType?.label} case:
+- Claimant: ${form.claimantName}
+- Defendant: ${form.defendantName}
+- State: ${form.state}
+- Amount: $${form.claimAmount}
+- Description: ${form.claimDescription}
+- Incident date: ${form.incidentDate || "not specified"}
+- Desired outcome: ${form.desiredOutcome || "not specified"}
+- Evidence: ${form.supportingFacts || "not specified"}
+
+Help them prepare for small claims court. Be specific, practical, and concise.
+Note: You are not a licensed attorney and they should consult one for complex matters.`;
+
+    let assistantContent = "";
+    setMessages((prev) => [...prev, { role: "assistant", content: "", streaming: true }]);
+
+    try {
+      const response = await fetch(`${baseUrl}/api/openai/conversations/${convoId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: userMsg, systemPrompt }),
+      });
+
+      if (!response.body) throw new Error("No response body");
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = decoder.decode(value);
+        const lines = text.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            const data = line.slice(6);
+            if (data === "[DONE]") break;
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.content) {
+                assistantContent += parsed.content;
+                setMessages((prev) => {
+                  const next = [...prev];
+                  next[next.length - 1] = { role: "assistant", content: assistantContent, streaming: true };
+                  return next;
+                });
+              }
+            } catch {}
+          }
+        }
+      }
+
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: assistantContent, streaming: false };
+        return next;
+      });
+    } catch (err) {
+      setMessages((prev) => {
+        const next = [...prev];
+        next[next.length - 1] = { role: "assistant", content: "Sorry, I encountered an error. Please try again.", streaming: false };
+        return next;
+      });
+    } finally {
+      setStreaming(false);
+    }
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+      <h2 className="font-serif text-2xl font-semibold text-foreground mb-1">AI Legal Assistant</h2>
+      <p className="text-muted-foreground text-sm mb-4">
+        Get personalized guidance for your {claimType?.label?.toLowerCase()} case. Ask any questions about evidence, procedures, or strategy.
+      </p>
+
+      <div className="border border-border rounded-lg overflow-hidden mb-4">
+        <div className="bg-muted/30 px-4 py-2.5 border-b border-border flex items-center gap-2">
+          <Bot className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium text-foreground">AI Case Assistant</span>
+          <span className="ml-auto text-xs text-muted-foreground">Not a substitute for legal advice</span>
+        </div>
+
+        <div className="h-72 overflow-y-auto p-4 space-y-4 bg-background">
+          {messages.length === 0 && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center text-muted-foreground">
+                <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2" />
+                <p className="text-sm">Starting your session...</p>
+              </div>
+            </div>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${msg.role === "user" ? "bg-primary" : "bg-muted border border-border"}`}>
+                {msg.role === "user" ? <User className="w-4 h-4 text-primary-foreground" /> : <Bot className="w-4 h-4 text-foreground" />}
+              </div>
+              <div className={`max-w-[80%] px-3 py-2 rounded-lg text-sm leading-relaxed ${
+                msg.role === "user" ? "bg-primary text-primary-foreground rounded-br-none" : "bg-muted text-foreground rounded-bl-none"
+              }`}>
+                {msg.content.split("\n").map((line, j) => (
+                  <span key={j}>
+                    {line.startsWith("- ") ? <span>• {line.slice(2)}</span> : line.startsWith("**") && line.endsWith("**") ? <strong>{line.slice(2, -2)}</strong> : line}
+                    {j < msg.content.split("\n").length - 1 && <br />}
+                  </span>
+                ))}
+                {msg.streaming && <span className="inline-block w-1 h-4 bg-current ml-0.5 animate-pulse" />}
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </div>
+
+        <div className="border-t border-border p-3 flex gap-2 bg-background">
+          <input
+            type="text"
+            className={`${inputClass} flex-1`}
+            placeholder="Ask about evidence, procedures, deadlines..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+            disabled={streaming || !convoId}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={streaming || !input.trim() || !convoId}
+            className="flex items-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:opacity-90 transition-opacity disabled:opacity-40"
+          >
+            {streaming ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex gap-3">
+        <button onClick={onBack}
+          className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <button onClick={onNext}
+          className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-md hover:opacity-90 transition-opacity">
+          Generate Statement <ArrowRight className="w-4 h-4" />
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
+function Step4Statement({ form, caseId, conversationId, onBack }: {
+  form: FormData; caseId: number | null; conversationId: number | null; onBack: () => void;
+}) {
+  const [, setLocation] = useLocation();
+  const claimType = CLAIM_TYPES.find((c) => c.value === form.claimType);
+  const [statement, setStatement] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [generated, setGenerated] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const updateCase = useUpdateSmallClaim();
+
+  const generate = async () => {
+    if (!caseId) return;
+    setGenerating(true);
+    try {
+      const result = await generateClaimStatement(caseId);
+      setStatement(result.statement);
+      setGenerated(true);
+    } catch {
+      setStatement("Error generating statement. Please try again.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const submit = async () => {
+    if (!caseId) return;
+    setSubmitting(true);
+    try {
+      await updateCase.mutateAsync({
+        id: caseId,
+        data: {
+          status: "ready",
+          generatedStatement: statement,
+          conversationId: conversationId ?? undefined,
+        },
+      });
+      setSubmitted(true);
+    } catch {
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (submitted) {
+    return (
+      <motion.div initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }}>
+        <div className="text-center py-10">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <h2 className="font-serif text-2xl font-semibold text-foreground mb-2">Case Ready to File!</h2>
+          <p className="text-muted-foreground text-sm mb-6 max-w-sm mx-auto">
+            Your small claims case has been saved and your statement of claim is ready. Take it to your local courthouse to file.
+          </p>
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-left mb-6 max-w-md mx-auto">
+            <p className="text-sm font-semibold text-amber-800 mb-1">Next steps:</p>
+            <ol className="text-sm text-amber-700 space-y-1 list-decimal list-inside">
+              <li>Visit your local small claims court clerk</li>
+              <li>Bring this statement, ID, and filing fee</li>
+              <li>Serve the defendant with notice of the hearing</li>
+              <li>Gather and organize your evidence</li>
+              <li>Appear on your hearing date</li>
+            </ol>
+          </div>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => setLocation("/cases")}
+              className="px-5 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors"
+            >
+              View My Cases
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:opacity-90 transition-opacity"
+            >
+              Print Statement
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    );
   }
 
   return (
-    <div className="bg-card border border-card-border rounded-lg p-5">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-foreground">Case strength</span>
-        <span className="text-sm font-semibold text-foreground">{strength}</span>
-      </div>
-      <div className="h-2 bg-muted rounded-full overflow-hidden mb-3">
-        <div className={`h-full ${color} rounded-full transition-all duration-700`} style={{ width }} />
-      </div>
-      <p className="text-xs text-muted-foreground">{description}</p>
-    </div>
-  );
-}
-
-function Step3Review({
-  form,
-  grievanceId,
-  onNext,
-  onBack,
-}: {
-  form: FormData;
-  grievanceId: number | null;
-  onNext: () => void;
-  onBack: () => void;
-}) {
-  const comparables = useListComparables(
-    { grievanceId: grievanceId ?? 0 },
-    { query: { enabled: !!grievanceId } }
-  );
-
-  const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-    >
-      <h2 className="font-serif text-2xl font-semibold text-foreground mb-2">Review your case</h2>
-      <p className="text-muted-foreground text-sm mb-6">
-        Confirm your details and review what you'll present at the hearing.
+    <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
+      <h2 className="font-serif text-2xl font-semibold text-foreground mb-1">Statement of Claim</h2>
+      <p className="text-muted-foreground text-sm mb-4">
+        Generate an AI-powered statement of claim for your {claimType?.label?.toLowerCase()} case.
       </p>
 
-      <div className="space-y-5">
-        {/* Property summary */}
-        <div className="bg-card border border-card-border rounded-lg p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-3">Property details</h3>
-          <dl className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
-            <div>
-              <dt className="text-muted-foreground">Owner</dt>
-              <dd className="text-foreground font-medium">{form.ownerName}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Property</dt>
-              <dd className="text-foreground font-medium">{form.propertyAddress}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">County</dt>
-              <dd className="text-foreground">{form.county}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Municipality</dt>
-              <dd className="text-foreground">{form.municipality}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Tax year</dt>
-              <dd className="text-foreground">{form.taxYear}</dd>
-            </div>
-            <div>
-              <dt className="text-muted-foreground">Parcel ID</dt>
-              <dd className="text-foreground">{form.parcelId || "—"}</dd>
-            </div>
-          </dl>
-        </div>
-
-        {/* Assessment summary */}
-        <div className="bg-card border border-card-border rounded-lg p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-3">Assessment comparison</h3>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Current assessment</div>
-              <div className="text-lg font-semibold text-foreground">${form.currentAssessment.toLocaleString()}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Est. market value</div>
-              <div className="text-lg font-semibold text-foreground">${form.estimatedMarketValue.toLocaleString()}</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground mb-1">Requested assessment</div>
-              <div className="text-lg font-semibold text-primary">${form.requestedAssessment.toLocaleString()}</div>
-            </div>
-          </div>
-        </div>
-
-        <CaseStrength
-          current={form.currentAssessment}
-          market={form.estimatedMarketValue}
-          requested={form.requestedAssessment}
-        />
-
-        {/* Comparables */}
-        <div className="bg-card border border-card-border rounded-lg p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-1">Comparable sales</h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            Comparable sales are the strongest evidence at your hearing. Bring 3-5 similar homes that sold for less than your assessment implies.
-          </p>
-          {comparables.data && comparables.data.length > 0 ? (
-            <ul className="space-y-2">
-              {comparables.data.map((c) => (
-                <li key={c.id} className="flex justify-between text-sm border-b border-border pb-2 last:border-0">
-                  <span className="text-foreground truncate">{c.address}</span>
-                  <span className="text-muted-foreground shrink-0 ml-4">${c.salePrice.toLocaleString()} · {c.saleDate}</span>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <div className="text-sm text-muted-foreground bg-muted/30 rounded-md p-4">
-              No comparables saved yet. You can bring your own research to the hearing — look up recent sales on Zillow, Realtor.com, or your county's property search.
-              {grievanceId && (
-                <a
-                  href={`${baseUrl}/api/auto-comparables?grievanceId=${grievanceId}`}
-                  className="block mt-2 text-primary hover:underline inline-flex items-center gap-1"
-                >
-                  Find comparables automatically
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Basis */}
-        <div className="bg-card border border-card-border rounded-lg p-5">
-          <h3 className="text-sm font-semibold text-foreground mb-2">Basis of complaint</h3>
-          <p className="text-sm text-foreground">
-            {BASIS_OPTIONS.find((o) => o.value === form.basisOfComplaint)?.label ?? form.basisOfComplaint}
-          </p>
-          {form.notes && (
-            <p className="text-sm text-muted-foreground mt-2">{form.notes}</p>
-          )}
+      <div className="bg-card border border-card-border rounded-lg p-5 mb-4">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm mb-4">
+          <div><dt className="text-muted-foreground">Claim type</dt><dd className="font-medium">{claimType?.label}</dd></div>
+          <div><dt className="text-muted-foreground">State</dt><dd className="font-medium">{form.state}</dd></div>
+          <div><dt className="text-muted-foreground">Claimant</dt><dd className="font-medium">{form.claimantName}</dd></div>
+          <div><dt className="text-muted-foreground">Defendant</dt><dd className="font-medium">{form.defendantName}</dd></div>
+          <div><dt className="text-muted-foreground">Amount</dt><dd className="font-semibold text-primary">${form.claimAmount.toLocaleString()}</dd></div>
+          <div><dt className="text-muted-foreground">Incident date</dt><dd>{form.incidentDate || "—"}</dd></div>
         </div>
       </div>
 
-      <div className="flex gap-3 mt-8">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
-        <button
-          onClick={onNext}
-          className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-md hover:opacity-90 transition-opacity"
-        >
-          Looks good — continue
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
-    </motion.div>
-  );
-}
-
-function Step4Submit({ form, grievanceId }: { form: FormData; grievanceId: number | null }) {
-  const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-    >
-      <div className="text-center mb-8">
-        <div className="w-14 h-14 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="w-8 h-8 text-primary" />
+      {!generated ? (
+        <div className="border border-dashed border-border rounded-lg p-8 text-center mb-4">
+          <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground mb-4">Click below to generate a personalized statement of claim using AI</p>
+          <button
+            onClick={generate}
+            disabled={generating || !caseId}
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:opacity-90 transition-opacity disabled:opacity-40"
+          >
+            {generating ? (<><Loader2 className="w-4 h-4 animate-spin" /> Generating...</>) : (<><Sparkles className="w-4 h-4" /> Generate Statement</>)}
+          </button>
         </div>
-        <h2 className="font-serif text-2xl font-semibold text-foreground mb-2">Your petition is ready</h2>
-        <p className="text-muted-foreground text-sm">
-          Download your documents and bring them to the small claims court in your county.
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        {/* Download */}
-        {grievanceId && (
-          <div className="bg-primary/5 border border-primary/20 rounded-lg p-5">
-            <h3 className="font-semibold text-foreground mb-1">Download your petition</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Your completed petition document is ready to download. Print it out and bring it to the court along with your supporting evidence.
-            </p>
-            <a
-              href={`${baseUrl}/api/download/${grievanceId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 rounded-md hover:opacity-90 transition-opacity"
+      ) : (
+        <div className="mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-sm font-medium text-foreground">Statement of Claim</label>
+            <button
+              onClick={generate}
+              disabled={generating}
+              className="text-xs text-primary hover:underline flex items-center gap-1"
             >
-              <Download className="w-4 h-4" />
-              Download Petition PDF
-            </a>
+              {generating ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+              Regenerate
+            </button>
           </div>
-        )}
-
-        {/* What to do next */}
-        <div className="bg-card border border-card-border rounded-lg p-5 space-y-4">
-          <h3 className="font-semibold text-foreground">Next steps</h3>
-          <ol className="space-y-3">
-            {[
-              {
-                title: "File at your local small claims court",
-                detail: `Bring your petition to the small claims court in ${form.county} County. The filing fee is $30, payable at the clerk's office.`,
-              },
-              {
-                title: "Submit within 30 days of your BAR denial",
-                detail: "The deadline is strict. File as soon as possible to ensure you don't miss the window.",
-              },
-              {
-                title: "Gather your comparable sales",
-                detail: "Bring 3-5 recent sales of similar homes that sold for less than your current assessment implies. The court clerk can tell you when your hearing will be.",
-              },
-              {
-                title: "Attend your hearing",
-                detail: "The hearing is informal. Present your comparables, explain your basis, and the hearing officer will make a decision — usually within a few weeks.",
-              },
-            ].map((step, i) => (
-              <li key={i} className="flex gap-3 text-sm">
-                <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center shrink-0 mt-0.5">
-                  {i + 1}
-                </span>
-                <div>
-                  <div className="font-medium text-foreground">{step.title}</div>
-                  <div className="text-muted-foreground mt-0.5">{step.detail}</div>
-                </div>
-              </li>
-            ))}
-          </ol>
+          <textarea
+            className={`${inputClass} h-48 resize-y font-serif text-sm`}
+            value={statement}
+            onChange={(e) => setStatement(e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground mt-1">You can edit the statement above before submitting.</p>
         </div>
+      )}
 
-        {/* Key facts */}
-        <div className="grid grid-cols-2 gap-3">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-2 items-start">
-            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-            <div className="text-xs text-amber-700">
-              <strong>$30 filing fee</strong> — paid at the court clerk's office
-            </div>
-          </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex gap-2 items-start">
-            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-            <div className="text-xs text-amber-700">
-              <strong>30-day deadline</strong> — from the date of your BAR determination
-            </div>
-          </div>
-        </div>
+      <div className="flex gap-3">
+        <button onClick={onBack}
+          className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
+        </button>
+        <button
+          onClick={submit}
+          disabled={!generated || submitting || !statement.trim()}
+          className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {submitting ? (<><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>) : (<><CheckCircle className="w-4 h-4" /> Mark as Ready to File</>)}
+        </button>
       </div>
     </motion.div>
   );
@@ -768,94 +678,101 @@ function Step4Submit({ form, grievanceId }: { form: FormData; grievanceId: numbe
 
 export function FileWizard() {
   const [step, setStep] = useState(1);
-  const [eligibility, setEligibility] = useState<EligibilityAnswers>({
-    wasDenied: null,
-    isNY: null,
-    withinDeadline: null,
-    isResidential: null,
-  });
   const [form, setForm] = useState<FormData>(defaultForm);
-  const [grievanceId, setGrievanceId] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [caseId, setCaseId] = useState<number | null>(null);
+  const [conversationId, setConversationId] = useState<number | null>(null);
+  const createCase = useCreateSmallClaim();
+  const updateCase = useUpdateSmallClaim();
 
-  const createGrievance = useCreateGrievance();
-  const updateGrievance = useUpdateGrievance();
-  const queryClient = useQueryClient();
-
-  const handleSaveDetails = async () => {
-    setSaving(true);
+  const saveCase = async (): Promise<boolean> => {
     try {
-      const payload = {
-        ownerName: form.ownerName,
-        ownerEmail: form.ownerEmail || null,
-        ownerPhone: form.ownerPhone || null,
-        ownerMailingAddress: form.ownerMailingAddress || null,
-        propertyAddress: form.propertyAddress,
-        county: form.county,
-        municipality: form.municipality,
-        state: "NY",
-        parcelId: form.parcelId || null,
-        taxYear: form.taxYear,
-        currentAssessment: form.currentAssessment,
-        estimatedMarketValue: form.estimatedMarketValue,
-        requestedAssessment: form.requestedAssessment,
-        basisOfComplaint: form.basisOfComplaint || null,
-        notes: form.notes || null,
-        status: "draft" as const,
-      };
-
-      if (grievanceId) {
-        await updateGrievance.mutateAsync({ id: grievanceId, data: payload });
-        queryClient.invalidateQueries({ queryKey: getGetGrievanceQueryKey(grievanceId) });
+      if (!caseId) {
+        const created = await createCase.mutateAsync({
+          claimType: form.claimType,
+          state: form.state,
+          claimantName: form.claimantName,
+          claimantEmail: form.claimantEmail || undefined,
+          claimantPhone: form.claimantPhone || undefined,
+          claimantAddress: form.claimantAddress || undefined,
+          defendantName: form.defendantName,
+          defendantAddress: form.defendantAddress || undefined,
+          defendantEmail: form.defendantEmail || undefined,
+          defendantPhone: form.defendantPhone || undefined,
+          claimAmount: form.claimAmount,
+          claimDescription: form.claimDescription,
+          claimBasis: form.claimBasis || undefined,
+          incidentDate: form.incidentDate || undefined,
+          desiredOutcome: form.desiredOutcome || undefined,
+          supportingFacts: form.supportingFacts || undefined,
+        });
+        setCaseId(created.id);
       } else {
-        const result = await createGrievance.mutateAsync({ data: payload });
-        setGrievanceId(result.id);
+        await updateCase.mutateAsync({
+          id: caseId,
+          data: {
+            claimType: form.claimType,
+            state: form.state,
+            claimantName: form.claimantName,
+            claimantEmail: form.claimantEmail || undefined,
+            claimantPhone: form.claimantPhone || undefined,
+            claimantAddress: form.claimantAddress || undefined,
+            defendantName: form.defendantName,
+            defendantAddress: form.defendantAddress || undefined,
+            defendantEmail: form.defendantEmail || undefined,
+            defendantPhone: form.defendantPhone || undefined,
+            claimAmount: form.claimAmount,
+            claimDescription: form.claimDescription,
+            claimBasis: form.claimBasis || undefined,
+            incidentDate: form.incidentDate || undefined,
+            desiredOutcome: form.desiredOutcome || undefined,
+            supportingFacts: form.supportingFacts || undefined,
+          },
+        });
       }
-      setStep(3);
-    } catch (err) {
-      console.error("Save failed:", err);
-    } finally {
-      setSaving(false);
+      return true;
+    } catch {
+      return false;
     }
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12">
-      <StepIndicator current={step} total={4} />
-
+    <div className="max-w-2xl mx-auto px-4 py-10">
+      <StepIndicator current={step} />
       <AnimatePresence mode="wait">
         {step === 1 && (
-          <Step1Check
-            key="step1"
-            answers={eligibility}
-            setAnswers={setEligibility}
-            onNext={() => setStep(2)}
-          />
+          <Step1ClaimType key="step1" form={form} setForm={setForm} onNext={() => setStep(2)} />
         )}
         {step === 2 && (
           <Step2Details
             key="step2"
             form={form}
             setForm={setForm}
-            onNext={handleSaveDetails}
+            saving={createCase.isPending || updateCase.isPending}
             onBack={() => setStep(1)}
-            saving={saving}
+            onNext={async () => {
+              const ok = await saveCase();
+              if (ok) setStep(3);
+            }}
           />
         )}
         {step === 3 && (
-          <Step3Review
+          <Step3Chat
             key="step3"
             form={form}
-            grievanceId={grievanceId}
-            onNext={() => setStep(4)}
+            caseId={caseId}
+            conversationId={conversationId}
+            setConversationId={setConversationId}
             onBack={() => setStep(2)}
+            onNext={() => setStep(4)}
           />
         )}
         {step === 4 && (
-          <Step4Submit
+          <Step4Statement
             key="step4"
             form={form}
-            grievanceId={grievanceId}
+            caseId={caseId}
+            conversationId={conversationId}
+            onBack={() => setStep(3)}
           />
         )}
       </AnimatePresence>

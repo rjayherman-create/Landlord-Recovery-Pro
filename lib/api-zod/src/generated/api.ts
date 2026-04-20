@@ -249,3 +249,264 @@ export const ListCountiesResponseItem = zod.object({
   municipalities: zod.array(zod.string()),
 });
 export const ListCountiesResponse = zod.array(ListCountiesResponseItem);
+
+/**
+ * @summary List all small claims cases
+ */
+export const ListSmallClaimsResponseItem = zod.object({
+  id: zod.number(),
+  userId: zod.string().nullish(),
+  claimType: zod.string(),
+  state: zod.string(),
+  county: zod.string().nullish(),
+  courtLocation: zod.string().nullish(),
+  claimantName: zod.string(),
+  claimantEmail: zod.string().nullish(),
+  claimantPhone: zod.string().nullish(),
+  claimantAddress: zod.string().nullish(),
+  defendantName: zod.string(),
+  defendantAddress: zod.string().nullish(),
+  defendantEmail: zod.string().nullish(),
+  defendantPhone: zod.string().nullish(),
+  claimAmount: zod.number(),
+  claimDescription: zod.string(),
+  claimBasis: zod.string().nullish(),
+  incidentDate: zod.string().nullish(),
+  desiredOutcome: zod.string().nullish(),
+  supportingFacts: zod.string().nullish(),
+  generatedStatement: zod.string().nullish(),
+  conversationId: zod.number().nullish(),
+  status: zod.enum(["draft", "ready", "filed", "dismissed", "won", "lost"]),
+  filingDeadline: zod.string().nullish(),
+  caseNumber: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListSmallClaimsResponse = zod.array(ListSmallClaimsResponseItem);
+
+/**
+ * @summary Create a new small claims case
+ */
+export const CreateSmallClaimBody = zod.object({
+  claimType: zod.string(),
+  state: zod.string().optional(),
+  county: zod.string().nullish(),
+  courtLocation: zod.string().nullish(),
+  claimantName: zod.string(),
+  claimantEmail: zod.string().nullish(),
+  claimantPhone: zod.string().nullish(),
+  claimantAddress: zod.string().nullish(),
+  defendantName: zod.string(),
+  defendantAddress: zod.string().nullish(),
+  defendantEmail: zod.string().nullish(),
+  defendantPhone: zod.string().nullish(),
+  claimAmount: zod.number(),
+  claimDescription: zod.string(),
+  claimBasis: zod.string().nullish(),
+  incidentDate: zod.string().nullish(),
+  desiredOutcome: zod.string().nullish(),
+  supportingFacts: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Get a small claims case by ID
+ */
+export const GetSmallClaimParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetSmallClaimResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string().nullish(),
+  claimType: zod.string(),
+  state: zod.string(),
+  county: zod.string().nullish(),
+  courtLocation: zod.string().nullish(),
+  claimantName: zod.string(),
+  claimantEmail: zod.string().nullish(),
+  claimantPhone: zod.string().nullish(),
+  claimantAddress: zod.string().nullish(),
+  defendantName: zod.string(),
+  defendantAddress: zod.string().nullish(),
+  defendantEmail: zod.string().nullish(),
+  defendantPhone: zod.string().nullish(),
+  claimAmount: zod.number(),
+  claimDescription: zod.string(),
+  claimBasis: zod.string().nullish(),
+  incidentDate: zod.string().nullish(),
+  desiredOutcome: zod.string().nullish(),
+  supportingFacts: zod.string().nullish(),
+  generatedStatement: zod.string().nullish(),
+  conversationId: zod.number().nullish(),
+  status: zod.enum(["draft", "ready", "filed", "dismissed", "won", "lost"]),
+  filingDeadline: zod.string().nullish(),
+  caseNumber: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Update a small claims case
+ */
+export const UpdateSmallClaimParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateSmallClaimBody = zod.object({
+  claimType: zod.string().optional(),
+  state: zod.string().optional(),
+  county: zod.string().nullish(),
+  courtLocation: zod.string().nullish(),
+  claimantName: zod.string().optional(),
+  claimantEmail: zod.string().nullish(),
+  claimantPhone: zod.string().nullish(),
+  claimantAddress: zod.string().nullish(),
+  defendantName: zod.string().optional(),
+  defendantAddress: zod.string().nullish(),
+  defendantEmail: zod.string().nullish(),
+  defendantPhone: zod.string().nullish(),
+  claimAmount: zod.number().optional(),
+  claimDescription: zod.string().optional(),
+  claimBasis: zod.string().nullish(),
+  incidentDate: zod.string().nullish(),
+  desiredOutcome: zod.string().nullish(),
+  supportingFacts: zod.string().nullish(),
+  generatedStatement: zod.string().nullish(),
+  conversationId: zod.number().nullish(),
+  status: zod
+    .enum(["draft", "ready", "filed", "dismissed", "won", "lost"])
+    .optional(),
+  filingDeadline: zod.string().nullish(),
+  caseNumber: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateSmallClaimResponse = zod.object({
+  id: zod.number(),
+  userId: zod.string().nullish(),
+  claimType: zod.string(),
+  state: zod.string(),
+  county: zod.string().nullish(),
+  courtLocation: zod.string().nullish(),
+  claimantName: zod.string(),
+  claimantEmail: zod.string().nullish(),
+  claimantPhone: zod.string().nullish(),
+  claimantAddress: zod.string().nullish(),
+  defendantName: zod.string(),
+  defendantAddress: zod.string().nullish(),
+  defendantEmail: zod.string().nullish(),
+  defendantPhone: zod.string().nullish(),
+  claimAmount: zod.number(),
+  claimDescription: zod.string(),
+  claimBasis: zod.string().nullish(),
+  incidentDate: zod.string().nullish(),
+  desiredOutcome: zod.string().nullish(),
+  supportingFacts: zod.string().nullish(),
+  generatedStatement: zod.string().nullish(),
+  conversationId: zod.number().nullish(),
+  status: zod.enum(["draft", "ready", "filed", "dismissed", "won", "lost"]),
+  filingDeadline: zod.string().nullish(),
+  caseNumber: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a small claims case
+ */
+export const DeleteSmallClaimParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Generate an AI-powered statement of claim
+ */
+export const GenerateClaimStatementParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GenerateClaimStatementResponse = zod.object({
+  statement: zod.string(),
+});
+
+/**
+ * @summary List all conversations
+ */
+export const ListOpenaiConversationsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  createdAt: zod.date(),
+});
+export const ListOpenaiConversationsResponse = zod.array(
+  ListOpenaiConversationsResponseItem,
+);
+
+/**
+ * @summary Create a new conversation
+ */
+export const CreateOpenaiConversationBody = zod.object({
+  title: zod.string(),
+});
+
+/**
+ * @summary Get conversation with messages
+ */
+export const GetOpenaiConversationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetOpenaiConversationResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  createdAt: zod.date(),
+  messages: zod.array(
+    zod.object({
+      id: zod.number(),
+      conversationId: zod.number(),
+      role: zod.string(),
+      content: zod.string(),
+      createdAt: zod.date(),
+    }),
+  ),
+});
+
+/**
+ * @summary Delete a conversation
+ */
+export const DeleteOpenaiConversationParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List messages in a conversation
+ */
+export const ListOpenaiMessagesParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListOpenaiMessagesResponseItem = zod.object({
+  id: zod.number(),
+  conversationId: zod.number(),
+  role: zod.string(),
+  content: zod.string(),
+  createdAt: zod.date(),
+});
+export const ListOpenaiMessagesResponse = zod.array(
+  ListOpenaiMessagesResponseItem,
+);
+
+/**
+ * @summary Send a text message and receive a streaming text response
+ */
+export const SendOpenaiMessageParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SendOpenaiMessageBody = zod.object({
+  content: zod.string(),
+  systemPrompt: zod.string().nullish(),
+});

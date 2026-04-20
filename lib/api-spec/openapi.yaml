@@ -15,6 +15,10 @@ tags:
     description: Comparable property sales operations
   - name: counties
     description: County-specific information
+  - name: small-claims
+    description: General small claims court case operations
+  - name: openai
+    description: OpenAI AI chat operations
 paths:
   /healthz:
     get:
@@ -195,6 +199,241 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/County"
+
+  /small-claims:
+    get:
+      operationId: listSmallClaims
+      tags: [small-claims]
+      summary: List all small claims cases
+      responses:
+        "200":
+          description: List of small claims cases
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SmallClaimsCase"
+    post:
+      operationId: createSmallClaim
+      tags: [small-claims]
+      summary: Create a new small claims case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSmallClaimRequest"
+      responses:
+        "201":
+          description: Created case
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmallClaimsCase"
+
+  /small-claims/{id}:
+    get:
+      operationId: getSmallClaim
+      tags: [small-claims]
+      summary: Get a small claims case by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Small claims case details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmallClaimsCase"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateSmallClaim
+      tags: [small-claims]
+      summary: Update a small claims case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSmallClaimRequest"
+      responses:
+        "200":
+          description: Updated case
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmallClaimsCase"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteSmallClaim
+      tags: [small-claims]
+      summary: Delete a small claims case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /small-claims/{id}/generate-statement:
+    post:
+      operationId: generateClaimStatement
+      tags: [small-claims]
+      summary: Generate an AI-powered statement of claim
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Generated statement
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  statement:
+                    type: string
+                required:
+                  - statement
+
+  /openai/conversations:
+    get:
+      operationId: listOpenaiConversations
+      tags: [openai]
+      summary: List all conversations
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenaiConversation"
+    post:
+      operationId: createOpenaiConversation
+      tags: [openai]
+      summary: Create a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOpenaiConversationBody"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiConversation"
+
+  /openai/conversations/{id}:
+    get:
+      operationId: getOpenaiConversation
+      tags: [openai]
+      summary: Get conversation with messages
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiConversationWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+    delete:
+      operationId: deleteOpenaiConversation
+      tags: [openai]
+      summary: Delete a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /openai/conversations/{id}/messages:
+    get:
+      operationId: listOpenaiMessages
+      tags: [openai]
+      summary: List messages in a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OpenaiMessage"
+    post:
+      operationId: sendOpenaiMessage
+      tags: [openai]
+      summary: Send a text message and receive a streaming text response
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendOpenaiMessageBody"
+      responses:
+        "200":
+          description: SSE stream of assistant text chunks
+          content:
+            text/event-stream: {}
 
 components:
   schemas:
@@ -565,3 +804,307 @@ components:
         - formRequired
         - notes
         - municipalities
+
+    SmallClaimsCase:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+          nullable: true
+        claimType:
+          type: string
+        state:
+          type: string
+        county:
+          type: string
+          nullable: true
+        courtLocation:
+          type: string
+          nullable: true
+        claimantName:
+          type: string
+        claimantEmail:
+          type: string
+          nullable: true
+        claimantPhone:
+          type: string
+          nullable: true
+        claimantAddress:
+          type: string
+          nullable: true
+        defendantName:
+          type: string
+        defendantAddress:
+          type: string
+          nullable: true
+        defendantEmail:
+          type: string
+          nullable: true
+        defendantPhone:
+          type: string
+          nullable: true
+        claimAmount:
+          type: number
+        claimDescription:
+          type: string
+        claimBasis:
+          type: string
+          nullable: true
+        incidentDate:
+          type: string
+          nullable: true
+        desiredOutcome:
+          type: string
+          nullable: true
+        supportingFacts:
+          type: string
+          nullable: true
+        generatedStatement:
+          type: string
+          nullable: true
+        conversationId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [draft, ready, filed, dismissed, won, lost]
+        filingDeadline:
+          type: string
+          nullable: true
+        caseNumber:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - claimType
+        - state
+        - claimantName
+        - defendantName
+        - claimAmount
+        - claimDescription
+        - status
+        - createdAt
+        - updatedAt
+
+    CreateSmallClaimRequest:
+      type: object
+      properties:
+        claimType:
+          type: string
+        state:
+          type: string
+        county:
+          type: string
+          nullable: true
+        courtLocation:
+          type: string
+          nullable: true
+        claimantName:
+          type: string
+        claimantEmail:
+          type: string
+          nullable: true
+        claimantPhone:
+          type: string
+          nullable: true
+        claimantAddress:
+          type: string
+          nullable: true
+        defendantName:
+          type: string
+        defendantAddress:
+          type: string
+          nullable: true
+        defendantEmail:
+          type: string
+          nullable: true
+        defendantPhone:
+          type: string
+          nullable: true
+        claimAmount:
+          type: number
+        claimDescription:
+          type: string
+        claimBasis:
+          type: string
+          nullable: true
+        incidentDate:
+          type: string
+          nullable: true
+        desiredOutcome:
+          type: string
+          nullable: true
+        supportingFacts:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - claimType
+        - claimantName
+        - defendantName
+        - claimAmount
+        - claimDescription
+
+    UpdateSmallClaimRequest:
+      type: object
+      properties:
+        claimType:
+          type: string
+        state:
+          type: string
+        county:
+          type: string
+          nullable: true
+        courtLocation:
+          type: string
+          nullable: true
+        claimantName:
+          type: string
+        claimantEmail:
+          type: string
+          nullable: true
+        claimantPhone:
+          type: string
+          nullable: true
+        claimantAddress:
+          type: string
+          nullable: true
+        defendantName:
+          type: string
+        defendantAddress:
+          type: string
+          nullable: true
+        defendantEmail:
+          type: string
+          nullable: true
+        defendantPhone:
+          type: string
+          nullable: true
+        claimAmount:
+          type: number
+        claimDescription:
+          type: string
+        claimBasis:
+          type: string
+          nullable: true
+        incidentDate:
+          type: string
+          nullable: true
+        desiredOutcome:
+          type: string
+          nullable: true
+        supportingFacts:
+          type: string
+          nullable: true
+        generatedStatement:
+          type: string
+          nullable: true
+        conversationId:
+          type: integer
+          nullable: true
+        status:
+          type: string
+          enum: [draft, ready, filed, dismissed, won, lost]
+        filingDeadline:
+          type: string
+          nullable: true
+        caseNumber:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    OpenaiConversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - title
+        - createdAt
+
+    OpenaiMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        role:
+          type: string
+        content:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - conversationId
+        - role
+        - content
+        - createdAt
+
+    CreateOpenaiConversationBody:
+      type: object
+      properties:
+        title:
+          type: string
+      required:
+        - title
+
+    SendOpenaiMessageBody:
+      type: object
+      properties:
+        content:
+          type: string
+        systemPrompt:
+          type: string
+          nullable: true
+      required:
+        - content
+
+    OpenaiConversationWithMessages:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpenaiMessage"
+      required:
+        - id
+        - title
+        - createdAt
+        - messages
+
+    OpenaiError:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

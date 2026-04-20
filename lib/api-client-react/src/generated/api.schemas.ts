@@ -165,6 +165,148 @@ export interface County {
   municipalities: string[];
 }
 
+export type SmallClaimsCaseStatus =
+  (typeof SmallClaimsCaseStatus)[keyof typeof SmallClaimsCaseStatus];
+
+export const SmallClaimsCaseStatus = {
+  draft: "draft",
+  ready: "ready",
+  filed: "filed",
+  dismissed: "dismissed",
+  won: "won",
+  lost: "lost",
+} as const;
+
+export interface SmallClaimsCase {
+  id: number;
+  userId?: string | null;
+  claimType: string;
+  state: string;
+  county?: string | null;
+  courtLocation?: string | null;
+  claimantName: string;
+  claimantEmail?: string | null;
+  claimantPhone?: string | null;
+  claimantAddress?: string | null;
+  defendantName: string;
+  defendantAddress?: string | null;
+  defendantEmail?: string | null;
+  defendantPhone?: string | null;
+  claimAmount: number;
+  claimDescription: string;
+  claimBasis?: string | null;
+  incidentDate?: string | null;
+  desiredOutcome?: string | null;
+  supportingFacts?: string | null;
+  generatedStatement?: string | null;
+  conversationId?: number | null;
+  status: SmallClaimsCaseStatus;
+  filingDeadline?: string | null;
+  caseNumber?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateSmallClaimRequest {
+  claimType: string;
+  state?: string;
+  county?: string | null;
+  courtLocation?: string | null;
+  claimantName: string;
+  claimantEmail?: string | null;
+  claimantPhone?: string | null;
+  claimantAddress?: string | null;
+  defendantName: string;
+  defendantAddress?: string | null;
+  defendantEmail?: string | null;
+  defendantPhone?: string | null;
+  claimAmount: number;
+  claimDescription: string;
+  claimBasis?: string | null;
+  incidentDate?: string | null;
+  desiredOutcome?: string | null;
+  supportingFacts?: string | null;
+  notes?: string | null;
+}
+
+export type UpdateSmallClaimRequestStatus =
+  (typeof UpdateSmallClaimRequestStatus)[keyof typeof UpdateSmallClaimRequestStatus];
+
+export const UpdateSmallClaimRequestStatus = {
+  draft: "draft",
+  ready: "ready",
+  filed: "filed",
+  dismissed: "dismissed",
+  won: "won",
+  lost: "lost",
+} as const;
+
+export interface UpdateSmallClaimRequest {
+  claimType?: string;
+  state?: string;
+  county?: string | null;
+  courtLocation?: string | null;
+  claimantName?: string;
+  claimantEmail?: string | null;
+  claimantPhone?: string | null;
+  claimantAddress?: string | null;
+  defendantName?: string;
+  defendantAddress?: string | null;
+  defendantEmail?: string | null;
+  defendantPhone?: string | null;
+  claimAmount?: number;
+  claimDescription?: string;
+  claimBasis?: string | null;
+  incidentDate?: string | null;
+  desiredOutcome?: string | null;
+  supportingFacts?: string | null;
+  generatedStatement?: string | null;
+  conversationId?: number | null;
+  status?: UpdateSmallClaimRequestStatus;
+  filingDeadline?: string | null;
+  caseNumber?: string | null;
+  notes?: string | null;
+}
+
+export interface OpenaiConversation {
+  id: number;
+  title: string;
+  createdAt: string;
+}
+
+export interface OpenaiMessage {
+  id: number;
+  conversationId: number;
+  role: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface CreateOpenaiConversationBody {
+  title: string;
+}
+
+export interface SendOpenaiMessageBody {
+  content: string;
+  systemPrompt?: string | null;
+}
+
+export interface OpenaiConversationWithMessages {
+  id: number;
+  title: string;
+  createdAt: string;
+  messages: OpenaiMessage[];
+}
+
+export interface OpenaiError {
+  error: string;
+}
+
 export type ListComparablesParams = {
   grievanceId: number;
+};
+
+export type GenerateClaimStatement200 = {
+  statement: string;
 };

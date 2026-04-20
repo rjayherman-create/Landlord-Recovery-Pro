@@ -1,180 +1,123 @@
-import { Link } from "wouter";
-import { motion } from "framer-motion";
-import { CheckCircle, FileText, Scale, Clock, DollarSign, ArrowRight } from "lucide-react";
+import { useLocation } from "wouter";
+import { Scale, FileText, MessageSquare, Sparkles, ArrowRight, Shield, Clock, CheckCircle } from "lucide-react";
 
-const steps = [
-  {
-    number: "01",
-    title: "Check Eligibility",
-    description: "Confirm you received a denial from the Board of Assessment Review and are within the 30-day window.",
-  },
-  {
-    number: "02",
-    title: "Enter Property Details",
-    description: "Provide your property information, current assessment, and what you believe the fair market value is.",
-  },
-  {
-    number: "03",
-    title: "Review Your Case",
-    description: "We'll help you organize comparable sales and show you the strength of your case.",
-  },
-  {
-    number: "04",
-    title: "File in Small Claims Court",
-    description: "Take your completed petition to the nearest small claims court with the $30 filing fee.",
-  },
+const CLAIM_TYPES = [
+  { icon: "📄", label: "Breach of Contract" },
+  { icon: "🏠", label: "Security Deposit" },
+  { icon: "🔨", label: "Property Damage" },
+  { icon: "💼", label: "Unpaid Wages" },
+  { icon: "🛒", label: "Consumer Dispute" },
+  { icon: "🔑", label: "Landlord / Tenant" },
+  { icon: "⚖️", label: "Negligence" },
+  { icon: "📦", label: "Personal Property" },
 ];
 
-const facts = [
-  { icon: DollarSign, label: "$30", description: "Filing fee to petition the court" },
-  { icon: Clock, label: "30 days", description: "From BAR denial to file your petition" },
-  { icon: Scale, label: "DIY", description: "No lawyer needed — represent yourself" },
-  { icon: CheckCircle, label: "NY Only", description: "Available in all New York counties" },
+const HOW_IT_WORKS = [
+  { icon: Scale, step: "1", title: "Pick Your Claim Type", description: "Choose from 8 common small claims categories and select your state." },
+  { icon: FileText, step: "2", title: "Enter Case Details", description: "Fill in information about you, the other party, and what happened." },
+  { icon: MessageSquare, step: "3", title: "Get AI Guidance", description: "Chat with our AI assistant to strengthen your case and prepare for court." },
+  { icon: Sparkles, step: "4", title: "Generate Your Statement", description: "Get a professional statement of claim ready to file at the courthouse." },
 ];
 
 export function Home() {
+  const [, setLocation] = useLocation();
   return (
-    <div>
-      {/* Hero */}
-      <section className="border-b border-border bg-gradient-to-b from-secondary/30 to-background">
-        <div className="max-w-5xl mx-auto px-4 py-20 md:py-28">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="max-w-2xl"
-          >
-            <span className="inline-block bg-accent/10 text-accent-foreground text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full mb-6 border border-accent/20">
-              Small Claims Assessment Review
-            </span>
-            <h1 className="font-serif text-4xl md:text-5xl font-semibold text-foreground leading-tight mb-6">
-              Fight your property tax assessment — without a lawyer.
-            </h1>
-            <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
-              If the Board of Assessment Review denied your grievance, you have 30 days to file a SCAR petition in small claims court. We'll walk you through every step of the process for a $30 court fee.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Link
-                href="/file"
-                className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-medium px-6 py-3 rounded-md hover:opacity-90 transition-opacity"
-              >
-                Start Filing Now
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/guide"
-                className="inline-flex items-center justify-center gap-2 border border-border text-foreground font-medium px-6 py-3 rounded-md hover:bg-secondary/50 transition-colors"
-              >
-                Learn How It Works
-              </Link>
-            </div>
-          </motion.div>
+    <div className="min-h-[calc(100vh-4rem)]">
+      <section className="bg-gradient-to-br from-primary/5 via-background to-background border-b border-border">
+        <div className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
+          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
+            <Scale className="w-3.5 h-3.5" />
+            AI-Powered Small Claims Filing
+          </div>
+          <h1 className="font-serif text-4xl sm:text-5xl font-bold text-foreground mb-4 leading-tight">
+            File Your Small Claims Case<br />
+            <span className="text-primary">With Confidence</span>
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
+            Our AI assistant guides you through every step of filing a small claims court case — from organizing your facts to generating a professional statement of claim.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={() => setLocation("/file")}
+              className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm"
+            >
+              Start Filing Now
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setLocation("/guide")}
+              className="inline-flex items-center justify-center gap-2 border border-border text-foreground font-medium px-6 py-3 rounded-lg hover:bg-secondary/50 transition-colors text-sm"
+            >
+              Learn How It Works
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* Key Facts */}
-      <section className="border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 py-12">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {facts.map((fact, i) => (
-              <motion.div
-                key={fact.label}
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 + 0.2 }}
-                className="text-center"
-              >
-                <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3">
-                  <fact.icon className="w-5 h-5 text-primary" />
+      <section className="max-w-4xl mx-auto px-4 py-12">
+        <h2 className="font-serif text-2xl font-semibold text-foreground text-center mb-2">We Help With All Common Small Claims</h2>
+        <p className="text-muted-foreground text-sm text-center mb-8">Available for NY, NJ, FL, TX, CA and more states</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {CLAIM_TYPES.map((ct) => (
+            <div key={ct.label} className="bg-card border border-card-border rounded-lg p-4 text-center hover:border-primary/40 transition-colors cursor-default">
+              <div className="text-3xl mb-2">{ct.icon}</div>
+              <div className="text-sm font-medium text-foreground">{ct.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="bg-muted/30 border-y border-border">
+        <div className="max-w-4xl mx-auto px-4 py-12">
+          <h2 className="font-serif text-2xl font-semibold text-foreground text-center mb-8">How It Works</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {HOW_IT_WORKS.map(({ icon: Icon, step, title, description }) => (
+              <div key={step}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Step {step}</span>
                 </div>
-                <div className="font-serif text-2xl font-semibold text-foreground mb-1">{fact.label}</div>
-                <div className="text-sm text-muted-foreground">{fact.description}</div>
-              </motion.div>
+                <h3 className="text-sm font-semibold text-foreground mb-1.5">{title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* What is SCAR */}
-      <section className="border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 py-16">
-          <div className="grid md:grid-cols-2 gap-12 items-start">
-            <div>
-              <h2 className="font-serif text-3xl font-semibold text-foreground mb-4">What is SCAR?</h2>
-              <div className="space-y-4 text-muted-foreground leading-relaxed">
-                <p>
-                  The Small Claims Assessment Review (SCAR) is a simplified court procedure in New York State that allows homeowners to challenge their property tax assessment without hiring an attorney.
-                </p>
-                <p>
-                  After the Board of Assessment Review (BAR) denies your grievance, SCAR is your next step. You file a petition in small claims court, pay a $30 fee, and present your case to a hearing officer who will make a binding decision.
-                </p>
-                <p>
-                  Hearing officers are real estate professionals appointed by the court. The process is informal and designed for homeowners to navigate on their own — you don't need a lawyer.
-                </p>
+      <section className="max-w-4xl mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          {[
+            { icon: Shield, title: "Legally Informed", description: "Our AI is trained on small claims procedures across multiple states and provides jurisdiction-specific guidance." },
+            { icon: Clock, title: "Takes Under 15 Minutes", description: "From start to a ready-to-file statement of claim. No legal background required." },
+            { icon: CheckCircle, title: "Free to Use", description: "Generate your case details and statement for free. Court filing fees vary by state and claim amount." },
+          ].map(({ icon: Icon, title, description }) => (
+            <div key={title} className="flex gap-4">
+              <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Icon className="w-5 h-5 text-primary" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground mb-1">{title}</h3>
+                <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
               </div>
             </div>
-            <div className="bg-card border border-card-border rounded-lg p-6 space-y-4">
-              <h3 className="font-semibold text-foreground">You may qualify if:</h3>
-              <ul className="space-y-3">
-                {[
-                  "Your property is your primary residence (1-3 unit residential)",
-                  "You filed a grievance with the Board of Assessment Review (BAR)",
-                  "The BAR denied or partially denied your grievance",
-                  "You are within 30 days of receiving the BAR determination",
-                  "Your property is in New York State",
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
-                    <CheckCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="border-b border-border bg-secondary/10">
-        <div className="max-w-5xl mx-auto px-4 py-16">
-          <h2 className="font-serif text-3xl font-semibold text-foreground mb-10">How it works</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            {steps.map((step, i) => (
-              <motion.div
-                key={step.number}
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="flex gap-5 bg-card border border-card-border rounded-lg p-6"
-              >
-                <div className="font-mono text-3xl font-bold text-primary/20 leading-none shrink-0">{step.number}</div>
-                <div>
-                  <h3 className="font-semibold text-foreground mb-1">{step.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section>
-        <div className="max-w-5xl mx-auto px-4 py-16 text-center">
-          <h2 className="font-serif text-3xl font-semibold text-foreground mb-4">
-            Ready to challenge your assessment?
-          </h2>
-          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            It takes about 15 minutes to prepare your petition. We'll guide you through every field.
-          </p>
-          <Link
-            href="/file"
-            className="inline-flex items-center gap-2 bg-primary text-primary-foreground font-medium px-8 py-3 rounded-md hover:opacity-90 transition-opacity text-lg"
+      <section className="bg-primary text-primary-foreground">
+        <div className="max-w-4xl mx-auto px-4 py-12 text-center">
+          <h2 className="font-serif text-2xl font-semibold mb-3">Ready to file your case?</h2>
+          <p className="text-primary-foreground/80 text-sm mb-6">It's free and takes less than 15 minutes.</p>
+          <button
+            onClick={() => setLocation("/file")}
+            className="inline-flex items-center gap-2 bg-white text-primary font-semibold px-6 py-3 rounded-lg hover:bg-white/90 transition-colors text-sm"
           >
-            Start Your SCAR Petition
-            <ArrowRight className="w-5 h-5" />
-          </Link>
+            Start Your Case
+            <ArrowRight className="w-4 h-4" />
+          </button>
         </div>
       </section>
     </div>
