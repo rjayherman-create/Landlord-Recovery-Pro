@@ -351,6 +351,19 @@ export function CaseDashboard() {
             <h1 className="font-serif text-xl font-semibold text-foreground">
               {claimTypeLabel} — vs. {c.defendantName}
             </h1>
+            {c.paidAt && (() => {
+              const plan = c.plan ?? "basic";
+              const planCfg = {
+                basic:    { label: "Basic",    cls: "bg-blue-50 border-blue-200 text-blue-700" },
+                standard: { label: "Standard", cls: "bg-primary/10 border-primary/30 text-primary" },
+                premium:  { label: "Premium",  cls: "bg-amber-50 border-amber-300 text-amber-700" },
+              }[plan] ?? { label: plan, cls: "bg-muted border-border text-muted-foreground" };
+              return (
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border uppercase tracking-wide ${planCfg.cls}`}>
+                  {planCfg.label}
+                </span>
+              );
+            })()}
           </div>
           <div className="flex items-center gap-3 mt-1 flex-wrap text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><Scale className="w-3 h-3" /> {c.state}</span>
@@ -364,9 +377,81 @@ export function CaseDashboard() {
       {/* Main sections */}
       <StatusCard caseData={c} onStatusUpdate={load} />
       <NextSteps status={c.status} />
-      <Suspense fallback={null}>
-        <CollectionToolkit caseData={c} />
-      </Suspense>
+
+      {/* Evidence Analysis — Standard & Premium only */}
+      {c.paidAt && (() => {
+        const plan = c.plan ?? "basic";
+        const hasAnalysis = plan === "standard" || plan === "premium";
+        if (!hasAnalysis) {
+          return (
+            <div className="bg-card border border-card-border rounded-xl p-5 mb-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-1">Evidence Checklist & Analysis</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Get a tailored evidence checklist and AI analysis of what documents strengthen your case.
+                  </p>
+                </div>
+                <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border bg-primary/10 border-primary/30 text-primary uppercase tracking-wide">Standard+</span>
+              </div>
+              <div className="bg-muted/40 rounded-lg p-3 text-xs text-muted-foreground">
+                Upgrade to Standard ($49) or Premium ($79) to unlock evidence analysis, filing timeline builder, and post-filing guidance.
+              </div>
+            </div>
+          );
+        }
+        return (
+          <div className="bg-card border border-card-border rounded-xl p-5 mb-4">
+            <h3 className="text-sm font-semibold text-foreground mb-1">Evidence Checklist</h3>
+            <p className="text-xs text-muted-foreground mb-3">Documents that typically strengthen a {c.claimType?.replace(/_/g, " ")} case.</p>
+            <ul className="space-y-1.5">
+              {[
+                "Contracts or written agreements",
+                "Invoices, receipts, or payment records",
+                "Photos or video evidence",
+                "Correspondence (emails, texts, letters)",
+                "Witness statements or contact info",
+                "Any prior attempts to resolve the dispute",
+              ].map((item, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                  <span className="mt-0.5 w-4 h-4 rounded border border-border flex items-center justify-center shrink-0 text-muted-foreground/60 text-xs">☐</span>
+                  {item}
+                </li>
+              ))}
+            </ul>
+            <p className="text-xs text-muted-foreground mt-3 italic">Organize these in the order events occurred. Courts respond well to clear timelines.</p>
+          </div>
+        );
+      })()}
+
+      {/* Collection Toolkit — Premium only */}
+      {c.paidAt && (() => {
+        const plan = c.plan ?? "basic";
+        if (plan !== "premium") {
+          return (
+            <div className="bg-card border border-card-border rounded-xl p-5 mb-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground mb-1">Post-Judgment Collection Toolkit</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Demand letter templates, wage garnishment guides, and bank levy instructions to collect after you win.
+                  </p>
+                </div>
+                <span className="shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded border bg-amber-50 border-amber-300 text-amber-700 uppercase tracking-wide">Premium</span>
+              </div>
+              <div className="bg-muted/40 rounded-lg p-3 mt-3 text-xs text-muted-foreground">
+                Upgrade to Premium ($79) to unlock the full collection toolkit.
+              </div>
+            </div>
+          );
+        }
+        return (
+          <Suspense fallback={null}>
+            <CollectionToolkit caseData={c} />
+          </Suspense>
+        );
+      })()}
+
       <Timeline events={timeline} />
       <EvidenceList files={evidence} />
       <DownloadSection caseData={c} />

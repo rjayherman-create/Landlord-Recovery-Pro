@@ -39,7 +39,8 @@ export class WebhookHandlers {
       const caseId = session.metadata?.caseId;
 
       if (caseId && session.payment_status === "paid") {
-        await WebhookHandlers.handleSmallClaimsPayment(Number(caseId), session.id);
+        const plan = session.metadata?.plan ?? "basic";
+        await WebhookHandlers.handleSmallClaimsPayment(Number(caseId), session.id, plan);
       }
     }
 
@@ -53,7 +54,7 @@ export class WebhookHandlers {
     }
   }
 
-  private static async handleSmallClaimsPayment(caseId: number, sessionId: string): Promise<void> {
+  private static async handleSmallClaimsPayment(caseId: number, sessionId: string, plan = "basic"): Promise<void> {
     const [found] = await db
       .select()
       .from(smallClaimsCasesTable)
@@ -76,6 +77,7 @@ export class WebhookHandlers {
         paidAt: new Date(),
         status: "ready",
         stripeSessionId: sessionId,
+        plan,
         updatedAt: new Date(),
       })
       .where(eq(smallClaimsCasesTable.id, caseId));

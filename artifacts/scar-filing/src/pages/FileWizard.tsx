@@ -1121,6 +1121,7 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
   const updateCase = useUpdateCase();
   const [checkingOut, setCheckingOut] = useState(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<"basic" | "standard" | "premium">("standard");
   const [courtInfo, setCourtInfo] = useState<any>(null);
   const [courtLoading, setCourtLoading] = useState(false);
 
@@ -1155,11 +1156,16 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
     window.open(`${WIZARD_API_BASE}/api/cases/${caseId}/preview`, "_blank");
   };
 
-  const checkout = async () => {
+  const checkout = async (plan?: "basic" | "standard" | "premium") => {
     if (!caseId) return;
     setCheckingOut(true);
+    const usePlan = plan ?? selectedPlan;
     try {
-      const res = await fetch(`${WIZARD_API_BASE}/api/cases/${caseId}/checkout`, { method: "POST" });
+      const res = await fetch(`${WIZARD_API_BASE}/api/cases/${caseId}/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: usePlan }),
+      });
       const data = await res.json();
       if (data.alreadyPaid) {
         window.open(`${WIZARD_API_BASE}/api/small-claims/download/${caseId}`, "_blank");
@@ -1330,8 +1336,8 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Total Cost Breakdown</p>
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center text-sm">
-                  <span className="text-foreground">SmallClaims AI — document generation</span>
-                  <span className="font-semibold text-foreground">$29.00</span>
+                  <span className="text-foreground">SmallClaims AI — {selectedPlan === "basic" ? "Basic" : selectedPlan === "standard" ? "Standard" : "Premium"} plan</span>
+                  <span className="font-semibold text-foreground">{selectedPlan === "basic" ? "$29.00" : selectedPlan === "standard" ? "$49.00" : "$79.00"}</span>
                 </div>
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-muted-foreground">Court filing fee ({form.state})</span>
@@ -1343,7 +1349,7 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
                 </div>
                 <div className="border-t border-border/60 pt-1.5 flex justify-between items-center text-sm font-semibold">
                   <span>Estimated total (all fees)</span>
-                  <span className="text-primary">$29 + {court.filingFee} + {court.serviceFee}</span>
+                  <span className="text-primary">{selectedPlan === "basic" ? "$29" : selectedPlan === "standard" ? "$49" : "$79"} + {court.filingFee} + {court.serviceFee}</span>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2">
@@ -1453,6 +1459,100 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
         );
       })()}
 
+      {/* 3-tier pricing selector — shown after statement is generated */}
+      {generated && (() => {
+        const plans = [
+          {
+            id: "basic" as const,
+            name: "Basic",
+            price: "$29",
+            badge: null,
+            color: "border-border",
+            selectedColor: "border-blue-400 ring-1 ring-blue-400",
+            features: [
+              { text: "Court-ready filing document (PDF)", included: true },
+              { text: "AI-generated statement of claim", included: true },
+              { text: "Step-by-step filing instructions", included: true },
+              { text: "Evidence checklist & analysis", included: false },
+              { text: "Post-judgment collection toolkit", included: false },
+            ],
+          },
+          {
+            id: "standard" as const,
+            name: "Standard",
+            price: "$49",
+            badge: "Most Popular",
+            color: "border-primary/40",
+            selectedColor: "border-primary ring-1 ring-primary",
+            features: [
+              { text: "Court-ready filing document (PDF)", included: true },
+              { text: "AI-generated statement of claim", included: true },
+              { text: "Step-by-step filing instructions", included: true },
+              { text: "Evidence checklist & analysis", included: true },
+              { text: "Post-judgment collection toolkit", included: false },
+            ],
+          },
+          {
+            id: "premium" as const,
+            name: "Premium",
+            price: "$79",
+            badge: "Full Suite",
+            color: "border-border",
+            selectedColor: "border-amber-500 ring-1 ring-amber-500",
+            features: [
+              { text: "Court-ready filing document (PDF)", included: true },
+              { text: "AI-generated statement of claim", included: true },
+              { text: "Step-by-step filing instructions", included: true },
+              { text: "Evidence checklist & analysis", included: true },
+              { text: "Post-judgment collection toolkit", included: true },
+            ],
+          },
+        ] as const;
+        return (
+          <div className="mb-5">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Choose Your Plan</p>
+            <div className="grid grid-cols-3 gap-2.5">
+              {plans.map((plan) => (
+                <button
+                  key={plan.id}
+                  onClick={() => setSelectedPlan(plan.id)}
+                  className={`relative text-left rounded-xl border-2 px-3 py-3 transition-all hover:shadow-sm ${selectedPlan === plan.id ? plan.selectedColor + " bg-background shadow-sm" : plan.color + " bg-muted/20 hover:bg-muted/40"}`}
+                >
+                  {plan.badge && (
+                    <span className={`absolute -top-2.5 left-1/2 -translate-x-1/2 text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${plan.id === "standard" ? "bg-primary text-primary-foreground" : "bg-amber-500 text-white"}`}>
+                      {plan.badge}
+                    </span>
+                  )}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-semibold text-foreground">{plan.name}</span>
+                    <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 ${selectedPlan === plan.id ? (plan.id === "standard" ? "border-primary bg-primary" : plan.id === "premium" ? "border-amber-500 bg-amber-500" : "border-blue-400 bg-blue-400") : "border-muted-foreground/40"}`}>
+                      {selectedPlan === plan.id && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                    </div>
+                  </div>
+                  <div className="text-lg font-bold text-foreground mb-2">{plan.price}</div>
+                  <ul className="space-y-1">
+                    {plan.features.map((f, i) => (
+                      <li key={i} className="flex items-start gap-1.5">
+                        <span className={`text-[11px] mt-0.5 shrink-0 ${f.included ? "text-green-600" : "text-muted-foreground/40"}`}>{f.included ? "✓" : "✗"}</span>
+                        <span className={`text-[11px] leading-tight ${f.included ? "text-foreground" : "text-muted-foreground/50"}`}>{f.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </button>
+              ))}
+            </div>
+            {/* Trust signals */}
+            <div className="flex flex-wrap items-center justify-center gap-3 mt-3">
+              {["Pay once. No subscription.", "Court-ready format", "No legal experience needed"].map(t => (
+                <span key={t} className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <span className="text-green-500 text-xs">✓</span> {t}
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="flex gap-3">
         <button onClick={onBack}
           className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors">
@@ -1470,7 +1570,7 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
         )}
         {generated ? (
           <button
-            onClick={checkout}
+            onClick={() => checkout()}
             disabled={checkingOut || !caseId || !disclaimerAccepted}
             className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
             title={!disclaimerAccepted ? "Please accept the disclaimer above to continue" : undefined}
@@ -1478,7 +1578,7 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
             {checkingOut ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
             ) : (
-              <><Lock className="w-4 h-4" /> Unlock & Download — $29</>
+              <><Lock className="w-4 h-4" /> {selectedPlan === "basic" ? "Get Basic — $29" : selectedPlan === "standard" ? "Get Standard — $49" : "Get Premium — $79"}</>
             )}
           </button>
         ) : (

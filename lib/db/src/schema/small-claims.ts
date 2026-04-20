@@ -40,6 +40,7 @@ export const smallClaimsCasesTable = pgTable("small_claims_cases", {
 
   stripeSessionId: text("stripe_session_id"),
   paidAt: timestamp("paid_at"),
+  plan: text("plan").default("basic"),
 
   emailReminders: text("email_reminders").default("true"),
   smsReminders: text("sms_reminders").default("false"),

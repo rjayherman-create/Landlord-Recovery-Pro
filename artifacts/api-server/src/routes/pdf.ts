@@ -8,7 +8,11 @@ import { PDFDocument, rgb, degrees } from "pdf-lib";
 
 const router: IRouter = Router();
 
-const PRICE_CENTS = 2900;
+const PLAN_CONFIG: Record<string, { cents: number; label: string; description: string }> = {
+  basic:    { cents: 2900, label: "SmallClaims AI — Basic",    description: "Case PDF + filing instructions" },
+  standard: { cents: 4900, label: "SmallClaims AI — Standard", description: "PDF + evidence analysis + timeline + post-filing guide" },
+  premium:  { cents: 7900, label: "SmallClaims AI — Premium",  description: "Full suite + collection toolkit + demand letters" },
+};
 
 function buildFrontendBase(req: any): string {
   const proto = req.headers["x-forwarded-proto"] ?? req.protocol;
@@ -134,6 +138,9 @@ router.post("/cases/:id/preview", async (req, res) => {
 router.post("/cases/:id/checkout", async (req, res) => {
   try {
     const id = Number(req.params.id);
+    const plan = (req.body?.plan as string) || "basic";
+    const planCfg = PLAN_CONFIG[plan] ?? PLAN_CONFIG.basic;
+
     const [found] = await db
       .select()
       .from(smallClaimsCasesTable)
@@ -145,7 +152,7 @@ router.post("/cases/:id/checkout", async (req, res) => {
     }
 
     if (found.paidAt) {
-      res.json({ alreadyPaid: true });
+      res.json({ alreadyPaid: true, plan: found.plan ?? "basic" });
       return;
     }
 
@@ -160,15 +167,15 @@ router.post("/cases/:id/checkout", async (req, res) => {
           price_data: {
             currency: "usd",
             product_data: {
-              name: "SmallClaims AI — Court PDF Download",
-              description: `${found.state} court form · ${found.claimantName} v. ${found.defendantName}`,
+              name: planCfg.label,
+              description: `${found.state} · ${found.claimantName} v. ${found.defendantName} · ${planCfg.description}`,
             },
-            unit_amount: PRICE_CENTS,
+            unit_amount: planCfg.cents,
           },
           quantity: 1,
         },
       ],
-      metadata: { caseId: String(id) },
+      metadata: { caseId: String(id), plan },
       success_url: `${base}/scar-filing/checkout/success?caseId=${id}&session_id={CHECKOUT_SESSION_ID}&apiBase=${encodeURIComponent(base)}`,
       cancel_url: `${base}/scar-filing/checkout/cancel`,
     });
