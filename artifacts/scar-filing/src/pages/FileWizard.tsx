@@ -496,6 +496,12 @@ function Step2Details({ form, setForm, onNext, onBack, saving, caseId }: {
         </div>
 
         <EvidenceUpload caseId={caseId} />
+
+        <CaseAnalysisPanel
+          form={form}
+          caseId={caseId}
+          onUseNarrative={(narrative) => setForm({ ...form, claimDescription: narrative })}
+        />
       </div>
 
       <div className="flex gap-3 mt-8">
@@ -509,6 +515,157 @@ function Step2Details({ form, setForm, onNext, onBack, saving, caseId }: {
         </button>
       </div>
     </motion.div>
+  );
+}
+
+type AnalysisResult = {
+  timeline: { date: string; event: string }[];
+  facts: string[];
+  amounts: { description: string; amount: string }[];
+  narrative: string;
+};
+
+function CaseAnalysisPanel({
+  form,
+  caseId,
+  onUseNarrative,
+}: {
+  form: FormData;
+  caseId: number | null;
+  onUseNarrative: (narrative: string) => void;
+}) {
+  const [analyzing, setAnalyzing] = useState(false);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+  const analyze = async () => {
+    setAnalyzing(true);
+    setError(null);
+    setResult(null);
+    try {
+      const res = await fetch(`${baseUrl}/api/analyze-case`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          caseId: caseId ?? undefined,
+          description: form.claimDescription,
+          supportingFacts: form.supportingFacts,
+          amount: form.claimAmount,
+          claimType: form.claimType,
+          state: form.state,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setError(data.message ?? "Analysis failed");
+        return;
+      }
+      setResult(await res.json());
+    } catch {
+      setError("Could not reach the analysis service.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <div className="bg-muted/40 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-4 h-4 text-primary" />
+          <span className="text-sm font-semibold text-foreground">AI Case Analysis</span>
+        </div>
+        <button
+          type="button"
+          onClick={analyze}
+          disabled={analyzing || (!form.claimDescription.trim() && !form.supportingFacts.trim())}
+          className="inline-flex items-center gap-1.5 text-sm bg-primary text-primary-foreground px-3 py-1.5 rounded-md font-medium hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {analyzing ? (
+            <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Analyzing...</>
+          ) : (
+            <><Sparkles className="w-3.5 h-3.5" /> Analyze Case</>
+          )}
+        </button>
+      </div>
+
+      {!result && !analyzing && !error && (
+        <div className="px-4 py-4 text-sm text-muted-foreground">
+          Paste or type your description and supporting facts above, then click <strong>Analyze Case</strong> to extract a timeline, key facts, and a draft court statement from your evidence.
+        </div>
+      )}
+
+      {error && (
+        <div className="px-4 py-3 text-sm text-destructive bg-destructive/5 border-t border-destructive/20">
+          {error}
+        </div>
+      )}
+
+      {result && (
+        <div className="divide-y divide-border">
+          {result.timeline.length > 0 && (
+            <div className="px-4 py-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Timeline</p>
+              <ol className="space-y-2">
+                {result.timeline.map((t, i) => (
+                  <li key={i} className="flex gap-3 text-sm">
+                    <span className="shrink-0 font-medium text-muted-foreground w-28">{t.date}</span>
+                    <span className="text-foreground">{t.event}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+
+          {result.facts.length > 0 && (
+            <div className="px-4 py-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Key Facts</p>
+              <ul className="space-y-1.5">
+                {result.facts.map((f, i) => (
+                  <li key={i} className="flex gap-2 text-sm">
+                    <span className="text-primary shrink-0 mt-0.5">•</span>
+                    <span className="text-foreground">{f}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {result.amounts.length > 0 && (
+            <div className="px-4 py-4">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Financial Amounts</p>
+              <ul className="space-y-1.5">
+                {result.amounts.map((a, i) => (
+                  <li key={i} className="flex items-center gap-3 text-sm">
+                    <span className="font-mono font-semibold text-green-700">{a.amount}</span>
+                    <span className="text-muted-foreground">{a.description}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {result.narrative && (
+            <div className="px-4 py-4">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Court-Ready Statement</p>
+                <button
+                  type="button"
+                  onClick={() => onUseNarrative(result.narrative)}
+                  className="text-xs text-primary font-medium hover:underline"
+                >
+                  Use as description ↑
+                </button>
+              </div>
+              <p className="text-sm text-foreground leading-relaxed bg-muted/30 rounded-md p-3">
+                {result.narrative}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 

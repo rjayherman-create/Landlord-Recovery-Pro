@@ -17,6 +17,7 @@ import casesRouter from "./cases";
 import pdfRouter from "./pdf";
 import openaiConversationsRouter from "./openai-conversations";
 import evidenceRouter from "./evidence";
+import analyzeRouter from "./analyze";
 
 const router: IRouter = Router();
 
@@ -38,5 +39,6 @@ router.use(pdfRouter);
 router.use(casesRouter);
 router.use(openaiConversationsRouter);
 router.use(evidenceRouter);
+router.use(analyzeRouter);
 
 export default router;
