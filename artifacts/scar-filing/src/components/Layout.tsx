@@ -10,6 +10,7 @@ export function Layout({ children }: { children: ReactNode }) {
     { href: "/file", label: "File a Case" },
     { href: "/cases", label: "My Cases" },
     { href: "/guide", label: "Guide" },
+    { href: "/what-happens-next", label: "After Filing" },
   ];
 
   return (
@@ -53,7 +54,8 @@ export function Layout({ children }: { children: ReactNode }) {
             <span>SmallClaims AI — Not a law firm. Not legal advice.</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/guide" className="hover:text-foreground transition-colors">Filing Guide</Link>
+            <Link href="/what-happens-next" className="hover:text-foreground transition-colors">After Filing</Link>
+            <Link href="/guide" className="hover:text-foreground transition-colors">Guide</Link>
             <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
             <Link href="/refund" className="hover:text-foreground transition-colors">Refund Policy</Link>
             <Link href="/disclaimer" className="hover:text-foreground transition-colors">Disclaimer</Link>

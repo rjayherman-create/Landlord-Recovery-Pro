@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
-import { CheckCircle, Download, Loader2, ArrowRight } from "lucide-react";
+import { CheckCircle, Download, Loader2, ArrowRight, Map } from "lucide-react";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -71,12 +71,29 @@ export function CheckoutSuccess() {
         </ol>
       </div>
 
-      <button
-        onClick={() => setLocation("/cases")}
-        className="inline-flex items-center gap-2 border border-border text-foreground font-medium px-6 py-2.5 rounded-md hover:bg-secondary/50 transition-colors"
-      >
-        View My Cases <ArrowRight className="w-4 h-4" />
-      </button>
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <button
+          onClick={() => setLocation("/cases")}
+          className="flex-1 inline-flex items-center justify-center gap-2 border border-border text-foreground font-medium px-5 py-2.5 rounded-md hover:bg-secondary/50 transition-colors text-sm"
+        >
+          View My Cases
+        </button>
+        <button
+          onClick={() => setLocation("/what-happens-next")}
+          className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-medium px-5 py-2.5 rounded-md hover:opacity-90 transition-opacity text-sm"
+        >
+          <Map className="w-4 h-4" />
+          What Happens Next
+        </button>
+      </div>
+
+      <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 text-left mb-6">
+        <p className="text-sm font-semibold text-foreground mb-1">Did you know?</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Most small claims cases resolve <strong>before</strong> a hearing. Filing your claim often leads directly
+          to payment or settlement — without ever stepping into a courtroom. We'll guide you through every step.
+        </p>
+      </div>
 
       <p className="text-xs text-muted-foreground mt-8 leading-relaxed">
         SmallClaims AI provides self-help tools and general information only. It is not a law firm and does not

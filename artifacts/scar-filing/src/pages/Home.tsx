@@ -19,6 +19,14 @@ const HOW_IT_WORKS = [
   { icon: Sparkles, step: "4", title: "Generate Your Statement", description: "Get a professional statement of claim ready to file at the courthouse." },
 ];
 
+const WHAT_HAPPENS = [
+  { emoji: "📬", label: "File", description: "Submit your claim at the courthouse." },
+  { emoji: "⚡", label: "Pressure starts", description: "Defendant is officially notified — many pay here." },
+  { emoji: "🟢", label: "Most cases settle", description: "Payment or negotiation before any hearing." },
+  { emoji: "⚖️", label: "Hearing if needed", description: "Short, informal — usually 10–15 minutes." },
+  { emoji: "💰", label: "Judgment", description: "Court awards your money. Enforcement options available." },
+];
+
 export function Home() {
   const [, setLocation] = useLocation();
   return (
@@ -87,7 +95,40 @@ export function Home() {
         </div>
       </section>
 
+      {/* Conversion section: What Happens After You File */}
       <section className="max-w-4xl mx-auto px-4 py-12">
+        <div className="text-center mb-6">
+          <h2 className="font-serif text-2xl font-semibold text-foreground mb-2">We Don't Just Help You File</h2>
+          <p className="text-muted-foreground text-sm max-w-xl mx-auto">
+            Most people fear going to court. Here's the truth: <strong>most small claims cases resolve before a hearing ever happens.</strong>{" "}
+            Filing creates pressure — and we guide you through every step of what comes next.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch gap-0 mb-4">
+          {WHAT_HAPPENS.map((item, i) => (
+            <div key={item.label} className="flex sm:flex-col flex-1 items-start sm:items-center gap-3 sm:gap-1 relative">
+              {i < WHAT_HAPPENS.length - 1 && (
+                <div className="hidden sm:block absolute right-0 top-5 w-px h-full bg-border" style={{ width: "50%", height: 1, top: 20, right: "-25%" }} />
+              )}
+              <div className="text-2xl leading-none">{item.emoji}</div>
+              <div className="sm:text-center">
+                <p className="text-xs font-semibold text-foreground">{item.label}</p>
+                <p className="text-xs text-muted-foreground leading-relaxed">{item.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="text-center">
+          <button
+            onClick={() => setLocation("/what-happens-next")}
+            className="inline-flex items-center gap-2 text-primary text-sm font-medium hover:underline"
+          >
+            See the full post-filing guide <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </section>
+
+      <section className="max-w-4xl mx-auto px-4 py-12 border-t border-border">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           {[
             { icon: Shield, title: "Legally Informed", description: "Our AI is trained on small claims procedures across multiple states and provides jurisdiction-specific guidance." },

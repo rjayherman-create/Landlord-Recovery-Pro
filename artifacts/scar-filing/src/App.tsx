@@ -15,6 +15,7 @@ import { CheckoutCancel } from "@/pages/CheckoutCancel";
 import { Disclaimer } from "@/pages/Disclaimer";
 import { Terms } from "@/pages/Terms";
 import { RefundPolicy } from "@/pages/RefundPolicy";
+import { WhatHappensNext } from "@/pages/WhatHappensNext";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/disclaimer" component={Disclaimer} />
         <Route path="/terms" component={Terms} />
         <Route path="/refund" component={RefundPolicy} />
+        <Route path="/what-happens-next" component={WhatHappensNext} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
