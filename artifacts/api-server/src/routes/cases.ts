@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { db, smallClaimsCasesTable } from "@workspace/db";
+import { db, smallClaimsCasesTable, evidenceTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { generateStatement } from "../services/ai";
+
 import {
   CreateCaseBody,
   UpdateCaseBody,
@@ -16,6 +17,10 @@ import {
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
+
+async function getEvidenceForCase(caseId: number) {
+  return db.select().from(evidenceTable).where(eq(evidenceTable.caseId, caseId));
+}
 
 function formatCase(c: typeof smallClaimsCasesTable.$inferSelect) {
   return {
@@ -122,7 +127,9 @@ async function handleUpdate(req: any, res: any, paramSchema: typeof UpdateCasePa
     if ("generatedStatement" in body && body.generatedStatement !== undefined) updateData.generatedStatement = body.generatedStatement;
     if ("conversationId" in body && body.conversationId !== undefined) updateData.conversationId = body.conversationId;
     if (body.status !== undefined) updateData.status = body.status;
+    if ("lastUpdate" in body && body.lastUpdate !== undefined) updateData.lastUpdate = body.lastUpdate;
     if ("filingDeadline" in body && body.filingDeadline !== undefined) updateData.filingDeadline = body.filingDeadline;
+    if ("hearingDate" in body && body.hearingDate !== undefined) updateData.hearingDate = body.hearingDate;
     if ("caseNumber" in body && body.caseNumber !== undefined) updateData.caseNumber = body.caseNumber;
     if (body.notes !== undefined) updateData.notes = body.notes;
 
@@ -201,6 +208,42 @@ router.get("/cases/:id", (req, res) => handleGet(req, res, GetCaseParams));
 router.put("/cases/:id", (req, res) => handleUpdate(req, res, UpdateCaseParams, UpdateCaseBody));
 router.delete("/cases/:id", (req, res) => handleDelete(req, res, DeleteCaseParams));
 router.post("/cases/:id/generate-statement", handleGenerateStatement);
+
+// Dashboard: case + evidence + derived timeline
+router.get("/cases/:id/dashboard", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [found] = await db.select().from(smallClaimsCasesTable).where(eq(smallClaimsCasesTable.id, id));
+    if (!found) { res.status(404).json({ error: "not_found" }); return; }
+    const evidence = await getEvidenceForCase(id);
+    const timeline: { date: string; event: string; type: string }[] = [];
+    timeline.push({ date: found.createdAt.toISOString(), event: "Case started", type: "created" });
+    if (found.paidAt) timeline.push({ date: found.paidAt.toISOString(), event: "Document generated & emailed", type: "paid" });
+    if (found.lastUpdate) timeline.push({ date: found.updatedAt.toISOString(), event: found.lastUpdate, type: "update" });
+    res.json({ case: formatCase(found), evidence, timeline });
+  } catch (err) {
+    req.log?.error({ err }, "Failed to get dashboard");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
+
+// Status update shortcut
+router.patch("/cases/:id/status", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { status, lastUpdate, hearingDate } = req.body as { status: string; lastUpdate?: string; hearingDate?: string };
+    const [updated] = await db
+      .update(smallClaimsCasesTable)
+      .set({ status, ...(lastUpdate ? { lastUpdate } : {}), ...(hearingDate ? { hearingDate } : {}), updatedAt: new Date() })
+      .where(eq(smallClaimsCasesTable.id, id))
+      .returning();
+    if (!updated) { res.status(404).json({ error: "not_found" }); return; }
+    res.json(formatCase(updated));
+  } catch (err) {
+    req.log?.error({ err }, "Failed to update status");
+    res.status(500).json({ error: "internal_error" });
+  }
+});
 
 router.get("/small-claims", handleList);
 router.post("/small-claims", (req, res) => handleCreate(req, res, CreateSmallClaimBody));

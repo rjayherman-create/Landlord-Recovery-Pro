@@ -40,6 +40,13 @@ artifacts-monorepo/
 
 ## Features
 
+**SmallClaims AI** (`/scar-filing/`):
+- 10-state small claims filing wizard (NY, NJ, FL, TX, CA, PA, IL, OH, GA, NC)
+- AI-powered statement generation, from-scratch court PDFs, Stripe $29 paywall, Resend email delivery
+- Case lifecycle dashboard at `/cases/:id` — status tracking (8 states), editable updates, timeline, evidence list, download section
+- Legal compliance: `/disclaimer`, `/terms`, `/refund` pages
+
+**Property Tax Grievance** (`/property-tax-grievance/`):
 - **User Accounts** — Replit Auth login/logout; cases are scoped to the logged-in user
 - **Dashboard** — All grievance cases with statuses, stats, upcoming deadlines; case cards show computed county standard deadline (with passed/upcoming state) when no specific date is set
 - **Create/Edit Grievance** — Form with auto-fill from NYC PLUTO, NYS ORPS (4.7M parcels), GPS, and OCR tax bill scanning

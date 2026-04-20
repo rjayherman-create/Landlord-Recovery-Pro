@@ -16,6 +16,7 @@ import { Disclaimer } from "@/pages/Disclaimer";
 import { Terms } from "@/pages/Terms";
 import { RefundPolicy } from "@/pages/RefundPolicy";
 import { WhatHappensNext } from "@/pages/WhatHappensNext";
+import { CaseDashboard } from "@/pages/CaseDashboard";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ function Router() {
         <Route path="/terms" component={Terms} />
         <Route path="/refund" component={RefundPolicy} />
         <Route path="/what-happens-next" component={WhatHappensNext} />
+        <Route path="/cases/:id" component={CaseDashboard} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

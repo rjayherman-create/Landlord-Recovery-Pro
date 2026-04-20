@@ -32,7 +32,9 @@ export const smallClaimsCasesTable = pgTable("small_claims_cases", {
   conversationId: integer("conversation_id"),
 
   status: text("status").notNull().default("draft"),
+  lastUpdate: text("last_update"),
   filingDeadline: text("filing_deadline"),
+  hearingDate: text("hearing_date"),
   caseNumber: text("case_number"),
   notes: text("notes"),
 

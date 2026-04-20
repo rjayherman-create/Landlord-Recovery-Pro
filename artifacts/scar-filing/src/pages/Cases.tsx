@@ -27,12 +27,18 @@ const CLAIM_TYPE_ICONS: Record<string, string> = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; icon: typeof CheckCircle; color: string }> = {
-  draft: { label: "Draft", icon: Clock, color: "text-muted-foreground bg-muted" },
-  ready: { label: "Ready to File", icon: CheckCircle, color: "text-green-700 bg-green-50 border border-green-200" },
-  filed: { label: "Filed", icon: AlertCircle, color: "text-blue-700 bg-blue-50 border border-blue-200" },
-  won: { label: "Won", icon: CheckCircle, color: "text-green-700 bg-green-50 border border-green-200" },
-  lost: { label: "Closed", icon: AlertCircle, color: "text-muted-foreground bg-muted" },
-  dismissed: { label: "Dismissed", icon: AlertCircle, color: "text-muted-foreground bg-muted" },
+  draft:             { label: "Draft",               icon: Clock,         color: "text-muted-foreground bg-muted" },
+  ready:             { label: "Ready to File",        icon: CheckCircle,   color: "text-green-700 bg-green-50 border border-green-200" },
+  filed:             { label: "Filed",                icon: AlertCircle,   color: "text-blue-700 bg-blue-50 border border-blue-200" },
+  served:            { label: "Defendant Served",     icon: CheckCircle,   color: "text-purple-700 bg-purple-50 border border-purple-200" },
+  waiting:           { label: "Waiting for Response", icon: Clock,         color: "text-amber-700 bg-amber-50 border border-amber-200" },
+  settled:           { label: "Settled",              icon: CheckCircle,   color: "text-green-700 bg-green-50 border border-green-200" },
+  hearing_scheduled: { label: "Hearing Scheduled",    icon: AlertCircle,   color: "text-orange-700 bg-orange-50 border border-orange-200" },
+  judgment_awarded:  { label: "Judgment Awarded",     icon: CheckCircle,   color: "text-green-700 bg-green-50 border border-green-200" },
+  closed:            { label: "Closed",               icon: AlertCircle,   color: "text-muted-foreground bg-muted" },
+  won:               { label: "Won",                  icon: CheckCircle,   color: "text-green-700 bg-green-50 border border-green-200" },
+  lost:              { label: "Closed / Lost",         icon: AlertCircle,   color: "text-muted-foreground bg-muted" },
+  dismissed:         { label: "Dismissed",            icon: AlertCircle,   color: "text-muted-foreground bg-muted" },
 };
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
@@ -119,7 +125,10 @@ export function Cases() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
               >
-                <div className="bg-card border border-card-border rounded-lg p-4 hover:border-primary/30 transition-colors group">
+                <div
+                  className="bg-card border border-card-border rounded-lg p-4 hover:border-primary/30 transition-colors group cursor-pointer"
+                  onClick={() => setLocation(`/cases/${c.id}`)}
+                >
                   <div className="flex items-start gap-4">
                     <div className="text-2xl shrink-0 mt-0.5">
                       {CLAIM_TYPE_ICONS[c.claimType] ?? "⚖️"}
@@ -169,15 +178,19 @@ export function Cases() {
                               <FileText className="w-3 h-3" /> Statement ready
                             </span>
                           )}
-                          <a
-                            href={`${API_BASE}/api/cases/${c.id}/pdf`}
-                            download
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1 transition-colors"
-                            title="Download court PDF"
-                          >
-                            <Download className="w-3 h-3" /> PDF
-                          </a>
+                          {c.paidAt && (
+                            <a
+                              href={`${API_BASE}/api/small-claims/download/${c.id}`}
+                              onClick={(e) => e.stopPropagation()}
+                              className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1 transition-colors"
+                              title="Download court PDF"
+                            >
+                              <Download className="w-3 h-3" /> PDF
+                            </a>
+                          )}
+                          <span className="text-xs text-primary inline-flex items-center gap-1">
+                            View <ArrowRight className="w-3 h-3" />
+                          </span>
                         </div>
                       </div>
                     </div>
