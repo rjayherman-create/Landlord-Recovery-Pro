@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { getStripeSync, getStripeSecretKey } from "./stripeClient";
-import { db, smallClaimsCasesTable } from "@workspace/db";
+import { db, smallClaimsCasesTable, evidenceTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { generateCourtPDF } from "./services/pdfFill";
 import { Resend } from "resend";
@@ -84,6 +84,7 @@ export class WebhookHandlers {
     // Generate PDF
     let pdfBytes: Uint8Array | null = null;
     try {
+      const evidenceFiles = await db.select().from(evidenceTable).where(eq(evidenceTable.caseId, caseId));
       pdfBytes = await generateCourtPDF({
         state: found.state,
         claimantName: found.claimantName,
@@ -94,6 +95,7 @@ export class WebhookHandlers {
         claimDescription: found.generatedStatement ?? found.claimDescription,
         incidentDate: found.incidentDate,
         desiredOutcome: found.desiredOutcome,
+        evidenceFiles,
       });
     } catch (err) {
       logger.error({ err, caseId }, "Webhook: PDF generation failed");

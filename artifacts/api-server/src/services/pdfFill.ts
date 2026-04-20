@@ -174,6 +174,7 @@ export type CourtPDFInput = {
   claimDescription: string;
   incidentDate?: string | null;
   desiredOutcome?: string | null;
+  evidenceFiles?: { fileName: string; mimeType?: string | null }[];
 };
 
 function safeSetField(form: ReturnType<PDFDocument["getForm"]>, fieldName: string, value: string) {
@@ -218,6 +219,55 @@ export async function generateCourtPDF(data: CourtPDFInput): Promise<Uint8Array>
   }
 
   form.flatten();
+
+  // Append evidence list page if files were uploaded
+  if (data.evidenceFiles && data.evidenceFiles.length > 0) {
+    const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const evidencePage = pdfDoc.addPage([612, 792]);
+    const { width } = evidencePage.getSize();
+
+    evidencePage.drawText("EXHIBIT INDEX — Supporting Evidence", {
+      x: 50,
+      y: 740,
+      size: 14,
+      font: boldFont,
+      color: rgb(0.1, 0.1, 0.3),
+    });
+    evidencePage.drawText(`Case: ${data.claimantName} v. ${data.defendantName}`, {
+      x: 50,
+      y: 718,
+      size: 10,
+      font,
+      color: rgb(0.3, 0.3, 0.3),
+    });
+    evidencePage.drawLine({
+      start: { x: 50, y: 708 },
+      end: { x: width - 50, y: 708 },
+      thickness: 0.5,
+      color: rgb(0.6, 0.6, 0.6),
+    });
+
+    let y = 688;
+    data.evidenceFiles.forEach((f, i) => {
+      const label = `${i + 1}.  ${f.fileName}`;
+      const type = f.mimeType ? `  [${f.mimeType}]` : "";
+      evidencePage.drawText(label + type, {
+        x: 60,
+        y,
+        size: 10,
+        font,
+        color: rgb(0.15, 0.15, 0.15),
+      });
+      y -= 20;
+    });
+
+    evidencePage.drawText(
+      "Note: The files listed above were submitted as supporting evidence and should be brought to court.",
+      { x: 50, y: y - 20, size: 8, font, color: rgb(0.5, 0.5, 0.5) }
+    );
+  }
+
   return pdfDoc.save();
 }
 

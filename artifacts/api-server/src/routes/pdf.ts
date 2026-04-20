@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, smallClaimsCasesTable } from "@workspace/db";
+import { db, smallClaimsCasesTable, evidenceTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { generateCourtPDF, getStateConfig, getSupportedStates } from "../services/pdfFill";
 import { improveClaim } from "../services/ai";
@@ -14,6 +14,10 @@ function buildFrontendBase(req: any): string {
   const proto = req.headers["x-forwarded-proto"] ?? req.protocol;
   const host = req.get("host");
   return `${proto}://${host}`;
+}
+
+async function getEvidenceForCase(caseId: number) {
+  return db.select().from(evidenceTable).where(eq(evidenceTable.caseId, caseId));
 }
 
 
@@ -63,6 +67,8 @@ router.post("/cases/:id/preview", async (req, res) => {
       return;
     }
 
+    const evidenceFiles = await getEvidenceForCase(id);
+
     const pdfBytes = await generateCourtPDF({
       state: found.state,
       claimantName: found.claimantName,
@@ -73,6 +79,7 @@ router.post("/cases/:id/preview", async (req, res) => {
       claimDescription: found.claimDescription,
       incidentDate: found.incidentDate,
       desiredOutcome: found.desiredOutcome,
+      evidenceFiles,
     });
 
     const pdfDoc = await PDFDocument.load(pdfBytes);
@@ -203,6 +210,8 @@ router.get("/small-claims/download/:id", async (req, res) => {
       return;
     }
 
+    const evidenceFiles = await getEvidenceForCase(id);
+
     const pdfBytes = await generateCourtPDF({
       state: found.state,
       claimantName: found.claimantName,
@@ -213,6 +222,7 @@ router.get("/small-claims/download/:id", async (req, res) => {
       claimDescription: found.generatedStatement ?? found.claimDescription,
       incidentDate: found.incidentDate,
       desiredOutcome: found.desiredOutcome,
+      evidenceFiles,
     });
 
     const safeDefendant = found.defendantName.replace(/[^a-z0-9]/gi, "_").slice(0, 30);

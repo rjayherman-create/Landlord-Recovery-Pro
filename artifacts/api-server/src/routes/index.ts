@@ -16,6 +16,7 @@ import countyDataRouter from "./county-data";
 import casesRouter from "./cases";
 import pdfRouter from "./pdf";
 import openaiConversationsRouter from "./openai-conversations";
+import evidenceRouter from "./evidence";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(countyDataRouter);
 router.use(pdfRouter);
 router.use(casesRouter);
 router.use(openaiConversationsRouter);
+router.use(evidenceRouter);
 
 export default router;
