@@ -155,6 +155,7 @@ type FormData = {
   claimantEmail: string;
   claimantPhone: string;
   claimantAddress: string;
+  zip: string;
   defendantName: string;
   defendantAddress: string;
   defendantEmail: string;
@@ -178,6 +179,7 @@ const defaultForm: FormData = {
   claimantEmail: "",
   claimantPhone: "",
   claimantAddress: "",
+  zip: "",
   defendantName: "",
   defendantAddress: "",
   defendantEmail: "",
@@ -549,6 +551,10 @@ function Step2Details({ form, setForm, onNext, onBack, saving, caseId }: {
             <FieldRow label="Your address">
               <input type="text" className={inputClass} placeholder="123 Main St, City, ST 12345" value={form.claimantAddress}
                 onChange={(e) => setForm({ ...form, claimantAddress: e.target.value })} />
+            </FieldRow>
+            <FieldRow label="Your ZIP code" hint="Used to find your exact courthouse">
+              <input type="text" className={inputClass} placeholder="e.g. 10001" maxLength={5}
+                value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value.replace(/\D/g, "").slice(0, 5) })} />
             </FieldRow>
           </div>
           <div className="border-t border-border/50 pt-3 mt-1">
@@ -1115,6 +1121,20 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
   const updateCase = useUpdateCase();
   const [checkingOut, setCheckingOut] = useState(false);
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
+  const [courtInfo, setCourtInfo] = useState<any>(null);
+  const [courtLoading, setCourtLoading] = useState(false);
+
+  useEffect(() => {
+    const zip = (form.zip ?? "").trim();
+    if (zip.length === 5 && form.state) {
+      setCourtLoading(true);
+      fetch(`/api/court?state=${encodeURIComponent(form.state)}&zip=${encodeURIComponent(zip)}`)
+        .then((r) => r.json())
+        .then((data) => setCourtInfo(data))
+        .catch(() => setCourtInfo(null))
+        .finally(() => setCourtLoading(false));
+    }
+  }, [form.zip, form.state]);
 
   const generate = async () => {
     if (!caseId) return;
@@ -1331,22 +1351,83 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
               </p>
             </div>
 
-            {/* Filing court */}
+            {/* Filing court — dynamic lookup */}
             <div className="px-4 py-3 border-b border-border">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Where to File in {form.state}</p>
-              <p className="text-sm font-medium text-foreground mb-1">{court.courtName}</p>
-              <p className="text-xs text-muted-foreground leading-relaxed">{court.filingNote}</p>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {court.methods.map(m => {
-                  const ml = METHOD_LABELS[m];
-                  return (
-                    <span key={m} className="inline-flex items-center gap-1 text-xs bg-green-50 border border-green-200 text-green-700 px-2 py-0.5 rounded-full">
-                      {ml.icon} {ml.label}
-                      <span className="text-green-500">· {ml.tip}</span>
-                    </span>
-                  );
-                })}
-              </div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
+                Where to File in {form.state}
+              </p>
+              {courtLoading ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Looking up your courthouse…
+                </div>
+              ) : courtInfo && !courtInfo.fallback ? (
+                <>
+                  <p className="text-sm font-semibold text-foreground mb-0.5">{courtInfo.name}</p>
+                  <p className="text-xs text-muted-foreground mb-1">{courtInfo.address}</p>
+                  {courtInfo.phone && (
+                    <p className="text-xs text-muted-foreground mb-1">📞 {courtInfo.phone}</p>
+                  )}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {(courtInfo.filingMethods ?? []).map((m: string) => {
+                      const ml = METHOD_LABELS[m as keyof typeof METHOD_LABELS];
+                      if (!ml) return null;
+                      return (
+                        <span key={m} className="inline-flex items-center gap-1 text-xs bg-green-50 border border-green-200 text-green-700 px-2 py-0.5 rounded-full">
+                          {ml.icon} {ml.label}<span className="text-green-500">· {ml.tip}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-wrap gap-3 mt-2">
+                    {courtInfo.filingLink && (
+                      <a href={courtInfo.filingLink} target="_blank" rel="noopener noreferrer"
+                        className="text-xs text-primary underline hover:opacity-80">File Online →</a>
+                    )}
+                    {courtInfo.clerkLink && (
+                      <a href={courtInfo.clerkLink} target="_blank" rel="noopener noreferrer"
+                        className="text-xs text-primary underline hover:opacity-80">Court Website →</a>
+                    )}
+                  </div>
+                </>
+              ) : courtInfo?.fallback ? (
+                <>
+                  <p className="text-sm font-medium text-foreground mb-1">{court.courtName}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed mb-1">{court.filingNote}</p>
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-1">
+                    {courtInfo.message}
+                  </p>
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {court.methods.map(m => {
+                      const ml = METHOD_LABELS[m];
+                      return (
+                        <span key={m} className="inline-flex items-center gap-1 text-xs bg-green-50 border border-green-200 text-green-700 px-2 py-0.5 rounded-full">
+                          {ml.icon} {ml.label}<span className="text-green-500">· {ml.tip}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm font-medium text-foreground mb-1">{court.courtName}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{court.filingNote}</p>
+                  {!form.zip && (
+                    <p className="text-xs text-muted-foreground mt-1 italic">
+                      Add your ZIP code in Step 2 to find your exact courthouse.
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {court.methods.map(m => {
+                      const ml = METHOD_LABELS[m];
+                      return (
+                        <span key={m} className="inline-flex items-center gap-1 text-xs bg-green-50 border border-green-200 text-green-700 px-2 py-0.5 rounded-full">
+                          {ml.icon} {ml.label}<span className="text-green-500">· {ml.tip}</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Next steps */}
@@ -1355,10 +1436,10 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
               <ol className="space-y-1.5">
                 {[
                   "Download your completed court filing document",
-                  `Go to ${court.courtName} and pay the ${court.filingFee} filing fee`,
-                  "Submit your documents — ask the clerk for a case number",
+                  `Go to ${(courtInfo && !courtInfo.fallback ? courtInfo.name : null) ?? court.courtName} and pay the ${court.filingFee} filing fee`,
+                  "Submit your documents — ask the clerk for a case number and your hearing date",
                   "Have the defendant officially served (court arranges this or you hire a process server)",
-                  "Wait for your hearing date in the mail (usually 30–60 days)",
+                  "Wait for your hearing date notice in the mail (usually 30–60 days)",
                   "Show up prepared with your evidence and this document",
                 ].map((step, i) => (
                   <li key={i} className="flex items-start gap-2.5 text-sm text-foreground">
