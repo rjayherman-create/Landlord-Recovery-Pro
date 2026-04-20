@@ -59,6 +59,9 @@ export function Home() {
               Learn How It Works
             </button>
           </div>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Court-ready documents · <span className="font-semibold text-foreground">$29</span> one-time · No subscription
+          </p>
         </div>
       </section>
 

@@ -258,7 +258,12 @@ function Step1ClaimType({ form, setForm, onNext }: { form: FormData; setForm: (f
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
       <h2 className="font-serif text-2xl font-semibold text-foreground mb-1">What type of claim do you have?</h2>
-      <p className="text-muted-foreground text-sm mb-6">Select your claim type and state to get started.</p>
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-6">
+        <p className="text-muted-foreground text-sm">Select your claim type and state to get started.</p>
+        <span className="text-xs text-muted-foreground bg-muted/60 border border-border rounded-full px-2.5 py-1 shrink-0">
+          Court-ready documents · <strong className="text-foreground">$29</strong> one-time
+        </span>
+      </div>
 
       <div className="mb-6">
         <label className="block text-sm font-medium text-foreground mb-2">State *</label>
