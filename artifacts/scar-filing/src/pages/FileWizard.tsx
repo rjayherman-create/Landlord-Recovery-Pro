@@ -6,12 +6,14 @@ import {
   useUpdateCase,
   useCreateOpenaiConversation,
   generateCaseStatement,
+  getDownloadCasePdfUrl,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle,
   ArrowRight,
   ArrowLeft,
+  Download,
   Loader2,
   Scale,
   MessageSquare,
@@ -522,6 +524,8 @@ Note: You are not a licensed attorney and they should consult one for complex ma
   );
 }
 
+const WIZARD_API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
+
 function Step4Statement({ form, caseId, conversationId, onBack }: {
   form: FormData; caseId: number | null; conversationId: number | null; onBack: () => void;
 }) {
@@ -588,13 +592,23 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
               <li>Appear on your hearing date</li>
             </ol>
           </div>
-          <div className="flex gap-3 justify-center">
+          <div className="flex flex-wrap gap-3 justify-center">
             <button
               onClick={() => setLocation("/cases")}
               className="px-5 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors"
             >
               View My Cases
             </button>
+            {caseId && (
+              <a
+                href={`${WIZARD_API_BASE}/api/cases/${caseId}/pdf`}
+                download
+                className="inline-flex items-center gap-2 px-5 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                Download Court PDF
+              </a>
+            )}
             <button
               onClick={() => window.print()}
               className="px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:opacity-90 transition-opacity"

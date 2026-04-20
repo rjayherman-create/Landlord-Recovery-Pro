@@ -29,6 +29,7 @@ import type {
   Grievance,
   HealthStatus,
   ListComparablesParams,
+  ListPdfStates200,
   OpenaiConversation,
   OpenaiConversationWithMessages,
   OpenaiError,
@@ -1368,6 +1369,168 @@ export const useGenerateCaseStatement = <
 > => {
   return useMutation(getGenerateCaseStatementMutationOptions(options));
 };
+
+/**
+ * @summary Download a filled court PDF for the case
+ */
+export const getDownloadCasePdfUrl = (id: number) => {
+  return `/api/cases/${id}/pdf`;
+};
+
+export const downloadCasePdf = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getDownloadCasePdfUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getDownloadCasePdfQueryKey = (id: number) => {
+  return [`/api/cases/${id}/pdf`] as const;
+};
+
+export const getDownloadCasePdfQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadCasePdf>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadCasePdf>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getDownloadCasePdfQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadCasePdf>>> = ({
+    signal,
+  }) => downloadCasePdf(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof downloadCasePdf>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type DownloadCasePdfQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadCasePdf>>
+>;
+export type DownloadCasePdfQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Download a filled court PDF for the case
+ */
+
+export function useDownloadCasePdf<
+  TData = Awaited<ReturnType<typeof downloadCasePdf>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadCasePdf>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getDownloadCasePdfQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List states that support PDF generation
+ */
+export const getListPdfStatesUrl = () => {
+  return `/api/cases/pdf-states`;
+};
+
+export const listPdfStates = async (
+  options?: RequestInit,
+): Promise<ListPdfStates200> => {
+  return customFetch<ListPdfStates200>(getListPdfStatesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPdfStatesQueryKey = () => {
+  return [`/api/cases/pdf-states`] as const;
+};
+
+export const getListPdfStatesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPdfStates>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPdfStates>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPdfStatesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listPdfStates>>> = ({
+    signal,
+  }) => listPdfStates({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPdfStates>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPdfStatesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPdfStates>>
+>;
+export type ListPdfStatesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List states that support PDF generation
+ */
+
+export function useListPdfStates<
+  TData = Awaited<ReturnType<typeof listPdfStates>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPdfStates>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPdfStatesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List all small claims cases

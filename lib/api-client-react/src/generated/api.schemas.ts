@@ -311,6 +311,10 @@ export type GenerateCaseStatement200 = {
   statement: string;
 };
 
+export type ListPdfStates200 = {
+  states: string[];
+};
+
 export type GenerateClaimStatement200 = {
   statement: string;
 };

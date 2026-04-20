@@ -14,6 +14,7 @@ import linksRouter from "./links";
 import downloadRouter from "./download";
 import countyDataRouter from "./county-data";
 import casesRouter from "./cases";
+import pdfRouter from "./pdf";
 import openaiConversationsRouter from "./openai-conversations";
 
 const router: IRouter = Router();
@@ -32,6 +33,7 @@ router.use(stripeRouter);
 router.use("/links", linksRouter);
 router.use(downloadRouter);
 router.use(countyDataRouter);
+router.use(pdfRouter);
 router.use(casesRouter);
 router.use(openaiConversationsRouter);
 

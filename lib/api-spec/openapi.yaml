@@ -325,6 +325,58 @@ paths:
                 required:
                   - statement
 
+  /cases/{id}/pdf:
+    get:
+      operationId: downloadCasePdf
+      tags: [cases]
+      summary: Download a filled court PDF for the case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Filled PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Case not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Unsupported state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /cases/pdf-states:
+    get:
+      operationId: listPdfStates
+      tags: [cases]
+      summary: List states that support PDF generation
+      responses:
+        "200":
+          description: Supported states
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  states:
+                    type: array
+                    items:
+                      type: string
+                required:
+                  - states
+
   /small-claims:
     get:
       operationId: listSmallClaims

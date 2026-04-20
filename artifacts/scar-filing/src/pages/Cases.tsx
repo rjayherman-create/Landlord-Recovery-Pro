@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useListCases, useDeleteCase, getListCasesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, FileText, Plus, Scale, Trash2, CheckCircle, Clock, AlertCircle } from "lucide-react";
+import { ArrowRight, Download, FileText, Plus, Scale, Trash2, CheckCircle, Clock, AlertCircle } from "lucide-react";
 import { motion } from "framer-motion";
 
 const CLAIM_TYPE_LABELS: Record<string, string> = {
@@ -34,6 +34,8 @@ const STATUS_CONFIG: Record<string, { label: string; icon: typeof CheckCircle; c
   lost: { label: "Closed", icon: AlertCircle, color: "text-muted-foreground bg-muted" },
   dismissed: { label: "Dismissed", icon: AlertCircle, color: "text-muted-foreground bg-muted" },
 };
+
+const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function Cases() {
   const [, setLocation] = useLocation();
@@ -153,19 +155,30 @@ export function Cases() {
                         <span className="text-xs text-muted-foreground">
                           {new Date(c.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                         </span>
-                        {c.status === "draft" && (
-                          <button
-                            onClick={() => setLocation("/file")}
-                            className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                        <div className="flex items-center gap-3">
+                          {c.status === "draft" && (
+                            <button
+                              onClick={() => setLocation("/file")}
+                              className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                            >
+                              Continue <ArrowRight className="w-3 h-3" />
+                            </button>
+                          )}
+                          {c.generatedStatement && (
+                            <span className="text-xs text-green-700 flex items-center gap-1">
+                              <FileText className="w-3 h-3" /> Statement ready
+                            </span>
+                          )}
+                          <a
+                            href={`${API_BASE}/api/cases/${c.id}/pdf`}
+                            download
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs text-muted-foreground hover:text-primary inline-flex items-center gap-1 transition-colors"
+                            title="Download court PDF"
                           >
-                            Continue <ArrowRight className="w-3 h-3" />
-                          </button>
-                        )}
-                        {c.generatedStatement && (
-                          <span className="text-xs text-green-700 flex items-center gap-1">
-                            <FileText className="w-3 h-3" /> Statement ready
-                          </span>
-                        )}
+                            <Download className="w-3 h-3" /> PDF
+                          </a>
+                        </div>
                       </div>
                     </div>
                   </div>

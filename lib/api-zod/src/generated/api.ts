@@ -434,6 +434,20 @@ export const GenerateCaseStatementResponse = zod.object({
 });
 
 /**
+ * @summary Download a filled court PDF for the case
+ */
+export const DownloadCasePdfParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary List states that support PDF generation
+ */
+export const ListPdfStatesResponse = zod.object({
+  states: zod.array(zod.string()),
+});
+
+/**
  * @summary List all small claims cases
  */
 export const ListSmallClaimsResponseItem = zod.object({
