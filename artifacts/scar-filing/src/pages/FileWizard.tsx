@@ -1086,14 +1086,14 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
               View My Cases
             </button>
             {caseId && (
-              <a
-                href={`${WIZARD_API_BASE}/api/cases/${caseId}/pdf`}
-                download
-                className="inline-flex items-center gap-2 px-5 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors"
+              <button
+                onClick={checkout}
+                disabled={checkingOut}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground text-sm font-medium rounded-md hover:opacity-90 transition-opacity disabled:opacity-40"
               >
-                <Download className="w-4 h-4" />
-                Download Court PDF
-              </a>
+                {checkingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
+                {checkingOut ? "Redirecting…" : "Unlock & Download — $29"}
+              </button>
             )}
             <button
               onClick={() => window.print()}
