@@ -55,7 +55,15 @@ export function Layout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-4">
             <Link href="/guide" className="hover:text-foreground transition-colors">Filing Guide</Link>
             <Link href="/cases" className="hover:text-foreground transition-colors">My Cases</Link>
+            <Link href="/disclaimer" className="hover:text-foreground transition-colors">Legal Disclaimer</Link>
           </div>
+        </div>
+        <div className="max-w-5xl mx-auto px-4 pb-4 text-center">
+          <p className="text-xs text-muted-foreground/70">
+            This platform provides self-help tools and general information for individuals handling small claims matters on their own.
+            It is not a law firm and does not provide legal advice or representation.
+            Use of this service does not create an attorney-client relationship.
+          </p>
         </div>
       </footer>
     </div>

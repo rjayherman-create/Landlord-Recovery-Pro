@@ -137,6 +137,13 @@ export class WebhookHandlers {
           <p>Print this form, sign it, and bring it to your local small claims court to file. You can also <a href="https://smallclaimsai.com/scar-filing/cases">log in to your account</a> to download it again at any time.</p>
           <p>Good luck with your case!</p>
           <p>— The SmallClaims AI Team</p>
+          <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0"/>
+          <p style="font-size:11px;color:#9ca3af;line-height:1.6;">
+            <strong>Legal Disclaimer:</strong> SmallClaims AI is a self-help technology platform. It is not a law firm and does not provide legal advice or representation.
+            Use of this service does not create an attorney-client relationship. You are solely responsible for reviewing, verifying, and filing your documents.
+            Laws and court procedures vary by jurisdiction — always verify current requirements with your local courthouse.
+            We do not guarantee any legal outcome. If you need legal advice, please consult a licensed attorney in your jurisdiction.
+          </p>
         `,
         attachments: [
           {

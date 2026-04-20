@@ -12,6 +12,7 @@ import { Guide } from "@/pages/Guide";
 import { Counties } from "@/pages/Counties";
 import { CheckoutSuccess } from "@/pages/CheckoutSuccess";
 import { CheckoutCancel } from "@/pages/CheckoutCancel";
+import { Disclaimer } from "@/pages/Disclaimer";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -27,6 +28,7 @@ function Router() {
         <Route path="/counties" component={Counties} />
         <Route path="/checkout/success" component={CheckoutSuccess} />
         <Route path="/checkout/cancel" component={CheckoutCancel} />
+        <Route path="/disclaimer" component={Disclaimer} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

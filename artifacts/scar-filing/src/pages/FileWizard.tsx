@@ -1001,6 +1001,7 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
   const [submitted, setSubmitted] = useState(false);
   const updateCase = useUpdateCase();
   const [checkingOut, setCheckingOut] = useState(false);
+  const [disclaimerAccepted, setDisclaimerAccepted] = useState(false);
 
   const generate = async () => {
     if (!caseId) return;
@@ -1159,6 +1160,27 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
         </div>
       )}
 
+      {generated && (
+        <div className="mb-4 border border-border rounded-lg p-4 bg-muted/30">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={disclaimerAccepted}
+              onChange={(e) => setDisclaimerAccepted(e.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-primary cursor-pointer"
+            />
+            <span className="text-sm text-muted-foreground leading-snug">
+              I understand that SmallClaims AI provides self-help guidance only and is{" "}
+              <strong className="text-foreground">not legal advice</strong>. I am responsible for reviewing,
+              verifying, and filing my documents. No attorney-client relationship is created.{" "}
+              <a href="disclaimer" className="underline hover:text-foreground transition-colors text-xs">
+                Full Disclaimer
+              </a>
+            </span>
+          </label>
+        </div>
+      )}
+
       <div className="flex gap-3">
         <button onClick={onBack}
           className="flex items-center gap-2 px-4 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors">
@@ -1177,8 +1199,9 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
         {generated ? (
           <button
             onClick={checkout}
-            disabled={checkingOut || !caseId}
+            disabled={checkingOut || !caseId || !disclaimerAccepted}
             className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground text-sm font-medium py-2.5 rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+            title={!disclaimerAccepted ? "Please accept the disclaimer above to continue" : undefined}
           >
             {checkingOut ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Redirecting...</>
@@ -1262,6 +1285,13 @@ export function FileWizard() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
       <StepIndicator current={step} />
+      <div className="mb-4 px-3 py-2.5 bg-muted/50 border border-border rounded-md text-xs text-muted-foreground flex items-start gap-2">
+        <span className="shrink-0 mt-0.5">ℹ️</span>
+        <span>
+          SmallClaims AI provides self-help tools only. It is not a law firm and does not provide legal advice.
+          {" "}<a href="disclaimer" className="underline hover:text-foreground transition-colors">Full Disclaimer</a>
+        </span>
+      </div>
       <AnimatePresence mode="wait">
         {step === 1 && (
           <Step1ClaimType key="step1" form={form} setForm={setForm} onNext={() => setStep(2)} />

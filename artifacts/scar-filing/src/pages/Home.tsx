@@ -1,4 +1,4 @@
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Scale, FileText, MessageSquare, Sparkles, ArrowRight, Shield, Clock, CheckCircle } from "lucide-react";
 
 const CLAIM_TYPES = [
@@ -120,6 +120,14 @@ export function Home() {
           </button>
         </div>
       </section>
+
+      <div className="max-w-4xl mx-auto px-4 py-6 text-center border-t border-border mt-0">
+        <p className="text-xs text-muted-foreground">
+          SmallClaims AI provides self-help tools and general information only. It is not a law firm and does not provide legal advice or representation.
+          Use of this service does not create an attorney-client relationship.{" "}
+          <Link href="/disclaimer" className="underline hover:text-foreground transition-colors">Full Disclaimer</Link>
+        </p>
+      </div>
     </div>
   );
 }

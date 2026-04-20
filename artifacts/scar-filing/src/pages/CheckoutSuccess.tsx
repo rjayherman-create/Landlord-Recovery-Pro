@@ -77,6 +77,13 @@ export function CheckoutSuccess() {
       >
         View My Cases <ArrowRight className="w-4 h-4" />
       </button>
+
+      <p className="text-xs text-muted-foreground mt-8 leading-relaxed">
+        SmallClaims AI provides self-help tools and general information only. It is not a law firm and does not
+        provide legal advice or representation. You are responsible for reviewing and filing your documents.
+        Laws and procedures vary by jurisdiction — verify current requirements with your local courthouse.{" "}
+        <a href="../disclaimer" className="underline hover:text-foreground transition-colors">Full Disclaimer</a>
+      </p>
     </div>
   );
 }
