@@ -1170,7 +1170,9 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
               className="mt-0.5 h-4 w-4 shrink-0 rounded border-gray-300 accent-primary cursor-pointer"
             />
             <span className="text-sm text-muted-foreground leading-snug">
-              I understand that SmallClaims AI provides self-help guidance only and is{" "}
+              I agree to the{" "}
+              <a href="terms" className="underline hover:text-foreground transition-colors">Terms of Service</a>
+              {" "}and understand this service provides self-help guidance only and is{" "}
               <strong className="text-foreground">not legal advice</strong>. I am responsible for reviewing,
               verifying, and filing my documents. No attorney-client relationship is created.{" "}
               <a href="disclaimer" className="underline hover:text-foreground transition-colors text-xs">

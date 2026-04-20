@@ -54,8 +54,9 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
           <div className="flex items-center gap-4">
             <Link href="/guide" className="hover:text-foreground transition-colors">Filing Guide</Link>
-            <Link href="/cases" className="hover:text-foreground transition-colors">My Cases</Link>
-            <Link href="/disclaimer" className="hover:text-foreground transition-colors">Legal Disclaimer</Link>
+            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <Link href="/refund" className="hover:text-foreground transition-colors">Refund Policy</Link>
+            <Link href="/disclaimer" className="hover:text-foreground transition-colors">Disclaimer</Link>
           </div>
         </div>
         <div className="max-w-5xl mx-auto px-4 pb-4 text-center">
