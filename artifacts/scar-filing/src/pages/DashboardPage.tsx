@@ -84,12 +84,16 @@ export function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  useEffect(() => {
+  function loadCases() {
+    setLoading(true);
+    setError(false);
     getCases()
       .then(setCases)
       .catch(() => setError(true))
       .finally(() => setLoading(false));
-  }, []);
+  }
+
+  useEffect(() => { loadCases(); }, []);
 
   const stats = useMemo(() => {
     const total = cases.length;
@@ -132,7 +136,7 @@ export function DashboardPage() {
         <AlertCircle className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
         <p className="text-muted-foreground text-sm">Failed to load dashboard. Please try again.</p>
         <button
-          onClick={() => { setError(false); setLoading(true); getCases().then(setCases).catch(() => setError(true)).finally(() => setLoading(false)); }}
+          onClick={loadCases}
           className="mt-4 text-sm text-primary hover:underline"
         >
           Retry
