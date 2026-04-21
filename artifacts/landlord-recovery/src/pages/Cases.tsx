@@ -1,11 +1,12 @@
 import { useState, useMemo } from "react";
-import { useListLandlordCases, useDeleteLandlordCase } from "@workspace/api-client-react";
+import { useListLandlordCases, useDeleteLandlordCase, useUpdateLandlordCase } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
-import { PlusCircle, Search, Trash2, Pencil } from "lucide-react";
+import { PlusCircle, Search, Trash2, Pencil, MoreHorizontal, Archive, ArchiveRestore, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CaseStatusBadge, ClaimTypeBadge } from "@/components/shared/CaseStatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 export default function Cases() {
   const { data: cases, isLoading } = useListLandlordCases();
   const deleteCase = useDeleteLandlordCase();
+  const updateCase = useUpdateLandlordCase();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [, navigate] = useLocation();
@@ -23,8 +25,9 @@ export default function Cases() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -33,13 +36,18 @@ export default function Cases() {
   const filteredCases = useMemo(() => {
     if (!cases) return [];
     return cases.filter(c => {
+      const isArchived = !!(c as any).archived;
+      if (showArchived !== isArchived) return false;
       const matchesSearch = c.tenantName.toLowerCase().includes(search.toLowerCase()) || 
                             c.propertyAddress.toLowerCase().includes(search.toLowerCase());
       const matchesStatus = statusFilter === "all" || c.status === statusFilter;
       const matchesType = typeFilter === "all" || c.claimType === typeFilter;
       return matchesSearch && matchesStatus && matchesType;
     });
-  }, [cases, search, statusFilter, typeFilter]);
+  }, [cases, search, statusFilter, typeFilter, showArchived]);
+
+  const archivedCount = useMemo(() => cases?.filter(c => !!(c as any).archived).length ?? 0, [cases]);
+  const activeCount = useMemo(() => cases?.filter(c => !(c as any).archived).length ?? 0, [cases]);
 
   const pendingDeleteCase = cases?.find(c => c.id === pendingDeleteId);
 
@@ -60,6 +68,18 @@ export default function Cases() {
     });
   };
 
+  const handleArchive = (id: number, archive: boolean) => {
+    updateCase.mutate({ id, data: { archived: archive } as any }, {
+      onSuccess: () => {
+        toast({ title: archive ? "Case Archived" : "Case Restored" });
+        queryClient.invalidateQueries({ queryKey: ["listLandlordCases"] });
+      },
+      onError: () => {
+        toast({ title: archive ? "Archive Failed" : "Restore Failed", variant: "destructive" });
+      }
+    });
+  };
+
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
@@ -73,6 +93,25 @@ export default function Cases() {
             New Case
           </Link>
         </Button>
+      </div>
+
+      {/* Archive toggle tabs */}
+      <div className="flex gap-1 bg-muted/50 rounded-lg p-1 w-fit border border-border">
+        <button
+          onClick={() => setShowArchived(false)}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${!showArchived ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          Active
+          {activeCount > 0 && <span className="ml-2 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">{activeCount}</span>}
+        </button>
+        <button
+          onClick={() => setShowArchived(true)}
+          className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${showArchived ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
+        >
+          <Archive className="inline h-3.5 w-3.5 mr-1.5" />
+          Archived
+          {archivedCount > 0 && <span className="ml-2 text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full">{archivedCount}</span>}
+        </button>
       </div>
 
       <div className="bg-card border border-border p-4 rounded-lg shadow-sm flex flex-col md:flex-row gap-4">
@@ -131,7 +170,7 @@ export default function Cases() {
           filteredCases.map((caseItem, idx) => (
             <Card
               key={caseItem.id}
-              className="p-5 border-border shadow-sm hover-elevate cursor-pointer transition-all group animate-in fade-in slide-in-from-bottom-2"
+              className={`p-5 border-border shadow-sm hover-elevate cursor-pointer transition-all group animate-in fade-in slide-in-from-bottom-2 ${showArchived ? "opacity-75" : ""}`}
               style={{ animationDelay: `${idx * 30}ms` }}
               onClick={() => navigate(`/cases/${caseItem.id}`)}
             >
@@ -139,6 +178,11 @@ export default function Cases() {
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-3 mb-2">
                     <h3 className="font-semibold text-lg text-primary group-hover:text-accent transition-colors">{caseItem.tenantName}</h3>
+                    {showArchived && (
+                      <span className="inline-flex items-center gap-1 text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full font-medium">
+                        <Archive className="h-3 w-3" /> Archived
+                      </span>
+                    )}
                     <CaseStatusBadge status={caseItem.status} />
                     <ClaimTypeBadge type={caseItem.claimType} />
                   </div>
@@ -153,26 +197,37 @@ export default function Cases() {
                     <div className="font-bold text-xl text-foreground">{formatCurrency(caseItem.claimAmount)}</div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mt-1">{caseItem.state}</div>
                   </div>
-                  <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                      title="Edit case"
-                      onClick={() => navigate(`/cases/${caseItem.id}`)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                      title="Delete case"
-                      disabled={deletingId === caseItem.id}
-                      onClick={() => setPendingDeleteId(caseItem.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                  <div className="shrink-0" onClick={e => e.stopPropagation()}>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44">
+                        <DropdownMenuItem onClick={() => navigate(`/cases/${caseItem.id}`)}>
+                          <Eye className="h-4 w-4 mr-2" /> View / Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {!(caseItem as any).archived ? (
+                          <DropdownMenuItem onClick={() => handleArchive(caseItem.id, true)}>
+                            <Archive className="h-4 w-4 mr-2" /> Archive
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem onClick={() => handleArchive(caseItem.id, false)}>
+                            <ArchiveRestore className="h-4 w-4 mr-2" /> Restore
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => setPendingDeleteId(caseItem.id)}
+                          disabled={deletingId === caseItem.id}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>
@@ -181,10 +236,16 @@ export default function Cases() {
         ) : (
           <div className="mt-8">
             <EmptyState 
-              title="No cases found" 
-              description={cases?.length === 0 ? "You haven't created any cases yet." : "No cases match your current filters."}
-              actionLabel={cases?.length === 0 ? "Start a New Case" : undefined}
-              actionHref={cases?.length === 0 ? "/cases/new" : undefined}
+              title={showArchived ? "No archived cases" : "No cases found"}
+              description={
+                showArchived
+                  ? "Cases you archive will appear here."
+                  : cases?.filter(c => !(c as any).archived).length === 0
+                    ? "You haven't created any cases yet."
+                    : "No cases match your current filters."
+              }
+              actionLabel={!showArchived && cases?.filter(c => !(c as any).archived).length === 0 ? "Start a New Case" : undefined}
+              actionHref={!showArchived && cases?.filter(c => !(c as any).archived).length === 0 ? "/cases/new" : undefined}
             />
           </div>
         )}

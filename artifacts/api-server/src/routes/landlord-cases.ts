@@ -160,6 +160,7 @@ router.put("/landlord-cases/:id", async (req, res) => {
     if (body.recoveredAmount !== undefined) updateData.recoveredAmount = body.recoveredAmount?.toString() ?? null;
     if (body.notes !== undefined) updateData.notes = body.notes ?? null;
     if ((body as any).monthsOwed !== undefined) (updateData as any).monthsOwed = (body as any).monthsOwed ?? null;
+    if ((body as any).archived !== undefined) (updateData as any).archived = (body as any).archived;
     updateData.updatedAt = new Date();
     const [updated] = await db.update(landlordCases).set(updateData).where(eq(landlordCases.id, id)).returning();
     if (!updated) return res.status(404).json({ error: "not_found", message: "Case not found" });

@@ -9,7 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
-  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil
+  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -278,6 +278,20 @@ export default function CaseDetail() {
     });
   };
 
+  const handleToggleArchive = () => {
+    const isCurrentlyArchived = !!(caseData as any)?.archived;
+    updateCase.mutate({ id: caseId, data: { archived: !isCurrentlyArchived } as any }, {
+      onSuccess: () => {
+        toast({ title: isCurrentlyArchived ? "Case Restored" : "Case Archived" });
+        queryClient.invalidateQueries({ queryKey: ["getLandlordCase", String(caseId)] });
+        queryClient.invalidateQueries({ queryKey: ["listLandlordCases"] });
+        if (!isCurrentlyArchived) {
+          window.location.href = "/landlord-recovery/cases";
+        }
+      }
+    });
+  };
+
   const currentStatusIndex = STATUS_PROGRESS.findIndex(s => s.id === caseData.status);
 
   return (
@@ -303,6 +317,15 @@ export default function CaseDetail() {
             <Button variant="outline" onClick={openEdit}>
               <Pencil className="h-4 w-4 mr-2" /> Edit Case
             </Button>
+            {(caseData as any).archived ? (
+              <Button variant="outline" onClick={handleToggleArchive} disabled={updateCase.isPending}>
+                <ArchiveRestore className="h-4 w-4 mr-2" /> Restore
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={handleToggleArchive} disabled={updateCase.isPending}>
+                <Archive className="h-4 w-4 mr-2" /> Archive
+              </Button>
+            )}
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" className="text-destructive border-destructive/20 hover:bg-destructive/10">

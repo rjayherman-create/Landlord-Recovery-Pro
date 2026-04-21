@@ -7,6 +7,7 @@ import {
   numeric,
   timestamp,
   date,
+  boolean,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
@@ -36,6 +37,7 @@ export const landlordCases = pgTable("landlord_cases", {
   judgmentAmount: numeric("judgment_amount", { precision: 12, scale: 2 }),
   recoveredAmount: numeric("recovered_amount", { precision: 12, scale: 2 }),
   notes: text("notes"),
+  archived: boolean("archived").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
