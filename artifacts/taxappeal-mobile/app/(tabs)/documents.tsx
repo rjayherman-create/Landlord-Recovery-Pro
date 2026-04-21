@@ -9,10 +9,13 @@ import {
   Linking,
 } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import type { ComponentProps } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
+
+type FeatherIconName = ComponentProps<typeof Feather>["name"];
 
 type StateFilter = "ALL" | "NY" | "NJ" | "TX" | "FL";
 
@@ -23,7 +26,7 @@ interface Document {
   subtitle: string;
   description: string;
   url: string;
-  icon: string;
+  icon: FeatherIconName;
 }
 
 const DOCUMENTS: Document[] = [
@@ -109,7 +112,7 @@ function DocumentCard({ doc }: { doc: Document }) {
     <Card style={styles.docCard} elevated>
       <View style={styles.docHeader}>
         <View style={[styles.docIconWrap, { backgroundColor: colors.primary + "15" }]}>
-          <Feather name={doc.icon as any} size={20} color={colors.primary} />
+          <Feather name={doc.icon} size={20} color={colors.primary} />
         </View>
         <View style={styles.docTitleWrap}>
           <Text style={[styles.docTitle, { color: colors.foreground }]} numberOfLines={1}>
