@@ -12,20 +12,25 @@ router.get("/county-data", async (req, res) => {
     return;
   }
 
-  if (county) {
-    const result = await pool.query(
-      "SELECT state, county, tax_rate, equalization_rate FROM county_data WHERE state = $1 AND county = $2 LIMIT 1",
-      [state, county]
-    );
-    res.json(result.rows[0] ?? null);
-    return;
-  }
+  try {
+    if (county) {
+      const result = await pool.query(
+        "SELECT state, county, tax_rate, equalization_rate FROM county_data WHERE state = $1 AND county = $2 LIMIT 1",
+        [state, county]
+      );
+      res.json(result.rows[0] ?? null);
+      return;
+    }
 
-  const result = await pool.query(
-    "SELECT state, county, tax_rate, equalization_rate FROM county_data WHERE state = $1 ORDER BY county",
-    [state]
-  );
-  res.json(result.rows);
+    const result = await pool.query(
+      "SELECT state, county, tax_rate, equalization_rate FROM county_data WHERE state = $1 ORDER BY county",
+      [state]
+    );
+    res.json(result.rows);
+  } catch (err: any) {
+    console.error("[county-data]", err?.message);
+    res.status(500).json({ error: "Failed to fetch county data" });
+  }
 });
 
 export default router;

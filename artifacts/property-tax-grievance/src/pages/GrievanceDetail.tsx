@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import {
@@ -157,6 +158,7 @@ export function GrievanceDetail() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isAddCompOpen, setIsAddCompOpen] = useState(false);
   const [isPrintOpen, setIsPrintOpen] = useState(false);
+  const [compToDelete, setCompToDelete] = useState<number | null>(null);
   const printRef = useRef<HTMLDivElement>(null);
 
   const [autoComps, setAutoComps] = useState<AutoComp[]>([]);
@@ -251,9 +253,19 @@ export function GrievanceDetail() {
     }
   };
 
-  const handleDeleteComp = async (compId: number) => {
-    if (confirm("Remove this comparable?")) {
-      await deleteCompMutation.mutateAsync({ id: compId });
+  const handleDeleteComp = (compId: number) => {
+    setCompToDelete(compId);
+  };
+
+  const confirmDeleteComp = async () => {
+    if (compToDelete === null) return;
+    try {
+      await deleteCompMutation.mutateAsync({ id: compToDelete });
+      toast({ title: "Comparable removed" });
+    } catch {
+      toast({ title: "Error removing comparable", variant: "destructive" });
+    } finally {
+      setCompToDelete(null);
     }
   };
 
@@ -382,6 +394,26 @@ export function GrievanceDetail() {
 
   return (
     <AppLayout>
+      <AlertDialog open={compToDelete !== null} onOpenChange={(open) => { if (!open) setCompToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove comparable?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This comparable will be removed from your appeal package. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteComp}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <div className="hidden" id="rp524-print">
         <RP524PrintForm grievance={grievance} comparables={comparables} state={grievanceState} />
       </div>

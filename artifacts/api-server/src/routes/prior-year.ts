@@ -42,7 +42,7 @@ router.get("/prior-year/:grievanceId", async (req, res) => {
     } as RequestInit);
 
     if (!response.ok) throw new Error(`ORPS API error: ${response.status}`);
-    const data: Record<string, string>[] = await response.json();
+    const data = await response.json() as Record<string, string>[];
 
     if (!data.length) {
       return res.json({ priorYear: null, message: "No prior year data found" });

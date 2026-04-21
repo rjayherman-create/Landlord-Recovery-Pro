@@ -113,6 +113,7 @@ Standalone DIY small claims court filing assistant for 10 states (NY, NJ, FL, TX
 - `users` table — Auth users (id, email, firstName, lastName, profileImageUrl)
 - `grievances` table — owner info, property address, county, municipality, taxYear, assessments, status, filingDeadline, userId (nullable, scopes case to user)
 - `comparables` table — linked to grievance, address, salePrice, saleDate, sqft, beds, baths, assessedValue
+- `county_data` table — 160 records seeded (62 NY, 21 NJ, 33 TX, 44 FL counties) with tax_rate and equalization_rate per county; powers the Dashboard savings estimator's county-specific rate
 
 ## Auth
 
@@ -125,8 +126,38 @@ Standalone DIY small claims court filing assistant for 10 states (NY, NJ, FL, TX
 
 Every package extends `tsconfig.base.json` with `composite: true`. Root `tsconfig.json` lists all packages as references including `lib/replit-auth-web`.
 
+## Mobile App (`taxappeal-mobile`)
+
+Expo React Native app (iOS/Android/Web) — offline-first, separate from the web app grievance database.
+
+### Features
+- **Home** — savings summary card, quick actions (New Appeal, Estimator), recent cases, filing tip
+- **Cases** — list of all local cases, with status badges and tap-to-detail navigation
+- **New Case** — 3-step form (Property Info → Assessment Details → Review & Create)
+- **Estimator** — savings estimator with state-specific tax rate estimates
+- **Settings** — app preferences and help links
+- **Case Detail** — full case view with status, next steps, and action buttons
+
+### Key Files
+- `artifacts/taxappeal-mobile/app/(tabs)/index.tsx` — Home screen
+- `artifacts/taxappeal-mobile/app/(tabs)/cases.tsx` — Cases list
+- `artifacts/taxappeal-mobile/app/(tabs)/new-case.tsx` — Multi-step new case form
+- `artifacts/taxappeal-mobile/app/(tabs)/estimator.tsx` — Savings estimator
+- `artifacts/taxappeal-mobile/app/(tabs)/settings.tsx` — Settings
+- `artifacts/taxappeal-mobile/context/CasesContext.tsx` — AsyncStorage-backed case state
+
+## Bug Fixes Applied
+
+- **TypeScript `composite` flag** — `lib/replit-auth-web/tsconfig.json` fixed (was incorrectly named `composite-false`)
+- **Lazy OpenAI init** — moved `new OpenAI()` inside route handler to avoid startup crash if `OPENAI_API_KEY` is absent
+- **County-data route** — wrapped DB query in try/catch to return 500 instead of unhandled crash
+- **`AuthUser` interface** — added to `lib/api-zod/src/index.ts` so `req.user.id` is typed across all routes
+- **`generatePdf.ts`** — replaced `PDFDocument` as both type and value with `type PDFDoc = InstanceType<typeof PDFDocument>`
+- **`prior-year.ts`** — fixed `unknown` → `Record<string, unknown>` cast in ORPS API response
+- **GrievanceDetail delete confirmation** — replaced browser `confirm()` with Radix `AlertDialog` for comparable deletion; uses `compToDelete` state + `confirmDeleteComp` handler with toast feedback
+
 ## Ports
 
 - API server: `PORT` env var (default 8080)
-- Vite dev server: 19972
-- Vite proxies `/api` → `http://localhost:8080`
+- Vite dev server: 3000 (proxies `/api` → `http://localhost:8080`)
+- Expo Metro bundler: 19394

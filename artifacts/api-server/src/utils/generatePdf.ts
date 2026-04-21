@@ -1,5 +1,7 @@
 import PDFDocument from "pdfkit";
 
+type PDFDoc = InstanceType<typeof PDFDocument>;
+
 const STATE_FORM: Record<string, string> = {
   NY: "RP-524",
   NJ: "A-1",
@@ -28,17 +30,17 @@ function fmt(n: number | string | null | undefined): string {
   return "$" + num.toLocaleString("en-US");
 }
 
-function line(doc: PDFDocument, startX: number, startY: number, endX: number) {
+function line(doc: PDFDoc, startX: number, startY: number, endX: number) {
   doc.moveTo(startX, startY).lineTo(endX, startY).strokeColor("#e2e8f0").lineWidth(0.5).stroke();
 }
 
-function sectionHeader(doc: PDFDocument, text: string, y: number) {
+function sectionHeader(doc: PDFDoc, text: string, y: number) {
   doc.rect(72, y, 468, 18).fill("#1e3a5f");
   doc.fill("white").fontSize(9).font("Helvetica-Bold").text(text.toUpperCase(), 80, y + 4);
   doc.fill("black");
 }
 
-function row(doc: PDFDocument, label: string, value: string, x: number, y: number, halfWidth = false) {
+function row(doc: PDFDoc, label: string, value: string, x: number, y: number, halfWidth = false) {
   const w = halfWidth ? 220 : 460;
   doc.font("Helvetica").fontSize(8).fill("#64748b").text(label, x, y);
   doc.font("Helvetica-Bold").fontSize(9).fill("#1e293b").text(value, x, y + 11, { width: w });
