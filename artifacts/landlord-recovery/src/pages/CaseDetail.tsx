@@ -9,8 +9,10 @@ import {
 } from "@workspace/api-client-react";
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
-  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library
+  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil
 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { DocumentLibrary } from "@/components/shared/DocumentLibrary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -51,6 +53,69 @@ export default function CaseDetail() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<"overview" | "documents">("overview");
+
+  // Edit case dialog state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
+
+  const openEdit = () => {
+    if (!caseData) return;
+    setEditForm({
+      tenantName: caseData.tenantName || "",
+      tenantEmail: caseData.tenantEmail || "",
+      tenantPhone: caseData.tenantPhone || "",
+      tenantAddress: caseData.tenantAddress || "",
+      landlordName: caseData.landlordName || "",
+      landlordEmail: caseData.landlordEmail || "",
+      landlordPhone: caseData.landlordPhone || "",
+      landlordAddress: caseData.landlordAddress || "",
+      propertyAddress: caseData.propertyAddress || "",
+      state: caseData.state || "",
+      claimType: caseData.claimType || "",
+      claimAmount: caseData.claimAmount != null ? String(caseData.claimAmount) : "",
+      monthlyRent: caseData.monthlyRent != null ? String(caseData.monthlyRent) : "",
+      monthsOwed: caseData.monthsOwed != null ? String(caseData.monthsOwed) : "",
+      description: caseData.description || "",
+      leaseStartDate: caseData.leaseStartDate || "",
+      moveOutDate: caseData.moveOutDate || "",
+      courtDate: caseData.courtDate || "",
+    });
+    setIsEditOpen(true);
+  };
+
+  const handleSaveEdit = () => {
+    const payload: Record<string, any> = {
+      tenantName: editForm.tenantName,
+      tenantEmail: editForm.tenantEmail || null,
+      tenantPhone: editForm.tenantPhone || null,
+      tenantAddress: editForm.tenantAddress || null,
+      landlordName: editForm.landlordName,
+      landlordEmail: editForm.landlordEmail || null,
+      landlordPhone: editForm.landlordPhone || null,
+      landlordAddress: editForm.landlordAddress || null,
+      propertyAddress: editForm.propertyAddress,
+      state: editForm.state,
+      claimType: editForm.claimType,
+      claimAmount: editForm.claimAmount ? parseFloat(editForm.claimAmount) : 0,
+      monthlyRent: editForm.monthlyRent ? parseFloat(editForm.monthlyRent) : null,
+      monthsOwed: editForm.monthsOwed ? parseInt(editForm.monthsOwed) : null,
+      description: editForm.description || null,
+      leaseStartDate: editForm.leaseStartDate || null,
+      moveOutDate: editForm.moveOutDate || null,
+      courtDate: editForm.courtDate || null,
+    };
+    updateCase.mutate({ id: caseId, data: payload as any }, {
+      onSuccess: () => {
+        setIsEditOpen(false);
+        toast({ title: "Case Updated" });
+        queryClient.invalidateQueries({ queryKey: ["getLandlordCase", String(caseId)] });
+        queryClient.invalidateQueries({ queryKey: ["listLandlordCases"] });
+      },
+      onError: () => {
+        toast({ title: "Update Failed", variant: "destructive" });
+      }
+    });
+  };
 
   // Local state for edits
   const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -235,6 +300,9 @@ export default function CaseDetail() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={openEdit}>
+              <Pencil className="h-4 w-4 mr-2" /> Edit Case
+            </Button>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" className="text-destructive border-destructive/20 hover:bg-destructive/10">
@@ -257,6 +325,148 @@ export default function CaseDetail() {
               </DialogContent>
             </Dialog>
           </div>
+
+          {/* Edit Case Dialog */}
+          <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Case</DialogTitle>
+                <DialogDescription>Update the case details below.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-6 py-2">
+                {/* Claim Info */}
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Claim Info</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm mb-1 block">Claim Type</Label>
+                      <Select value={editForm.claimType || ""} onValueChange={v => setEditForm(f => ({ ...f, claimType: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="unpaid_rent">Unpaid Rent</SelectItem>
+                          <SelectItem value="property_damage">Property Damage</SelectItem>
+                          <SelectItem value="security_deposit">Security Deposit</SelectItem>
+                          <SelectItem value="lease_break">Lease Break</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">State</Label>
+                      <Select value={editForm.state || ""} onValueChange={v => setEditForm(f => ({ ...f, state: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {["AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"].map(s => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Claim Amount ($)</Label>
+                      <Input type="number" value={editForm.claimAmount || ""} onChange={e => setEditForm(f => ({ ...f, claimAmount: e.target.value }))} />
+                    </div>
+                    {editForm.claimType === "unpaid_rent" && (
+                      <>
+                        <div>
+                          <Label className="text-sm mb-1 block">Monthly Rent ($)</Label>
+                          <Input type="number" value={editForm.monthlyRent || ""} onChange={e => setEditForm(f => ({ ...f, monthlyRent: e.target.value }))} />
+                        </div>
+                        <div>
+                          <Label className="text-sm mb-1 block">Months Unpaid</Label>
+                          <Input type="number" min="1" max="24" value={editForm.monthsOwed || ""} onChange={e => {
+                            const months = e.target.value;
+                            const rent = parseFloat(editForm.monthlyRent || "0");
+                            const calc = rent && months ? String(rent * parseInt(months)) : editForm.claimAmount;
+                            setEditForm(f => ({ ...f, monthsOwed: months, claimAmount: calc }));
+                          }} />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                  <div className="mt-3">
+                    <Label className="text-sm mb-1 block">Description</Label>
+                    <Textarea value={editForm.description || ""} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="min-h-[70px] text-sm" />
+                  </div>
+                </div>
+
+                {/* Property */}
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Property</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Label className="text-sm mb-1 block">Property Address</Label>
+                      <Input value={editForm.propertyAddress || ""} onChange={e => setEditForm(f => ({ ...f, propertyAddress: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Lease Start Date</Label>
+                      <Input value={editForm.leaseStartDate || ""} onChange={e => setEditForm(f => ({ ...f, leaseStartDate: e.target.value }))} placeholder="e.g. Jan 1, 2023" />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Move-Out Date</Label>
+                      <Input value={editForm.moveOutDate || ""} onChange={e => setEditForm(f => ({ ...f, moveOutDate: e.target.value }))} placeholder="e.g. March 31, 2025" />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Court Date</Label>
+                      <Input value={editForm.courtDate || ""} onChange={e => setEditForm(f => ({ ...f, courtDate: e.target.value }))} placeholder="e.g. May 15, 2025" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Tenant */}
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Tenant (Defendant)</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm mb-1 block">Full Name *</Label>
+                      <Input value={editForm.tenantName || ""} onChange={e => setEditForm(f => ({ ...f, tenantName: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Email</Label>
+                      <Input type="email" value={editForm.tenantEmail || ""} onChange={e => setEditForm(f => ({ ...f, tenantEmail: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Phone</Label>
+                      <Input value={editForm.tenantPhone || ""} onChange={e => setEditForm(f => ({ ...f, tenantPhone: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Current Address</Label>
+                      <Input value={editForm.tenantAddress || ""} onChange={e => setEditForm(f => ({ ...f, tenantAddress: e.target.value }))} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Landlord */}
+                <div>
+                  <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Landlord (Plaintiff)</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-sm mb-1 block">Full Name *</Label>
+                      <Input value={editForm.landlordName || ""} onChange={e => setEditForm(f => ({ ...f, landlordName: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Email</Label>
+                      <Input type="email" value={editForm.landlordEmail || ""} onChange={e => setEditForm(f => ({ ...f, landlordEmail: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Phone</Label>
+                      <Input value={editForm.landlordPhone || ""} onChange={e => setEditForm(f => ({ ...f, landlordPhone: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Mailing Address</Label>
+                      <Input value={editForm.landlordAddress || ""} onChange={e => setEditForm(f => ({ ...f, landlordAddress: e.target.value }))} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancel</Button>
+                <Button onClick={handleSaveEdit} disabled={updateCase.isPending}>
+                  {updateCase.isPending ? <><RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Saving...</> : <><Save className="h-4 w-4 mr-2" /> Save Changes</>}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
 
         {/* Tab Bar */}

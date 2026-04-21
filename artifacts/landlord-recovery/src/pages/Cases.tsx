@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
-import { useListLandlordCases } from "@workspace/api-client-react";
-import { Link } from "wouter";
-import { PlusCircle, Search, Filter } from "lucide-react";
+import { useListLandlordCases, useDeleteLandlordCase } from "@workspace/api-client-react";
+import { Link, useLocation } from "wouter";
+import { PlusCircle, Search, Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
@@ -9,12 +9,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CaseStatusBadge, ClaimTypeBadge } from "@/components/shared/CaseStatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Cases() {
   const { data: cases, isLoading } = useListLandlordCases();
+  const deleteCase = useDeleteLandlordCase();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<number | null>(null);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
@@ -30,6 +40,25 @@ export default function Cases() {
       return matchesSearch && matchesStatus && matchesType;
     });
   }, [cases, search, statusFilter, typeFilter]);
+
+  const pendingDeleteCase = cases?.find(c => c.id === pendingDeleteId);
+
+  const handleConfirmDelete = () => {
+    if (!pendingDeleteId) return;
+    setDeletingId(pendingDeleteId);
+    deleteCase.mutate({ id: pendingDeleteId }, {
+      onSuccess: () => {
+        toast({ title: "Case Deleted" });
+        queryClient.invalidateQueries({ queryKey: ["listLandlordCases"] });
+        setPendingDeleteId(null);
+        setDeletingId(null);
+      },
+      onError: () => {
+        toast({ title: "Delete Failed", variant: "destructive" });
+        setDeletingId(null);
+      }
+    });
+  };
 
   return (
     <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 animate-in fade-in duration-500">
@@ -100,28 +129,54 @@ export default function Cases() {
           </>
         ) : filteredCases.length > 0 ? (
           filteredCases.map((caseItem, idx) => (
-            <Link key={caseItem.id} href={`/cases/${caseItem.id}`}>
-              <Card className="p-5 border-border shadow-sm hover-elevate cursor-pointer transition-all group animate-in fade-in slide-in-from-bottom-2" style={{ animationDelay: `${idx * 30}ms` }}>
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex flex-wrap items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-lg text-primary group-hover:text-accent transition-colors">{caseItem.tenantName}</h3>
-                      <CaseStatusBadge status={caseItem.status} />
-                      <ClaimTypeBadge type={caseItem.claimType} />
-                    </div>
-                    <div className="text-sm text-muted-foreground flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
-                      <span>{caseItem.propertyAddress}</span>
-                      <span className="hidden sm:inline">•</span>
-                      <span>Created {new Date(caseItem.createdAt).toLocaleDateString()}</span>
-                    </div>
+            <Card
+              key={caseItem.id}
+              className="p-5 border-border shadow-sm hover-elevate cursor-pointer transition-all group animate-in fade-in slide-in-from-bottom-2"
+              style={{ animationDelay: `${idx * 30}ms` }}
+              onClick={() => navigate(`/cases/${caseItem.id}`)}
+            >
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center gap-3 mb-2">
+                    <h3 className="font-semibold text-lg text-primary group-hover:text-accent transition-colors">{caseItem.tenantName}</h3>
+                    <CaseStatusBadge status={caseItem.status} />
+                    <ClaimTypeBadge type={caseItem.claimType} />
                   </div>
+                  <div className="text-sm text-muted-foreground flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
+                    <span>{caseItem.propertyAddress}</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span>Created {new Date(caseItem.createdAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
                   <div className="text-left md:text-right border-t md:border-t-0 pt-3 md:pt-0">
                     <div className="font-bold text-xl text-foreground">{formatCurrency(caseItem.claimAmount)}</div>
                     <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mt-1">{caseItem.state}</div>
                   </div>
+                  <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                      title="Edit case"
+                      onClick={() => navigate(`/cases/${caseItem.id}`)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                      title="Delete case"
+                      disabled={deletingId === caseItem.id}
+                      onClick={() => setPendingDeleteId(caseItem.id)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
-              </Card>
-            </Link>
+              </div>
+            </Card>
           ))
         ) : (
           <div className="mt-8">
@@ -134,6 +189,24 @@ export default function Cases() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!pendingDeleteId} onOpenChange={open => !open && setPendingDeleteId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Case?</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete the case for <strong>{pendingDeleteCase?.tenantName}</strong> at {pendingDeleteCase?.propertyAddress}? This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingDeleteId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleConfirmDelete} disabled={!!deletingId}>
+              {deletingId ? "Deleting..." : "Delete Case"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
