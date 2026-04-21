@@ -39,3 +39,8 @@ export async function getCases(): Promise<SmallClaimsCase[]> {
   if (!res.ok) throw new Error("Failed to fetch cases");
   return res.json();
 }
+
+export async function deleteCase(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/cases/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete case");
+}
