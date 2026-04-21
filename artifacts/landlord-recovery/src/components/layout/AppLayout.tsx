@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Scale, Home, FileText, Settings, LogOut, Menu, PieChart, Info, BookOpen, CreditCard } from "lucide-react";
+import { Scale, Home, FileText, Settings, LogOut, Menu, PieChart, Info, BookOpen, CreditCard, Library } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -103,6 +103,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <Link href="/cases" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${location.startsWith('/cases') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
               <FileText className="h-4 w-4" />
               My Cases
+            </Link>
+            <Link href="/documents" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${location === '/documents' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
+              <Library className="h-4 w-4" />
+              Documents
             </Link>
           </nav>
           
