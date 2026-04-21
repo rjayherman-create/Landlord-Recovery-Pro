@@ -1,5 +1,11 @@
 const API_BASE = "";
 
+export interface CaseDashboardData {
+  case: SmallClaimsCase;
+  evidence: { id: number; fileName: string; mimeType: string }[];
+  timeline: { date: string; event: string; type: string }[];
+}
+
 export interface SmallClaimsCase {
   id: number;
   userId?: string | null;
@@ -43,4 +49,32 @@ export async function getCases(): Promise<SmallClaimsCase[]> {
 export async function deleteCase(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/api/cases/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Failed to delete case");
+}
+
+export async function getCase(id: string): Promise<CaseDashboardData> {
+  const res = await fetch(`${API_BASE}/api/cases/${id}/dashboard`);
+  if (!res.ok) throw new Error("Failed to fetch case");
+  return res.json();
+}
+
+export async function updateCaseStatus(
+  id: string,
+  status: string
+): Promise<{ case: SmallClaimsCase }> {
+  const res = await fetch(`${API_BASE}/api/cases/${id}/status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ status }),
+  });
+  if (!res.ok) throw new Error("Failed to update case status");
+  const updated: SmallClaimsCase = await res.json();
+  return { case: updated };
+}
+
+export function getCourtSummaryUrl(id: string): string {
+  return `${API_BASE}/api/small-claims/download/${id}`;
+}
+
+export function getDemandLetterUrl(id: string): string {
+  return `${API_BASE}/api/cases/${id}/collection/demand-letter`;
 }
