@@ -7,12 +7,13 @@ import { useState } from "react";
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
 
-  const isMarketing = location === "/" || location === "/how-it-works" || location === "/resources" || location === "/pricing";
+  const isMarketing = location === "/" || location === "/how-it-works" || location === "/resources" || location === "/pricing" || location === "/documents";
 
   if (isMarketing) {
     const marketingLinks = [
       { href: "/how-it-works", label: "How it Works" },
-      { href: "/resources", label: "Resources" },
+      { href: "/documents", label: "Document Library" },
+      { href: "/resources", label: "State Limits" },
       { href: "/pricing", label: "Pricing" },
     ];
 
