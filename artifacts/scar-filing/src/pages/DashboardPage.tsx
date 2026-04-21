@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { getCases, SmallClaimsCase } from "../lib/api";
 import {
   Scale,
@@ -201,7 +201,7 @@ export function DashboardPage() {
             You have <strong>{stats.hearingsSoon}</strong> hearing
             {stats.hearingsSoon !== 1 ? "s" : ""} scheduled. Make sure you are prepared.
           </span>
-          <Link href="/cases" className="ml-auto text-orange-700 hover:underline font-medium whitespace-nowrap">
+          <Link to="/cases" className="ml-auto text-orange-700 hover:underline font-medium whitespace-nowrap">
             View cases
           </Link>
         </div>
@@ -211,7 +211,7 @@ export function DashboardPage() {
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-serif text-lg font-semibold text-foreground">Recent Cases</h2>
         {cases.length > 5 && (
-          <Link href="/cases" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
+          <Link to="/cases" className="text-sm text-primary hover:underline inline-flex items-center gap-1">
             View all <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         )}

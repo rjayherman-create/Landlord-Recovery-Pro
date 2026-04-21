@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   useCreateCase,
@@ -1116,7 +1116,7 @@ const WIZARD_API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 function Step4Statement({ form, caseId, conversationId, onBack }: {
   form: FormData; caseId: number | null; conversationId: number | null; onBack: () => void;
 }) {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const claimType = CLAIM_TYPES.find((c) => c.value === form.claimType);
   const [statement, setStatement] = useState("");
   const [generating, setGenerating] = useState(false);
@@ -1223,7 +1223,7 @@ function Step4Statement({ form, caseId, conversationId, onBack }: {
           </div>
           <div className="flex flex-wrap gap-3 justify-center">
             <button
-              onClick={() => setLocation("/cases")}
+              onClick={() => navigate("/cases")}
               className="px-5 py-2.5 border border-border text-foreground text-sm font-medium rounded-md hover:bg-secondary/50 transition-colors"
             >
               View My Cases

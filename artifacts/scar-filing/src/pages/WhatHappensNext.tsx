@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import {
   Bell, Clock, CheckCircle, AlertCircle, Scale, DollarSign,
   MessageSquare, FileText, ChevronDown, ChevronUp, ArrowRight,
@@ -199,7 +199,7 @@ function OutcomeGuidance({ guidanceKey }: { guidanceKey: string }) {
 }
 
 export function WhatHappensNext() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-10">
@@ -324,13 +324,13 @@ export function WhatHappensNext() {
 
       <div className="flex gap-3">
         <button
-          onClick={() => setLocation("/cases")}
+          onClick={() => navigate("/cases")}
           className="flex-1 flex items-center justify-center gap-2 border border-border text-foreground font-medium px-5 py-2.5 rounded-md hover:bg-secondary/50 transition-colors text-sm"
         >
           View My Cases
         </button>
         <button
-          onClick={() => setLocation("/guide")}
+          onClick={() => navigate("/guide")}
           className="flex-1 flex items-center justify-center gap-2 bg-primary text-primary-foreground font-medium px-5 py-2.5 rounded-md hover:opacity-90 transition-opacity text-sm"
         >
           Filing Guide <ArrowRight className="w-4 h-4" />

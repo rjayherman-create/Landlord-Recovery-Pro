@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { getCases, deleteCase, SmallClaimsCase } from "../lib/api";
 import {
   Scale,

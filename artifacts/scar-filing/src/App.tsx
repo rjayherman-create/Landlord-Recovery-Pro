@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Routes, Route } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/Layout";
@@ -27,24 +27,24 @@ const queryClient = new QueryClient();
 function Router() {
   return (
     <Layout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/dashboard" component={DashboardPage} />
-        <Route path="/new-claim" component={NewClaimPage} />
-        <Route path="/file" component={FileWizard} />
-        <Route path="/cases" component={Cases} />
-        <Route path="/case-list" component={CaseListPage} />
-        <Route path="/guide" component={Guide} />
-        <Route path="/counties" component={Counties} />
-        <Route path="/checkout/success" component={CheckoutSuccess} />
-        <Route path="/checkout/cancel" component={CheckoutCancel} />
-        <Route path="/disclaimer" component={Disclaimer} />
-        <Route path="/terms" component={Terms} />
-        <Route path="/refund" component={RefundPolicy} />
-        <Route path="/what-happens-next" component={WhatHappensNext} />
-        <Route path="/cases/:id" component={CaseDashboard} />
-        <Route component={NotFound} />
-      </Switch>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/new-claim" element={<NewClaimPage />} />
+        <Route path="/file" element={<FileWizard />} />
+        <Route path="/cases" element={<Cases />} />
+        <Route path="/case-list" element={<CaseListPage />} />
+        <Route path="/guide" element={<Guide />} />
+        <Route path="/counties" element={<Counties />} />
+        <Route path="/checkout/success" element={<CheckoutSuccess />} />
+        <Route path="/checkout/cancel" element={<CheckoutCancel />} />
+        <Route path="/disclaimer" element={<Disclaimer />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/refund" element={<RefundPolicy />} />
+        <Route path="/what-happens-next" element={<WhatHappensNext />} />
+        <Route path="/cases/:id" element={<CaseDashboard />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
     </Layout>
   );
 }
@@ -53,9 +53,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <Router />
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

@@ -1,4 +1,4 @@
-import { useLocation, Link } from "wouter";
+import { useNavigate, Link } from "react-router-dom";
 import { Scale, FileText, MessageSquare, Sparkles, ArrowRight, Shield, Clock, CheckCircle } from "lucide-react";
 
 const CLAIM_TYPES = [
@@ -28,7 +28,7 @@ const WHAT_HAPPENS = [
 ];
 
 export function Home() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   return (
     <div className="min-h-[calc(100vh-4rem)]">
       <section className="bg-gradient-to-br from-primary/5 via-background to-background border-b border-border">
@@ -46,14 +46,14 @@ export function Home() {
           </p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
-              onClick={() => setLocation("/file")}
+              onClick={() => navigate("/file")}
               className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm"
             >
               Start Filing Now
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setLocation("/guide")}
+              onClick={() => navigate("/guide")}
               className="inline-flex items-center justify-center gap-2 border border-border text-foreground font-medium px-6 py-3 rounded-lg hover:bg-secondary/50 transition-colors text-sm"
             >
               Learn How It Works
@@ -123,7 +123,7 @@ export function Home() {
         </div>
         <div className="text-center">
           <button
-            onClick={() => setLocation("/what-happens-next")}
+            onClick={() => navigate("/what-happens-next")}
             className="inline-flex items-center gap-2 text-primary text-sm font-medium hover:underline"
           >
             See the full post-filing guide <ArrowRight className="w-3.5 h-3.5" />
@@ -156,7 +156,7 @@ export function Home() {
           <h2 className="font-serif text-2xl font-semibold mb-3">Ready to file your case?</h2>
           <p className="text-primary-foreground/80 text-sm mb-6">It's free and takes less than 15 minutes.</p>
           <button
-            onClick={() => setLocation("/file")}
+            onClick={() => navigate("/file")}
             className="inline-flex items-center gap-2 bg-white text-primary font-semibold px-6 py-3 rounded-lg hover:bg-white/90 transition-colors text-sm"
           >
             Start Your Case
@@ -169,7 +169,7 @@ export function Home() {
         <p className="text-xs text-muted-foreground">
           SmallClaims AI provides self-help tools and general information only. It is not a law firm and does not provide legal advice or representation.
           Use of this service does not create an attorney-client relationship.{" "}
-          <Link href="/disclaimer" className="underline hover:text-foreground transition-colors">Full Disclaimer</Link>
+          <Link to="/disclaimer" className="underline hover:text-foreground transition-colors">Full Disclaimer</Link>
         </p>
       </div>
     </div>

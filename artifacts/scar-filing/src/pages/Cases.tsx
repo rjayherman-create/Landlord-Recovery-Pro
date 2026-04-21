@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter";
+import { Link, useNavigate } from "react-router-dom";
 import { useListCases, useDeleteCase, getListCasesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Download, FileText, Plus, Scale, Trash2, CheckCircle, Clock, AlertCircle } from "lucide-react";
@@ -44,7 +44,7 @@ const STATUS_CONFIG: Record<string, { label: string; icon: typeof CheckCircle; c
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function Cases() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: cases, isLoading, error } = useListCases();
   const deleteCase = useDeleteCase();
@@ -88,7 +88,7 @@ export function Cases() {
           </p>
         </div>
         <button
-          onClick={() => setLocation("/file")}
+          onClick={() => navigate("/file")}
           className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-md hover:opacity-90 transition-opacity"
         >
           <Plus className="w-4 h-4" />
@@ -105,7 +105,7 @@ export function Cases() {
               Start by filing your first small claims case. Our AI will guide you through the entire process.
             </p>
             <button
-              onClick={() => setLocation("/file")}
+              onClick={() => navigate("/file")}
               className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 rounded-md hover:opacity-90 transition-opacity"
             >
               <Plus className="w-4 h-4" />
@@ -127,7 +127,7 @@ export function Cases() {
               >
                 <div
                   className="bg-card border border-card-border rounded-lg p-4 hover:border-primary/30 transition-colors group cursor-pointer"
-                  onClick={() => setLocation(`/cases/${c.id}`)}
+                  onClick={() => navigate(`/cases/${c.id}`)}
                 >
                   <div className="flex items-start gap-4">
                     <div className="text-2xl shrink-0 mt-0.5">
@@ -167,7 +167,7 @@ export function Cases() {
                         <div className="flex items-center gap-3">
                           {c.status === "draft" && (
                             <button
-                              onClick={() => setLocation("/file")}
+                              onClick={() => navigate("/file")}
                               className="text-xs text-primary hover:underline inline-flex items-center gap-1"
                             >
                               Continue <ArrowRight className="w-3 h-3" />

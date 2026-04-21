@@ -1,6 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 const CollectionToolkit = lazy(() => import("./CollectionToolkit").then(m => ({ default: m.CollectionToolkit })));
-import { useLocation, useRoute } from "wouter";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   CheckCircle, Clock, AlertCircle, Download, FileText, ArrowLeft,
   Scale, ExternalLink, Calendar, Gavel, DollarSign, Users, ChevronDown, ChevronUp,
@@ -182,7 +182,7 @@ function StatusCard({ caseData, onStatusUpdate }: { caseData: any; onStatusUpdat
 
 function NextSteps({ status }: { status: string }) {
   const step = NEXT_STEPS[status] ?? NEXT_STEPS.draft;
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   return (
     <div className="bg-card border border-card-border rounded-xl p-5 mb-4">
       <h3 className="text-sm font-semibold text-foreground mb-2">What to Do Next</h3>
@@ -193,7 +193,7 @@ function NextSteps({ status }: { status: string }) {
         </div>
       )}
       <button
-        onClick={() => setLocation("/what-happens-next")}
+        onClick={() => navigate("/what-happens-next")}
         className="mt-3 text-xs text-primary hover:underline inline-flex items-center gap-1"
       >
         Full post-filing guide <ExternalLink className="w-3 h-3" />
@@ -256,7 +256,7 @@ function EvidenceList({ files }: { files: any[] }) {
 
 function DownloadSection({ caseData }: { caseData: any }) {
   const isPaid = !!caseData.paidAt;
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
 
   if (!isPaid) {
     return (
@@ -266,7 +266,7 @@ function DownloadSection({ caseData }: { caseData: any }) {
           Complete payment to unlock and download your professionally formatted court filing document.
         </p>
         <button
-          onClick={() => setLocation("/file")}
+          onClick={() => navigate("/file")}
           className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-medium px-4 py-2 rounded-md hover:opacity-90 transition-opacity"
         >
           Continue Filing
@@ -294,8 +294,8 @@ function DownloadSection({ caseData }: { caseData: any }) {
 
 // ── Main Dashboard ─────────────────────────────────────────────────────────
 export function CaseDashboard() {
-  const [, setLocation] = useLocation();
-  const [, params] = useRoute("/cases/:id");
+  const navigate = useNavigate();
+  const params = useParams();
   const caseId = params?.id ? Number(params.id) : null;
   const [dashData, setDashData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -326,7 +326,7 @@ export function CaseDashboard() {
       <div className="max-w-2xl mx-auto px-4 py-10 text-center">
         <AlertCircle className="w-10 h-10 text-muted-foreground/40 mx-auto mb-4" />
         <p className="text-muted-foreground">Case not found.</p>
-        <button onClick={() => setLocation("/cases")} className="mt-4 text-sm text-primary hover:underline">
+        <button onClick={() => navigate("/cases")} className="mt-4 text-sm text-primary hover:underline">
           Back to My Cases
         </button>
       </div>
@@ -341,7 +341,7 @@ export function CaseDashboard() {
       {/* Header */}
       <div className="flex items-start gap-3 mb-6">
         <button
-          onClick={() => setLocation("/cases")}
+          onClick={() => navigate("/cases")}
           className="mt-1 p-1.5 text-muted-foreground hover:text-foreground border border-border rounded-md hover:bg-secondary/50 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />

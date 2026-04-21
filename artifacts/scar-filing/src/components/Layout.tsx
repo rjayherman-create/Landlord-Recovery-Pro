@@ -1,9 +1,9 @@
-import { Link, useLocation } from "wouter";
+import { Link, useLocation } from "react-router-dom";
 import { ReactNode } from "react";
 import { Scale } from "lucide-react";
 
 export function Layout({ children }: { children: ReactNode }) {
-  const [location] = useLocation();
+  const { pathname: location } = useLocation();
 
   const navItems = [
     { href: "/", label: "Home" },
@@ -19,7 +19,7 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-background/95 backdrop-blur sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
+          <Link to="/" className="flex items-center gap-2 text-foreground hover:text-primary transition-colors">
             <div className="w-7 h-7 bg-primary rounded-md flex items-center justify-center">
               <Scale className="w-4 h-4 text-primary-foreground" />
             </div>
@@ -56,11 +56,11 @@ export function Layout({ children }: { children: ReactNode }) {
             <span>SmallClaims AI — Not a law firm. Not legal advice.</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/what-happens-next" className="hover:text-foreground transition-colors">After Filing</Link>
-            <Link href="/guide" className="hover:text-foreground transition-colors">Guide</Link>
-            <Link href="/terms" className="hover:text-foreground transition-colors">Terms</Link>
-            <Link href="/refund" className="hover:text-foreground transition-colors">Refund Policy</Link>
-            <Link href="/disclaimer" className="hover:text-foreground transition-colors">Disclaimer</Link>
+            <Link to="/what-happens-next" className="hover:text-foreground transition-colors">After Filing</Link>
+            <Link to="/guide" className="hover:text-foreground transition-colors">Guide</Link>
+            <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
+            <Link to="/refund" className="hover:text-foreground transition-colors">Refund Policy</Link>
+            <Link to="/disclaimer" className="hover:text-foreground transition-colors">Disclaimer</Link>
           </div>
         </div>
         <div className="max-w-5xl mx-auto px-4 pb-4 text-center">

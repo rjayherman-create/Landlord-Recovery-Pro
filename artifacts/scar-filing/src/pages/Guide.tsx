@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link } from "react-router-dom";
 import { ArrowRight, Scale, FileText, MessageSquare, Sparkles, DollarSign, AlertCircle } from "lucide-react";
 
 const STATE_INFO = [
@@ -112,7 +112,7 @@ export function Guide() {
         <p className="text-sm text-muted-foreground mb-4">
           Let our AI assistant help you prepare a strong case in under 15 minutes.
         </p>
-        <Link href="/file" className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 rounded-md hover:opacity-90 transition-opacity">
+        <Link to="/file" className="inline-flex items-center gap-2 bg-primary text-primary-foreground text-sm font-medium px-5 py-2.5 rounded-md hover:opacity-90 transition-opacity">
           Start Filing Now <ArrowRight className="w-4 h-4" />
         </Link>
       </section>

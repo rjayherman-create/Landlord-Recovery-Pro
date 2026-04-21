@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
 import { CheckCircle, Download, Loader2, ArrowRight, Map } from "lucide-react";
 
 const API_BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export function CheckoutSuccess() {
-  const [, setLocation] = useLocation();
+  const navigate = useNavigate();
   const params = new URLSearchParams(window.location.search);
   const caseId = params.get("caseId");
   const sessionId = params.get("session_id");
@@ -73,13 +73,13 @@ export function CheckoutSuccess() {
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <button
-          onClick={() => setLocation("/cases")}
+          onClick={() => navigate("/cases")}
           className="flex-1 inline-flex items-center justify-center gap-2 border border-border text-foreground font-medium px-5 py-2.5 rounded-md hover:bg-secondary/50 transition-colors text-sm"
         >
           View My Cases
         </button>
         <button
-          onClick={() => setLocation("/what-happens-next")}
+          onClick={() => navigate("/what-happens-next")}
           className="flex-1 inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-medium px-5 py-2.5 rounded-md hover:opacity-90 transition-opacity text-sm"
         >
           <Map className="w-4 h-4" />
