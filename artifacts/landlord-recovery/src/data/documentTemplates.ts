@@ -35,62 +35,16 @@ const COMMON_PARTY_FIELDS: TemplateField[] = [
 ];
 
 export const documentTemplates: DocumentTemplate[] = [
-  {
-    id: "5-day-notice",
-    title: "5-Day Notice to Pay Rent or Quit",
-    subtitle: "Most common unpaid rent notice",
-    category: "notices",
-    description: "Formally demands rent payment within 5 days or the tenant must vacate. Required first step before eviction in most states.",
-    states: ["NY", "IL", "OH", "GA", "NC"],
-    fields: [
-      ...COMMON_PARTY_FIELDS,
-      { key: "rent_amount", label: "Total Rent Owed ($)", placeholder: "2400.00", type: "number", required: true },
-      { key: "months_description", label: "Months Covered", placeholder: "March and April 2025", type: "text", required: true },
-      { key: "due_date", label: "Original Rent Due Date", placeholder: "March 1, 2025", type: "text", required: true },
-      { key: "notice_date", label: "Date of This Notice", placeholder: "April 21, 2025", type: "date", required: true },
-      { key: "pay_by_date", label: "Pay-By Deadline (5 days from notice)", placeholder: "April 26, 2025", type: "date", required: true },
-      { key: "state", label: "State", type: "state", required: true },
-    ],
-    body: `5-DAY NOTICE TO PAY RENT OR QUIT
 
-Date: {{notice_date}}
-State: {{state}}
-
-TO: {{tenant_name}}
-Property Address: {{property_address}}
-
-FROM: {{landlord_name}}
-{{landlord_address}}
-
-NOTICE IS HEREBY GIVEN that you are in default of your rental agreement for the above-described premises. You are indebted to the undersigned for unpaid rent as follows:
-
-    Rent Owed: \${{rent_amount}}
-    Period Covered: {{months_description}}
-    Original Due Date: {{due_date}}
-
-YOU ARE HEREBY REQUIRED to pay the above-stated amount in full OR vacate and surrender possession of the said premises on or before:
-
-    DEADLINE: {{pay_by_date}}
-
-If you fail to pay the full amount owed or vacate the premises by the deadline stated above, legal proceedings will be instituted against you to recover possession of the premises, declare the rental agreement forfeited, and seek a money judgment for all rent due, together with court costs and attorney's fees as permitted by law.
-
-If you have already paid the amount stated above, please disregard this notice and provide proof of payment immediately.
-
-___________________________
-{{landlord_name}}
-Landlord / Property Owner
-Date Served: {{notice_date}}
-
-NOTE: This notice must be served in accordance with the laws of {{state}}. Consult your local court clerk for proper service procedures.`,
-  },
+  // ─── Pay or Quit Notices ─────────────────────────────────────────────────────
 
   {
     id: "3-day-notice",
     title: "3-Day Notice to Pay Rent or Quit",
-    subtitle: "For California, Florida, Texas and others",
+    subtitle: "CA, FL, TX, OH and other 3-day states",
     category: "notices",
-    description: "Shorter notice period required before eviction proceedings. Commonly used in CA, FL, TX, PA, and NJ.",
-    states: ["CA", "FL", "TX", "NJ", "PA"],
+    description: "Formally demands rent payment within 3 days or the tenant must vacate. Required first step before eviction in 3-day notice states.",
+    states: ["CA", "FL", "TX", "OH", "AR", "CT", "ID", "IA", "KS", "MS", "MO", "MT", "NM", "ND", "SD", "UT", "WY"],
     fields: [
       ...COMMON_PARTY_FIELDS,
       { key: "rent_amount", label: "Total Rent Owed ($)", placeholder: "1800.00", type: "number", required: true },
@@ -115,32 +69,178 @@ PLEASE TAKE NOTICE that the rent on your rental unit, located at {{property_addr
     Total Amount Due: \${{rent_amount}}
     Period: {{months_description}}
 
-YOU ARE HEREBY REQUIRED to pay the total amount of \${{rent_amount}} in full within THREE (3) DAYS from service of this notice, or on or before {{pay_by_date}}, OR to vacate and surrender the premises.
+YOU ARE HEREBY REQUIRED to pay the total amount of \${{rent_amount}} in full within THREE (3) DAYS from service of this notice, on or before {{pay_by_date}}, OR to vacate and surrender the premises.
 
 If you fail to comply with this notice, your tenancy will be terminated and legal proceedings will be commenced against you to recover possession of the premises, a money judgment for past-due rent, and all costs and attorneys' fees as allowed by the laws of {{state}}.
 
 ___________________________
 {{landlord_name}}
 Landlord / Property Owner
-Date Served: {{notice_date}}`,
+Date Served: {{notice_date}}
+
+NOTE: This notice must be served in accordance with the laws of {{state}}. Consult your local court clerk for proper service procedures.`,
+  },
+
+  {
+    id: "5-day-notice",
+    title: "5-Day Notice to Pay Rent or Quit",
+    subtitle: "IL, WI, AZ, SC, VA and other 5-day states",
+    category: "notices",
+    description: "Formally demands rent payment within 5 days or the tenant must vacate. Required first step before eviction in 5-day notice states.",
+    states: ["IL", "WI", "AZ", "SC", "RI", "HI", "DE", "WV", "LA", "OK", "VA"],
+    fields: [
+      ...COMMON_PARTY_FIELDS,
+      { key: "rent_amount", label: "Total Rent Owed ($)", placeholder: "2400.00", type: "number", required: true },
+      { key: "months_description", label: "Months Covered", placeholder: "March and April 2025", type: "text", required: true },
+      { key: "due_date", label: "Original Rent Due Date", placeholder: "March 1, 2025", type: "text", required: true },
+      { key: "notice_date", label: "Date of This Notice", type: "date", required: true },
+      { key: "pay_by_date", label: "Pay-By Deadline (5 days from notice)", type: "date", required: true },
+      { key: "state", label: "State", type: "state", required: true },
+    ],
+    body: `5-DAY NOTICE TO PAY RENT OR QUIT
+
+Date: {{notice_date}}
+State: {{state}}
+
+TO: {{tenant_name}}
+Property Address: {{property_address}}
+
+FROM: {{landlord_name}}
+{{landlord_address}}
+
+NOTICE IS HEREBY GIVEN that you are in default of your rental agreement for the above-described premises. You are indebted to the undersigned for unpaid rent as follows:
+
+    Rent Owed: \${{rent_amount}}
+    Period Covered: {{months_description}}
+    Original Due Date: {{due_date}}
+
+YOU ARE HEREBY REQUIRED to pay the above-stated amount in full OR vacate and surrender possession of the said premises on or before:
+
+    DEADLINE: {{pay_by_date}}
+
+If you fail to pay the full amount owed or vacate the premises by the deadline stated above, legal proceedings will be instituted against you to recover possession of the premises, declare the rental agreement forfeited, and seek a money judgment for all rent due, together with court costs and attorney's fees as permitted by the laws of {{state}}.
+
+If you have already paid the amount stated above, please disregard this notice and provide proof of payment immediately.
+
+___________________________
+{{landlord_name}}
+Landlord / Property Owner
+Date Served: {{notice_date}}
+
+NOTE: This notice must be served in accordance with the laws of {{state}}. Consult your local court clerk for proper service procedures.`,
+  },
+
+  {
+    id: "7-day-notice",
+    title: "7-Day Notice to Pay Rent or Quit",
+    subtitle: "AL, AK, KY, MI, NV, NH and other 7-day states",
+    category: "notices",
+    description: "Formally demands rent payment within 7 days or the tenant must vacate. Required first step before eviction in 7-day notice states.",
+    states: ["AL", "AK", "KY", "ME", "MI", "NE", "NV", "NH"],
+    fields: [
+      ...COMMON_PARTY_FIELDS,
+      { key: "rent_amount", label: "Total Rent Owed ($)", placeholder: "1400.00", type: "number", required: true },
+      { key: "months_description", label: "Months Covered", placeholder: "April 2025", type: "text", required: true },
+      { key: "due_date", label: "Original Rent Due Date", placeholder: "April 1, 2025", type: "text", required: true },
+      { key: "notice_date", label: "Date of This Notice", type: "date", required: true },
+      { key: "pay_by_date", label: "Pay-By Deadline (7 days from notice)", type: "date", required: true },
+      { key: "state", label: "State", type: "state", required: true },
+    ],
+    body: `7-DAY NOTICE TO PAY RENT OR QUIT
+
+Date: {{notice_date}}
+State: {{state}}
+
+TO: {{tenant_name}}
+Property Address: {{property_address}}
+
+FROM: {{landlord_name}}
+{{landlord_address}}
+
+NOTICE IS HEREBY GIVEN that you are in default of your rental agreement for the above-described premises. You are indebted to the undersigned for unpaid rent as follows:
+
+    Rent Owed: \${{rent_amount}}
+    Period Covered: {{months_description}}
+    Original Due Date: {{due_date}}
+
+YOU ARE HEREBY REQUIRED to pay the above-stated amount in full OR vacate and surrender possession of the said premises on or before:
+
+    DEADLINE: {{pay_by_date}}
+
+If you fail to pay the full amount owed or vacate the premises by the deadline stated above, legal proceedings will be instituted against you to recover possession of the premises, declare the rental agreement forfeited, and seek a money judgment for all rent due, together with court costs and attorney's fees as permitted by the laws of {{state}}.
+
+___________________________
+{{landlord_name}}
+Landlord / Property Owner
+Date Served: {{notice_date}}
+
+NOTE: This notice must be served in accordance with the laws of {{state}}. Consult your local court clerk for proper service procedures.`,
+  },
+
+  {
+    id: "10-day-nonpayment-notice",
+    title: "10-Day Notice to Pay Rent or Quit",
+    subtitle: "PA, NC, CO, IN, OR and other 10-day states",
+    category: "notices",
+    description: "Formally demands rent payment within 10 days or the tenant must vacate. Required first step before eviction in 10-day notice states.",
+    states: ["PA", "NC", "CO", "IN", "OR"],
+    fields: [
+      ...COMMON_PARTY_FIELDS,
+      { key: "rent_amount", label: "Total Rent Owed ($)", placeholder: "1600.00", type: "number", required: true },
+      { key: "months_description", label: "Months Covered", placeholder: "April 2025", type: "text", required: true },
+      { key: "due_date", label: "Original Rent Due Date", placeholder: "April 1, 2025", type: "text", required: true },
+      { key: "notice_date", label: "Date of This Notice", type: "date", required: true },
+      { key: "pay_by_date", label: "Pay-By Deadline (10 days from notice)", type: "date", required: true },
+      { key: "state", label: "State", type: "state", required: true },
+    ],
+    body: `10-DAY NOTICE TO PAY RENT OR QUIT
+
+Date: {{notice_date}}
+State: {{state}}
+
+TO: {{tenant_name}}
+Property Address: {{property_address}}
+
+FROM: {{landlord_name}}
+{{landlord_address}}
+
+NOTICE IS HEREBY GIVEN that you are in default of your rental agreement for the above-described premises. You are indebted to the undersigned for unpaid rent as follows:
+
+    Rent Owed: \${{rent_amount}}
+    Period Covered: {{months_description}}
+    Original Due Date: {{due_date}}
+
+YOU ARE HEREBY REQUIRED to pay the above-stated amount in full OR vacate and surrender possession of the said premises on or before:
+
+    DEADLINE: {{pay_by_date}} (ten days from date of service)
+
+If you fail to pay the full amount owed or vacate the premises by the deadline stated above, legal proceedings will be instituted against you to recover possession of the premises, and to seek a money judgment for all rent due, together with court costs and attorney's fees as permitted by the laws of {{state}}.
+
+___________________________
+{{landlord_name}}
+Landlord / Property Owner
+Date Served: {{notice_date}}
+
+NOTE: This notice must be served in accordance with the laws of {{state}}. Consult your local court clerk for proper service procedures.`,
   },
 
   {
     id: "14-day-notice",
     title: "14-Day Notice to Pay Rent or Quit",
-    subtitle: "For New Jersey and similar states",
+    subtitle: "NY, MA, WA, MN, TN, VT and NJ",
     category: "notices",
-    description: "Required in NJ and some other states before commencing eviction for nonpayment of rent.",
-    states: ["NJ"],
+    description: "Formally demands rent payment within 14 days or the tenant must vacate. Required first step before eviction in 14-day notice states, including New York (required since 2019).",
+    states: ["NY", "MA", "WA", "MN", "TN", "VT", "NJ"],
     fields: [
       ...COMMON_PARTY_FIELDS,
       { key: "rent_amount", label: "Total Rent Owed ($)", placeholder: "1500.00", type: "number", required: true },
       { key: "months_description", label: "Months / Period Covered", placeholder: "March and April 2025", type: "text", required: true },
       { key: "notice_date", label: "Date of This Notice", type: "date", required: true },
-      { key: "pay_by_date", label: "Pay-By Deadline", type: "date", required: true },
+      { key: "pay_by_date", label: "Pay-By Deadline (14 days from notice)", type: "date", required: true },
+      { key: "state", label: "State", type: "state", required: true },
     ],
-    body: `NOTICE TO QUIT FOR NONPAYMENT OF RENT
-(14-Day Notice — New Jersey)
+    body: `NOTICE TO PAY RENT OR QUIT
+(14-Day Notice — {{state}})
 
 Date: {{notice_date}}
 
@@ -150,35 +250,36 @@ Premises: {{property_address}}
 FROM: {{landlord_name}}
 {{landlord_address}}
 
-PLEASE TAKE NOTICE that you are hereby required to pay the rent now due and in arrears in the amount of \${{rent_amount}} for the period of {{months_description}}, or remove from and deliver up possession of the premises which you hold as tenant.
+PLEASE TAKE NOTICE that the rent for the above-described premises is past due and unpaid in the amount of \${{rent_amount}} for the period of {{months_description}}.
 
-The total amount due is: \${{rent_amount}}
+You are required to pay the total amount of \${{rent_amount}} in full within FOURTEEN (14) DAYS from the date of service of this notice, on or before {{pay_by_date}}, OR to vacate and deliver up possession of the premises.
 
-You are required to pay this amount OR vacate the premises within FOURTEEN (14) DAYS from the date of service of this notice, on or before {{pay_by_date}}.
-
-In the event of your failure to pay such rent or to remove from said premises within the time above specified, your landlord will institute summary dispossess proceedings against you for recovery of said premises, as provided by law.
+In the event of your failure to pay such rent or to remove from said premises within the time above specified, legal proceedings will be instituted against you for recovery of said premises, a money judgment for past-due rent, and all court costs as provided by law.
 
 ___________________________
 {{landlord_name}}
-Landlord
-Date: {{notice_date}}`,
+Landlord / Property Owner
+Date Served: {{notice_date}}
+
+NOTE: This notice must be served in accordance with the laws of {{state}}. Consult your local court clerk for proper service procedures.`,
   },
 
   {
     id: "10-day-lease-violation",
-    title: "10-Day Notice to Cure Lease Violation or Quit",
+    title: "Notice to Cure Lease Violation or Quit",
     subtitle: "For lease violations other than non-payment",
     category: "notices",
-    description: "Notifies a tenant of a specific lease violation and gives them 10 days to correct it or face eviction.",
+    description: "Notifies a tenant of a specific lease violation and gives them time to correct it or face eviction. Cure period varies by state — verify your state's requirement.",
     fields: [
       ...COMMON_PARTY_FIELDS,
+      { key: "cure_days", label: "Cure Period (days — check your state's requirement)", placeholder: "10", type: "number", required: true },
       { key: "violation_description", label: "Specific Lease Violation", placeholder: "Unauthorized pet in violation of the no-pets clause in Section 12 of the lease agreement", type: "textarea", required: true },
       { key: "lease_clause", label: "Applicable Lease Clause / Section", placeholder: "Section 12 — No Pets", type: "text" },
       { key: "notice_date", label: "Date of This Notice", type: "date", required: true },
-      { key: "cure_by_date", label: "Cure-By Deadline (10 days)", type: "date", required: true },
+      { key: "cure_by_date", label: "Cure-By Deadline", type: "date", required: true },
       { key: "state", label: "State", type: "state", required: true },
     ],
-    body: `10-DAY NOTICE TO CURE OR QUIT
+    body: `NOTICE TO CURE OR QUIT
 
 Date: {{notice_date}}
 State: {{state}}
@@ -196,7 +297,7 @@ VIOLATION:
 
 APPLICABLE LEASE PROVISION: {{lease_clause}}
 
-YOU ARE HEREBY REQUIRED to remedy the above-described violation within TEN (10) DAYS from service of this notice, on or before {{cure_by_date}}.
+YOU ARE HEREBY REQUIRED to remedy the above-described violation within {{cure_days}} DAYS from service of this notice, on or before {{cure_by_date}}.
 
 If you fail to remedy the violation within the time specified, your tenancy will be terminated and legal proceedings will be commenced against you to recover possession of the premises and for damages as permitted by the laws of {{state}}.
 
@@ -207,6 +308,8 @@ ___________________________
 Landlord / Property Owner
 Date: {{notice_date}}`,
   },
+
+  // ─── Demand Letters ───────────────────────────────────────────────────────────
 
   {
     id: "demand-unpaid-rent",
@@ -324,12 +427,14 @@ Landlord / Property Owner
 Sent via Certified Mail, Return Receipt Requested`,
   },
 
+  // ─── Security Deposit ─────────────────────────────────────────────────────────
+
   {
     id: "security-deposit-itemization",
     title: "Security Deposit Itemized Deduction Statement",
     subtitle: "Required notice of deposit deductions",
     category: "deposit",
-    description: "Itemized statement of deductions from a security deposit, required in most states within 14–30 days of move-out.",
+    description: "Itemized statement of deductions from a security deposit, required in most states within a statutory deadline after move-out. Deadline is auto-filled when you select your state.",
     fields: [
       ...COMMON_PARTY_FIELDS,
       { key: "tenant_mailing_address", label: "Tenant Forwarding Address", placeholder: "789 New St, Queens, NY 11101", type: "text", required: true },
@@ -360,6 +465,8 @@ Dear {{tenant_name}},
 
 This letter provides the itemized accounting of your security deposit for the rental property at {{property_address}}, which you vacated on {{move_out_date}}.
 
+Under {{state}} law, landlords are required to return the security deposit or provide an itemized statement of deductions within {{deposit_deadline_days}} days of move-out.
+
 DEPOSIT ACCOUNTING:
 
     Security Deposit Collected:          \${{deposit_held}}
@@ -371,9 +478,9 @@ DEPOSIT ACCOUNTING:
     ─────────────────────────────────────────────
     BALANCE RETURNED TO TENANT:          \${{amount_returned}}
 
-A check for \${{amount_returned}} is enclosed / has been sent to your forwarding address on file.
+A check for \${{amount_returned}} is enclosed / has been mailed to your forwarding address on file.
 
-If you dispute any of the above deductions, please contact me in writing within 14 days of receiving this notice.
+If you dispute any of the above deductions, please contact me in writing within a reasonable time of receiving this notice.
 
 Sincerely,
 
@@ -388,7 +495,7 @@ Date: {{letter_date}}`,
     title: "Demand Letter — Unreturned Security Deposit",
     subtitle: "When your deposit was wrongfully withheld",
     category: "deposit",
-    description: "For tenants — demand the return of a security deposit that was not refunded or itemized within the legal deadline.",
+    description: "For tenants — demand the return of a security deposit that was not refunded or itemized within the legal deadline. State return deadline is auto-filled when you select a state.",
     fields: [
       ...COMMON_PARTY_FIELDS,
       { key: "move_out_date", label: "Move-Out / Lease End Date", placeholder: "March 31, 2025", type: "text", required: true },
@@ -413,7 +520,9 @@ Dear {{landlord_name}},
 
 I am writing to formally demand the return of my security deposit in the amount of \${{deposit_amount}}, which I paid upon commencement of my tenancy at {{property_address}}.
 
-I vacated the premises on {{move_out_date}}, leaving the unit in clean and undamaged condition, consistent with normal wear and tear. As of the date of this letter ({{days_since_moveout}} days after my move-out), I have not received my security deposit or a written itemized statement of any deductions, as required by {{state}} law.
+I vacated the premises on {{move_out_date}}, leaving the unit in clean and undamaged condition, consistent with normal wear and tear. As of the date of this letter ({{days_since_moveout}} days after my move-out), I have not received my security deposit or a written itemized statement of any deductions.
+
+Under {{state}} law, landlords are required to return security deposits or provide an itemized statement of deductions within {{deposit_deadline_days}} days of move-out. You are now past this statutory deadline.
 
 DEMAND: You are hereby demanded to return my security deposit of \${{deposit_amount}} in full, OR provide a legally compliant itemized statement of deductions, within TEN (10) DAYS — on or before {{response_deadline}}.
 
@@ -426,6 +535,8 @@ ___________________________
 Former Tenant
 Date: {{letter_date}}`,
   },
+
+  // ─── Lease Termination ────────────────────────────────────────────────────────
 
   {
     id: "30-day-notice-vacate",
@@ -462,7 +573,7 @@ Reason for Termination: {{reason}}
 
 This notice is given pursuant to the applicable laws of {{state}} governing the termination of month-to-month tenancies.
 
-Upon vacating, please return all keys and access devices. A move-out inspection will be scheduled at a mutually convenient time prior to the vacate date. Your security deposit will be returned (less any lawful deductions) within the time period required by {{state}} law.
+Upon vacating, please return all keys and access devices. A move-out inspection will be scheduled at a mutually convenient time prior to the vacate date. Your security deposit will be returned (less any lawful deductions) within {{deposit_deadline_days}} days as required by {{state}} law.
 
 If you fail to vacate the premises by the date specified above, legal proceedings to remove you from the premises may be commenced.
 
@@ -508,7 +619,7 @@ As a result of your failure to comply, your tenancy is hereby terminated. YOU AR
 
     VACATE BY: {{vacate_by_date}}
 
-If you fail to vacate by the date stated above, legal proceedings will be commenced to remove you from the premises and for any damages resulting from your breach, as permitted by the laws of {{state}}.
+If you fail to vacate by the above date, legal proceedings to recover possession of the premises will be commenced against you immediately. You may also be held liable for all costs, attorney's fees, and damages as permitted by the laws of {{state}}.
 
 ___________________________
 {{landlord_name}}
