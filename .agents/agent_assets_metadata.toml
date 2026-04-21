@@ -12,3 +12,9 @@ id = "t96HEJuS3sZ0Ys_-NQHTW"
 uri = "file://artifacts/taxappeal-mobile/assets/images/splash-icon.png"
 type = "image"
 title = "generated_image"
+
+[[generated]]
+id = "lnbiDdYdQxqYdfQE-jlSx"
+uri = "file://artifacts/landlord-recovery/src/assets/hero-landlord.png"
+type = "image"
+title = "landlord reviewing documents hero"
