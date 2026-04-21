@@ -14,6 +14,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { DocumentLibrary } from "@/components/shared/DocumentLibrary";
+import { CaseAdvisorChat } from "@/components/shared/CaseAdvisorChat";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -52,7 +53,7 @@ export default function CaseDetail() {
   const generateLetter = useGenerateDemandLetter();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"overview" | "documents">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "documents" | "advisor">("overview");
 
   // Edit case dialog state
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -514,6 +515,16 @@ export default function CaseDetail() {
           >
             <Library className="h-4 w-4" /> Documents
           </button>
+          <button
+            onClick={() => setActiveTab("advisor")}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === "advisor"
+                ? "border-accent text-accent"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span className="text-base leading-none">✦</span> AI Advisor
+          </button>
         </div>
       </div>
 
@@ -521,6 +532,27 @@ export default function CaseDetail() {
       {activeTab === "documents" && (
         <div className="flex-1 min-h-0 border-t border-border">
           <DocumentLibrary initialValues={docInitialValues} />
+        </div>
+      )}
+
+      {/* AI Advisor Tab */}
+      {activeTab === "advisor" && (
+        <div className="flex-1 min-h-0 border-t border-border">
+          <CaseAdvisorChat caseData={{
+            id: caseData.id,
+            tenantName: caseData.tenantName,
+            landlordName: caseData.landlordName,
+            propertyAddress: caseData.propertyAddress,
+            state: caseData.state,
+            claimType: caseData.claimType,
+            claimAmount: Number(caseData.claimAmount),
+            status: caseData.status,
+            description: caseData.description,
+            monthlyRent: caseData.monthlyRent ? Number(caseData.monthlyRent) : null,
+            monthsOwed: caseData.monthsOwed ?? null,
+            moveOutDate: caseData.moveOutDate,
+            leaseStartDate: caseData.leaseStartDate,
+          }} />
         </div>
       )}
 

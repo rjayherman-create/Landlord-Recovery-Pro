@@ -44,12 +44,16 @@ artifacts-monorepo/
 **Landlord Recovery** (`/landlord-recovery/`):
 - Helps landlords recover unpaid rent, property damage, security deposits, and lease-break costs via DIY small claims filing
 - 8-page app: landing, dashboard, case list, new case wizard (4 steps), case detail, how-it-works, resources, pricing
-- Full CRUD for landlord cases (`landlord_cases` table with serial PK)
-- AI-generated demand letters via GPT-4.1-mini
+- Full CRUD for landlord cases (`landlord_cases` table with serial PK); `archived` boolean column for soft archive
+- AI demand letters via GPT-4.1-mini (CaseDetail → Overview tab → Generate with AI)
+- AI Advisor tab on each CaseDetail: streaming SSE chat (via `/api/openai/conversations`) seeded with full case context as system prompt; starter prompts included; conversation persisted in `conversations`+`messages` tables
 - 8-stage case status tracking (draft → demand sent → filed → hearing → judgment → collection → closed)
+- Archive/restore on both Cases list (dropdown menu) and CaseDetail header; Active/Archived tab toggle on Cases list
+- Edit case dialog (all fields) + delete with confirmation on both Cases list and CaseDetail
 - State-by-state small claims reference (10 states)
 - Navy + gold design, no emoji, professional tone
-- Backend routes: `/api/landlord-cases` (CRUD + stats + generate-letter + status update)
+- Backend routes: `/api/landlord-cases` (CRUD + stats + generate-letter + status update + archive)
+- AI chat backend: `artifacts/api-server/src/routes/openai-conversations.ts` (SSE streaming, conversation history)
 - DB schema: `lib/db/src/schema/landlord-cases.ts`
 
 **SmallClaims AI** (`/scar-filing/`):
