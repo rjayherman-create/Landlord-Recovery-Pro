@@ -268,7 +268,7 @@ export const ListCasesResponseItem = zod.object({
   defendantAddress: zod.string().nullish(),
   defendantEmail: zod.string().nullish(),
   defendantPhone: zod.string().nullish(),
-  claimAmount: zod.coerce.number(),
+  claimAmount: zod.number(),
   claimDescription: zod.string(),
   claimBasis: zod.string().nullish(),
   incidentDate: zod.string().nullish(),
@@ -301,7 +301,7 @@ export const CreateCaseBody = zod.object({
   defendantAddress: zod.string().nullish(),
   defendantEmail: zod.string().nullish(),
   defendantPhone: zod.string().nullish(),
-  claimAmount: zod.coerce.number(),
+  claimAmount: zod.number(),
   claimDescription: zod.string(),
   claimBasis: zod.string().nullish(),
   incidentDate: zod.string().nullish(),
@@ -332,7 +332,7 @@ export const GetCaseResponse = zod.object({
   defendantAddress: zod.string().nullish(),
   defendantEmail: zod.string().nullish(),
   defendantPhone: zod.string().nullish(),
-  claimAmount: zod.coerce.number(),
+  claimAmount: zod.number(),
   claimDescription: zod.string(),
   claimBasis: zod.string().nullish(),
   incidentDate: zod.string().nullish(),
@@ -368,7 +368,7 @@ export const UpdateCaseBody = zod.object({
   defendantAddress: zod.string().nullish(),
   defendantEmail: zod.string().nullish(),
   defendantPhone: zod.string().nullish(),
-  claimAmount: zod.coerce.number().optional(),
+  claimAmount: zod.number().optional(),
   claimDescription: zod.string().optional(),
   claimBasis: zod.string().nullish(),
   incidentDate: zod.string().nullish(),
@@ -399,7 +399,7 @@ export const UpdateCaseResponse = zod.object({
   defendantAddress: zod.string().nullish(),
   defendantEmail: zod.string().nullish(),
   defendantPhone: zod.string().nullish(),
-  claimAmount: zod.coerce.number(),
+  claimAmount: zod.number(),
   claimDescription: zod.string(),
   claimBasis: zod.string().nullish(),
   incidentDate: zod.string().nullish(),
@@ -465,7 +465,7 @@ export const ListSmallClaimsResponseItem = zod.object({
   defendantAddress: zod.string().nullish(),
   defendantEmail: zod.string().nullish(),
   defendantPhone: zod.string().nullish(),
-  claimAmount: zod.coerce.number(),
+  claimAmount: zod.number(),
   claimDescription: zod.string(),
   claimBasis: zod.string().nullish(),
   incidentDate: zod.string().nullish(),
@@ -498,7 +498,7 @@ export const CreateSmallClaimBody = zod.object({
   defendantAddress: zod.string().nullish(),
   defendantEmail: zod.string().nullish(),
   defendantPhone: zod.string().nullish(),
-  claimAmount: zod.coerce.number(),
+  claimAmount: zod.number(),
   claimDescription: zod.string(),
   claimBasis: zod.string().nullish(),
   incidentDate: zod.string().nullish(),
@@ -529,7 +529,7 @@ export const GetSmallClaimResponse = zod.object({
   defendantAddress: zod.string().nullish(),
   defendantEmail: zod.string().nullish(),
   defendantPhone: zod.string().nullish(),
-  claimAmount: zod.coerce.number(),
+  claimAmount: zod.number(),
   claimDescription: zod.string(),
   claimBasis: zod.string().nullish(),
   incidentDate: zod.string().nullish(),
@@ -565,7 +565,7 @@ export const UpdateSmallClaimBody = zod.object({
   defendantAddress: zod.string().nullish(),
   defendantEmail: zod.string().nullish(),
   defendantPhone: zod.string().nullish(),
-  claimAmount: zod.coerce.number().optional(),
+  claimAmount: zod.number().optional(),
   claimDescription: zod.string().optional(),
   claimBasis: zod.string().nullish(),
   incidentDate: zod.string().nullish(),
@@ -596,7 +596,7 @@ export const UpdateSmallClaimResponse = zod.object({
   defendantAddress: zod.string().nullish(),
   defendantEmail: zod.string().nullish(),
   defendantPhone: zod.string().nullish(),
-  claimAmount: zod.coerce.number(),
+  claimAmount: zod.number(),
   claimDescription: zod.string(),
   claimBasis: zod.string().nullish(),
   incidentDate: zod.string().nullish(),
@@ -628,6 +628,322 @@ export const GenerateClaimStatementParams = zod.object({
 
 export const GenerateClaimStatementResponse = zod.object({
   statement: zod.string(),
+});
+
+/**
+ * @summary List all landlord recovery cases
+ */
+export const ListLandlordCasesResponseItem = zod.object({
+  id: zod.number(),
+  claimType: zod.enum([
+    "unpaid_rent",
+    "property_damage",
+    "security_deposit",
+    "lease_break",
+    "other",
+  ]),
+  state: zod.string(),
+  landlordName: zod.string(),
+  landlordEmail: zod.string().nullish(),
+  landlordPhone: zod.string().nullish(),
+  tenantName: zod.string(),
+  tenantEmail: zod.string().nullish(),
+  tenantPhone: zod.string().nullish(),
+  tenantAddress: zod.string().nullish(),
+  propertyAddress: zod.string(),
+  monthlyRent: zod.number().nullish(),
+  claimAmount: zod.number(),
+  description: zod.string(),
+  leaseStartDate: zod.string().nullish(),
+  leaseEndDate: zod.string().nullish(),
+  moveOutDate: zod.string().nullish(),
+  demandLetterText: zod.string().nullish(),
+  status: zod.enum([
+    "draft",
+    "demand_sent",
+    "no_response",
+    "filed",
+    "hearing_scheduled",
+    "judgment",
+    "collection",
+    "closed",
+  ]),
+  courtDate: zod.string().nullish(),
+  judgmentAmount: zod.number().nullish(),
+  recoveredAmount: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListLandlordCasesResponse = zod.array(
+  ListLandlordCasesResponseItem,
+);
+
+/**
+ * @summary Create a new landlord recovery case
+ */
+export const CreateLandlordCaseBody = zod.object({
+  claimType: zod.enum([
+    "unpaid_rent",
+    "property_damage",
+    "security_deposit",
+    "lease_break",
+    "other",
+  ]),
+  state: zod.string(),
+  landlordName: zod.string(),
+  landlordEmail: zod.string().nullish(),
+  landlordPhone: zod.string().nullish(),
+  tenantName: zod.string(),
+  tenantEmail: zod.string().nullish(),
+  tenantPhone: zod.string().nullish(),
+  tenantAddress: zod.string().nullish(),
+  propertyAddress: zod.string(),
+  monthlyRent: zod.number().nullish(),
+  claimAmount: zod.number(),
+  description: zod.string(),
+  leaseStartDate: zod.string().nullish(),
+  leaseEndDate: zod.string().nullish(),
+  moveOutDate: zod.string().nullish(),
+  notes: zod.string().nullish(),
+});
+
+/**
+ * @summary Get landlord dashboard stats
+ */
+export const GetLandlordStatsResponse = zod.object({
+  totalCases: zod.number(),
+  activeCases: zod.number(),
+  totalClaimed: zod.number(),
+  totalRecovered: zod.number(),
+  wonCases: zod.number(),
+  pendingCases: zod.number(),
+});
+
+/**
+ * @summary Get a landlord case by ID
+ */
+export const GetLandlordCaseParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GetLandlordCaseResponse = zod.object({
+  id: zod.number(),
+  claimType: zod.enum([
+    "unpaid_rent",
+    "property_damage",
+    "security_deposit",
+    "lease_break",
+    "other",
+  ]),
+  state: zod.string(),
+  landlordName: zod.string(),
+  landlordEmail: zod.string().nullish(),
+  landlordPhone: zod.string().nullish(),
+  tenantName: zod.string(),
+  tenantEmail: zod.string().nullish(),
+  tenantPhone: zod.string().nullish(),
+  tenantAddress: zod.string().nullish(),
+  propertyAddress: zod.string(),
+  monthlyRent: zod.number().nullish(),
+  claimAmount: zod.number(),
+  description: zod.string(),
+  leaseStartDate: zod.string().nullish(),
+  leaseEndDate: zod.string().nullish(),
+  moveOutDate: zod.string().nullish(),
+  demandLetterText: zod.string().nullish(),
+  status: zod.enum([
+    "draft",
+    "demand_sent",
+    "no_response",
+    "filed",
+    "hearing_scheduled",
+    "judgment",
+    "collection",
+    "closed",
+  ]),
+  courtDate: zod.string().nullish(),
+  judgmentAmount: zod.number().nullish(),
+  recoveredAmount: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Update a landlord case
+ */
+export const UpdateLandlordCaseParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateLandlordCaseBody = zod.object({
+  claimType: zod
+    .enum([
+      "unpaid_rent",
+      "property_damage",
+      "security_deposit",
+      "lease_break",
+      "other",
+    ])
+    .optional(),
+  state: zod.string().optional(),
+  landlordName: zod.string().optional(),
+  landlordEmail: zod.string().nullish(),
+  landlordPhone: zod.string().nullish(),
+  tenantName: zod.string().optional(),
+  tenantEmail: zod.string().nullish(),
+  tenantPhone: zod.string().nullish(),
+  tenantAddress: zod.string().nullish(),
+  propertyAddress: zod.string().optional(),
+  monthlyRent: zod.number().nullish(),
+  claimAmount: zod.number().optional(),
+  description: zod.string().optional(),
+  leaseStartDate: zod.string().nullish(),
+  leaseEndDate: zod.string().nullish(),
+  moveOutDate: zod.string().nullish(),
+  demandLetterText: zod.string().nullish(),
+  status: zod
+    .enum([
+      "draft",
+      "demand_sent",
+      "no_response",
+      "filed",
+      "hearing_scheduled",
+      "judgment",
+      "collection",
+      "closed",
+    ])
+    .optional(),
+  courtDate: zod.string().nullish(),
+  judgmentAmount: zod.number().nullish(),
+  recoveredAmount: zod.number().nullish(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateLandlordCaseResponse = zod.object({
+  id: zod.number(),
+  claimType: zod.enum([
+    "unpaid_rent",
+    "property_damage",
+    "security_deposit",
+    "lease_break",
+    "other",
+  ]),
+  state: zod.string(),
+  landlordName: zod.string(),
+  landlordEmail: zod.string().nullish(),
+  landlordPhone: zod.string().nullish(),
+  tenantName: zod.string(),
+  tenantEmail: zod.string().nullish(),
+  tenantPhone: zod.string().nullish(),
+  tenantAddress: zod.string().nullish(),
+  propertyAddress: zod.string(),
+  monthlyRent: zod.number().nullish(),
+  claimAmount: zod.number(),
+  description: zod.string(),
+  leaseStartDate: zod.string().nullish(),
+  leaseEndDate: zod.string().nullish(),
+  moveOutDate: zod.string().nullish(),
+  demandLetterText: zod.string().nullish(),
+  status: zod.enum([
+    "draft",
+    "demand_sent",
+    "no_response",
+    "filed",
+    "hearing_scheduled",
+    "judgment",
+    "collection",
+    "closed",
+  ]),
+  courtDate: zod.string().nullish(),
+  judgmentAmount: zod.number().nullish(),
+  recoveredAmount: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a landlord case
+ */
+export const DeleteLandlordCaseParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+/**
+ * @summary Generate an AI demand letter for the case
+ */
+export const GenerateDemandLetterParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const GenerateDemandLetterResponse = zod.object({
+  letter: zod.string(),
+});
+
+/**
+ * @summary Update status of a landlord case
+ */
+export const UpdateLandlordCaseStatusParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateLandlordCaseStatusBody = zod.object({
+  status: zod.enum([
+    "draft",
+    "demand_sent",
+    "no_response",
+    "filed",
+    "hearing_scheduled",
+    "judgment",
+    "collection",
+    "closed",
+  ]),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateLandlordCaseStatusResponse = zod.object({
+  id: zod.number(),
+  claimType: zod.enum([
+    "unpaid_rent",
+    "property_damage",
+    "security_deposit",
+    "lease_break",
+    "other",
+  ]),
+  state: zod.string(),
+  landlordName: zod.string(),
+  landlordEmail: zod.string().nullish(),
+  landlordPhone: zod.string().nullish(),
+  tenantName: zod.string(),
+  tenantEmail: zod.string().nullish(),
+  tenantPhone: zod.string().nullish(),
+  tenantAddress: zod.string().nullish(),
+  propertyAddress: zod.string(),
+  monthlyRent: zod.number().nullish(),
+  claimAmount: zod.number(),
+  description: zod.string(),
+  leaseStartDate: zod.string().nullish(),
+  leaseEndDate: zod.string().nullish(),
+  moveOutDate: zod.string().nullish(),
+  demandLetterText: zod.string().nullish(),
+  status: zod.enum([
+    "draft",
+    "demand_sent",
+    "no_response",
+    "filed",
+    "hearing_scheduled",
+    "judgment",
+    "collection",
+    "closed",
+  ]),
+  courtDate: zod.string().nullish(),
+  judgmentAmount: zod.number().nullish(),
+  recoveredAmount: zod.number().nullish(),
+  notes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
 });
 
 /**

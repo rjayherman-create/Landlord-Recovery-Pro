@@ -31,9 +31,7 @@ export interface SmallClaimsCase {
   generatedStatement?: string | null;
   conversationId?: number | null;
   status: SmallClaimsCaseStatus;
-  lastUpdate?: string | null;
   filingDeadline?: string | null;
-  hearingDate?: string | null;
   caseNumber?: string | null;
   notes?: string | null;
   createdAt: string;

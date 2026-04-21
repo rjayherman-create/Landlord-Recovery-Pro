@@ -19,6 +19,8 @@ tags:
     description: Small claims court case operations
   - name: small-claims
     description: Small claims court case operations (alias for /cases)
+  - name: landlord
+    description: Landlord recovery case operations
   - name: openai
     description: OpenAI AI chat operations
 paths:
@@ -499,6 +501,176 @@ paths:
                     type: string
                 required:
                   - statement
+
+  /landlord-cases:
+    get:
+      operationId: listLandlordCases
+      tags: [landlord]
+      summary: List all landlord recovery cases
+      responses:
+        "200":
+          description: List of landlord cases
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LandlordCase"
+    post:
+      operationId: createLandlordCase
+      tags: [landlord]
+      summary: Create a new landlord recovery case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLandlordCaseRequest"
+      responses:
+        "201":
+          description: Created landlord case
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LandlordCase"
+
+  /landlord-cases/stats:
+    get:
+      operationId: getLandlordStats
+      tags: [landlord]
+      summary: Get landlord dashboard stats
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LandlordStats"
+
+  /landlord-cases/{id}:
+    get:
+      operationId: getLandlordCase
+      tags: [landlord]
+      summary: Get a landlord case by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Landlord case details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LandlordCase"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: updateLandlordCase
+      tags: [landlord]
+      summary: Update a landlord case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLandlordCaseRequest"
+      responses:
+        "200":
+          description: Updated landlord case
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LandlordCase"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteLandlordCase
+      tags: [landlord]
+      summary: Delete a landlord case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /landlord-cases/{id}/generate-letter:
+    post:
+      operationId: generateDemandLetter
+      tags: [landlord]
+      summary: Generate an AI demand letter for the case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Generated demand letter
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  letter:
+                    type: string
+                required:
+                  - letter
+
+  /landlord-cases/{id}/status:
+    put:
+      operationId: updateLandlordCaseStatus
+      tags: [landlord]
+      summary: Update status of a landlord case
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: [draft, demand_sent, no_response, filed, hearing_scheduled, judgment, collection, closed]
+                notes:
+                  type: string
+                  nullable: true
+              required:
+                - status
+      responses:
+        "200":
+          description: Updated case
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LandlordCase"
 
   /openai/conversations:
     get:
@@ -1202,6 +1374,232 @@ components:
         notes:
           type: string
           nullable: true
+
+    LandlordCase:
+      type: object
+      properties:
+        id:
+          type: integer
+        claimType:
+          type: string
+          enum: [unpaid_rent, property_damage, security_deposit, lease_break, other]
+        state:
+          type: string
+        landlordName:
+          type: string
+        landlordEmail:
+          type: string
+          nullable: true
+        landlordPhone:
+          type: string
+          nullable: true
+        tenantName:
+          type: string
+        tenantEmail:
+          type: string
+          nullable: true
+        tenantPhone:
+          type: string
+          nullable: true
+        tenantAddress:
+          type: string
+          nullable: true
+        propertyAddress:
+          type: string
+        monthlyRent:
+          type: number
+          nullable: true
+        claimAmount:
+          type: number
+        description:
+          type: string
+        leaseStartDate:
+          type: string
+          nullable: true
+        leaseEndDate:
+          type: string
+          nullable: true
+        moveOutDate:
+          type: string
+          nullable: true
+        demandLetterText:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [draft, demand_sent, no_response, filed, hearing_scheduled, judgment, collection, closed]
+        courtDate:
+          type: string
+          nullable: true
+        judgmentAmount:
+          type: number
+          nullable: true
+        recoveredAmount:
+          type: number
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - claimType
+        - state
+        - landlordName
+        - tenantName
+        - propertyAddress
+        - claimAmount
+        - description
+        - status
+        - createdAt
+        - updatedAt
+
+    CreateLandlordCaseRequest:
+      type: object
+      properties:
+        claimType:
+          type: string
+          enum: [unpaid_rent, property_damage, security_deposit, lease_break, other]
+        state:
+          type: string
+        landlordName:
+          type: string
+        landlordEmail:
+          type: string
+          nullable: true
+        landlordPhone:
+          type: string
+          nullable: true
+        tenantName:
+          type: string
+        tenantEmail:
+          type: string
+          nullable: true
+        tenantPhone:
+          type: string
+          nullable: true
+        tenantAddress:
+          type: string
+          nullable: true
+        propertyAddress:
+          type: string
+        monthlyRent:
+          type: number
+          nullable: true
+        claimAmount:
+          type: number
+        description:
+          type: string
+        leaseStartDate:
+          type: string
+          nullable: true
+        leaseEndDate:
+          type: string
+          nullable: true
+        moveOutDate:
+          type: string
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+      required:
+        - claimType
+        - state
+        - landlordName
+        - tenantName
+        - propertyAddress
+        - claimAmount
+        - description
+
+    UpdateLandlordCaseRequest:
+      type: object
+      properties:
+        claimType:
+          type: string
+          enum: [unpaid_rent, property_damage, security_deposit, lease_break, other]
+        state:
+          type: string
+        landlordName:
+          type: string
+        landlordEmail:
+          type: string
+          nullable: true
+        landlordPhone:
+          type: string
+          nullable: true
+        tenantName:
+          type: string
+        tenantEmail:
+          type: string
+          nullable: true
+        tenantPhone:
+          type: string
+          nullable: true
+        tenantAddress:
+          type: string
+          nullable: true
+        propertyAddress:
+          type: string
+        monthlyRent:
+          type: number
+          nullable: true
+        claimAmount:
+          type: number
+        description:
+          type: string
+        leaseStartDate:
+          type: string
+          nullable: true
+        leaseEndDate:
+          type: string
+          nullable: true
+        moveOutDate:
+          type: string
+          nullable: true
+        demandLetterText:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [draft, demand_sent, no_response, filed, hearing_scheduled, judgment, collection, closed]
+        courtDate:
+          type: string
+          nullable: true
+        judgmentAmount:
+          type: number
+          nullable: true
+        recoveredAmount:
+          type: number
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+
+    LandlordStats:
+      type: object
+      properties:
+        totalCases:
+          type: integer
+        activeCases:
+          type: integer
+        totalClaimed:
+          type: number
+        totalRecovered:
+          type: number
+        wonCases:
+          type: integer
+        pendingCases:
+          type: integer
+      required:
+        - totalCases
+        - activeCases
+        - totalClaimed
+        - totalRecovered
+        - wonCases
+        - pendingCases
 
     OpenaiConversation:
       type: object

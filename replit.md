@@ -26,6 +26,7 @@ artifacts-monorepo/
 │   ├── api-server/                  # Express API server (port 8080)
 │   ├── property-tax-grievance/      # React + Vite frontend (port 19972)
 │   ├── scar-filing/                 # SmallClaims AI — general small claims filing assistant
+│   ├── landlord-recovery/           # Landlord Recovery — DIY landlord recovery tool (port 25790)
 │   └── taxappeal-mobile/            # Expo React Native mobile app (iOS/Android)
 ├── lib/
 │   ├── api-spec/                    # OpenAPI spec + Orval codegen config
@@ -39,6 +40,17 @@ artifacts-monorepo/
 ```
 
 ## Features
+
+**Landlord Recovery** (`/landlord-recovery/`):
+- Helps landlords recover unpaid rent, property damage, security deposits, and lease-break costs via DIY small claims filing
+- 8-page app: landing, dashboard, case list, new case wizard (4 steps), case detail, how-it-works, resources, pricing
+- Full CRUD for landlord cases (`landlord_cases` table with serial PK)
+- AI-generated demand letters via GPT-4.1-mini
+- 8-stage case status tracking (draft → demand sent → filed → hearing → judgment → collection → closed)
+- State-by-state small claims reference (10 states)
+- Navy + gold design, no emoji, professional tone
+- Backend routes: `/api/landlord-cases` (CRUD + stats + generate-letter + status update)
+- DB schema: `lib/db/src/schema/landlord-cases.ts`
 
 **SmallClaims AI** (`/scar-filing/`):
 - 10-state small claims filing wizard (NY, NJ, FL, TX, CA, PA, IL, OH, GA, NC)

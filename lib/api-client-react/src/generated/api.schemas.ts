@@ -269,6 +269,149 @@ export interface UpdateSmallClaimRequest {
   notes?: string | null;
 }
 
+export type LandlordCaseClaimType =
+  (typeof LandlordCaseClaimType)[keyof typeof LandlordCaseClaimType];
+
+export const LandlordCaseClaimType = {
+  unpaid_rent: "unpaid_rent",
+  property_damage: "property_damage",
+  security_deposit: "security_deposit",
+  lease_break: "lease_break",
+  other: "other",
+} as const;
+
+export type LandlordCaseStatus =
+  (typeof LandlordCaseStatus)[keyof typeof LandlordCaseStatus];
+
+export const LandlordCaseStatus = {
+  draft: "draft",
+  demand_sent: "demand_sent",
+  no_response: "no_response",
+  filed: "filed",
+  hearing_scheduled: "hearing_scheduled",
+  judgment: "judgment",
+  collection: "collection",
+  closed: "closed",
+} as const;
+
+export interface LandlordCase {
+  id: number;
+  claimType: LandlordCaseClaimType;
+  state: string;
+  landlordName: string;
+  landlordEmail?: string | null;
+  landlordPhone?: string | null;
+  tenantName: string;
+  tenantEmail?: string | null;
+  tenantPhone?: string | null;
+  tenantAddress?: string | null;
+  propertyAddress: string;
+  monthlyRent?: number | null;
+  claimAmount: number;
+  description: string;
+  leaseStartDate?: string | null;
+  leaseEndDate?: string | null;
+  moveOutDate?: string | null;
+  demandLetterText?: string | null;
+  status: LandlordCaseStatus;
+  courtDate?: string | null;
+  judgmentAmount?: number | null;
+  recoveredAmount?: number | null;
+  notes?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CreateLandlordCaseRequestClaimType =
+  (typeof CreateLandlordCaseRequestClaimType)[keyof typeof CreateLandlordCaseRequestClaimType];
+
+export const CreateLandlordCaseRequestClaimType = {
+  unpaid_rent: "unpaid_rent",
+  property_damage: "property_damage",
+  security_deposit: "security_deposit",
+  lease_break: "lease_break",
+  other: "other",
+} as const;
+
+export interface CreateLandlordCaseRequest {
+  claimType: CreateLandlordCaseRequestClaimType;
+  state: string;
+  landlordName: string;
+  landlordEmail?: string | null;
+  landlordPhone?: string | null;
+  tenantName: string;
+  tenantEmail?: string | null;
+  tenantPhone?: string | null;
+  tenantAddress?: string | null;
+  propertyAddress: string;
+  monthlyRent?: number | null;
+  claimAmount: number;
+  description: string;
+  leaseStartDate?: string | null;
+  leaseEndDate?: string | null;
+  moveOutDate?: string | null;
+  notes?: string | null;
+}
+
+export type UpdateLandlordCaseRequestClaimType =
+  (typeof UpdateLandlordCaseRequestClaimType)[keyof typeof UpdateLandlordCaseRequestClaimType];
+
+export const UpdateLandlordCaseRequestClaimType = {
+  unpaid_rent: "unpaid_rent",
+  property_damage: "property_damage",
+  security_deposit: "security_deposit",
+  lease_break: "lease_break",
+  other: "other",
+} as const;
+
+export type UpdateLandlordCaseRequestStatus =
+  (typeof UpdateLandlordCaseRequestStatus)[keyof typeof UpdateLandlordCaseRequestStatus];
+
+export const UpdateLandlordCaseRequestStatus = {
+  draft: "draft",
+  demand_sent: "demand_sent",
+  no_response: "no_response",
+  filed: "filed",
+  hearing_scheduled: "hearing_scheduled",
+  judgment: "judgment",
+  collection: "collection",
+  closed: "closed",
+} as const;
+
+export interface UpdateLandlordCaseRequest {
+  claimType?: UpdateLandlordCaseRequestClaimType;
+  state?: string;
+  landlordName?: string;
+  landlordEmail?: string | null;
+  landlordPhone?: string | null;
+  tenantName?: string;
+  tenantEmail?: string | null;
+  tenantPhone?: string | null;
+  tenantAddress?: string | null;
+  propertyAddress?: string;
+  monthlyRent?: number | null;
+  claimAmount?: number;
+  description?: string;
+  leaseStartDate?: string | null;
+  leaseEndDate?: string | null;
+  moveOutDate?: string | null;
+  demandLetterText?: string | null;
+  status?: UpdateLandlordCaseRequestStatus;
+  courtDate?: string | null;
+  judgmentAmount?: number | null;
+  recoveredAmount?: number | null;
+  notes?: string | null;
+}
+
+export interface LandlordStats {
+  totalCases: number;
+  activeCases: number;
+  totalClaimed: number;
+  totalRecovered: number;
+  wonCases: number;
+  pendingCases: number;
+}
+
 export interface OpenaiConversation {
   id: number;
   title: string;
@@ -317,4 +460,27 @@ export type ListPdfStates200 = {
 
 export type GenerateClaimStatement200 = {
   statement: string;
+};
+
+export type GenerateDemandLetter200 = {
+  letter: string;
+};
+
+export type UpdateLandlordCaseStatusBodyStatus =
+  (typeof UpdateLandlordCaseStatusBodyStatus)[keyof typeof UpdateLandlordCaseStatusBodyStatus];
+
+export const UpdateLandlordCaseStatusBodyStatus = {
+  draft: "draft",
+  demand_sent: "demand_sent",
+  no_response: "no_response",
+  filed: "filed",
+  hearing_scheduled: "hearing_scheduled",
+  judgment: "judgment",
+  collection: "collection",
+  closed: "closed",
+} as const;
+
+export type UpdateLandlordCaseStatusBody = {
+  status: UpdateLandlordCaseStatusBodyStatus;
+  notes?: string | null;
 };

@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/landlord-recovery/"
+title = "Landlord Recovery"
+version = "1.0.0"
+id = "artifacts/landlord-recovery"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/landlord-recovery/" ]
+localPort = 25790
+
+[services.development]
+run = "pnpm --filter @workspace/landlord-recovery run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/landlord-recovery", "run", "build" ]
+publicDir = "artifacts/landlord-recovery/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25790"
+BASE_PATH = "/landlord-recovery/"

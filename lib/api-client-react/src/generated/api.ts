@@ -21,13 +21,17 @@ import type {
   County,
   CreateComparableRequest,
   CreateGrievanceRequest,
+  CreateLandlordCaseRequest,
   CreateOpenaiConversationBody,
   CreateSmallClaimRequest,
   ErrorResponse,
   GenerateCaseStatement200,
   GenerateClaimStatement200,
+  GenerateDemandLetter200,
   Grievance,
   HealthStatus,
+  LandlordCase,
+  LandlordStats,
   ListComparablesParams,
   ListPdfStates200,
   OpenaiConversation,
@@ -37,6 +41,8 @@ import type {
   SendOpenaiMessageBody,
   SmallClaimsCase,
   UpdateGrievanceRequest,
+  UpdateLandlordCaseRequest,
+  UpdateLandlordCaseStatusBody,
   UpdateSmallClaimRequest,
 } from "./api.schemas";
 
@@ -2036,6 +2042,674 @@ export const useGenerateClaimStatement = <
   TContext
 > => {
   return useMutation(getGenerateClaimStatementMutationOptions(options));
+};
+
+/**
+ * @summary List all landlord recovery cases
+ */
+export const getListLandlordCasesUrl = () => {
+  return `/api/landlord-cases`;
+};
+
+export const listLandlordCases = async (
+  options?: RequestInit,
+): Promise<LandlordCase[]> => {
+  return customFetch<LandlordCase[]>(getListLandlordCasesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListLandlordCasesQueryKey = () => {
+  return [`/api/landlord-cases`] as const;
+};
+
+export const getListLandlordCasesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listLandlordCases>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listLandlordCases>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListLandlordCasesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listLandlordCases>>
+  > = ({ signal }) => listLandlordCases({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listLandlordCases>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListLandlordCasesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listLandlordCases>>
+>;
+export type ListLandlordCasesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all landlord recovery cases
+ */
+
+export function useListLandlordCases<
+  TData = Awaited<ReturnType<typeof listLandlordCases>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listLandlordCases>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListLandlordCasesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a new landlord recovery case
+ */
+export const getCreateLandlordCaseUrl = () => {
+  return `/api/landlord-cases`;
+};
+
+export const createLandlordCase = async (
+  createLandlordCaseRequest: CreateLandlordCaseRequest,
+  options?: RequestInit,
+): Promise<LandlordCase> => {
+  return customFetch<LandlordCase>(getCreateLandlordCaseUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createLandlordCaseRequest),
+  });
+};
+
+export const getCreateLandlordCaseMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createLandlordCase>>,
+    TError,
+    { data: BodyType<CreateLandlordCaseRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createLandlordCase>>,
+  TError,
+  { data: BodyType<CreateLandlordCaseRequest> },
+  TContext
+> => {
+  const mutationKey = ["createLandlordCase"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createLandlordCase>>,
+    { data: BodyType<CreateLandlordCaseRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createLandlordCase(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateLandlordCaseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createLandlordCase>>
+>;
+export type CreateLandlordCaseMutationBody =
+  BodyType<CreateLandlordCaseRequest>;
+export type CreateLandlordCaseMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new landlord recovery case
+ */
+export const useCreateLandlordCase = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createLandlordCase>>,
+    TError,
+    { data: BodyType<CreateLandlordCaseRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createLandlordCase>>,
+  TError,
+  { data: BodyType<CreateLandlordCaseRequest> },
+  TContext
+> => {
+  return useMutation(getCreateLandlordCaseMutationOptions(options));
+};
+
+/**
+ * @summary Get landlord dashboard stats
+ */
+export const getGetLandlordStatsUrl = () => {
+  return `/api/landlord-cases/stats`;
+};
+
+export const getLandlordStats = async (
+  options?: RequestInit,
+): Promise<LandlordStats> => {
+  return customFetch<LandlordStats>(getGetLandlordStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetLandlordStatsQueryKey = () => {
+  return [`/api/landlord-cases/stats`] as const;
+};
+
+export const getGetLandlordStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getLandlordStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getLandlordStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetLandlordStatsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getLandlordStats>>
+  > = ({ signal }) => getLandlordStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getLandlordStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetLandlordStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getLandlordStats>>
+>;
+export type GetLandlordStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get landlord dashboard stats
+ */
+
+export function useGetLandlordStats<
+  TData = Awaited<ReturnType<typeof getLandlordStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getLandlordStats>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetLandlordStatsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a landlord case by ID
+ */
+export const getGetLandlordCaseUrl = (id: number) => {
+  return `/api/landlord-cases/${id}`;
+};
+
+export const getLandlordCase = async (
+  id: number,
+  options?: RequestInit,
+): Promise<LandlordCase> => {
+  return customFetch<LandlordCase>(getGetLandlordCaseUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetLandlordCaseQueryKey = (id: number) => {
+  return [`/api/landlord-cases/${id}`] as const;
+};
+
+export const getGetLandlordCaseQueryOptions = <
+  TData = Awaited<ReturnType<typeof getLandlordCase>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getLandlordCase>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetLandlordCaseQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getLandlordCase>>> = ({
+    signal,
+  }) => getLandlordCase(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof getLandlordCase>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetLandlordCaseQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getLandlordCase>>
+>;
+export type GetLandlordCaseQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Get a landlord case by ID
+ */
+
+export function useGetLandlordCase<
+  TData = Awaited<ReturnType<typeof getLandlordCase>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getLandlordCase>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetLandlordCaseQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Update a landlord case
+ */
+export const getUpdateLandlordCaseUrl = (id: number) => {
+  return `/api/landlord-cases/${id}`;
+};
+
+export const updateLandlordCase = async (
+  id: number,
+  updateLandlordCaseRequest: UpdateLandlordCaseRequest,
+  options?: RequestInit,
+): Promise<LandlordCase> => {
+  return customFetch<LandlordCase>(getUpdateLandlordCaseUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateLandlordCaseRequest),
+  });
+};
+
+export const getUpdateLandlordCaseMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateLandlordCase>>,
+    TError,
+    { id: number; data: BodyType<UpdateLandlordCaseRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateLandlordCase>>,
+  TError,
+  { id: number; data: BodyType<UpdateLandlordCaseRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateLandlordCase"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateLandlordCase>>,
+    { id: number; data: BodyType<UpdateLandlordCaseRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateLandlordCase(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateLandlordCaseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateLandlordCase>>
+>;
+export type UpdateLandlordCaseMutationBody =
+  BodyType<UpdateLandlordCaseRequest>;
+export type UpdateLandlordCaseMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Update a landlord case
+ */
+export const useUpdateLandlordCase = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateLandlordCase>>,
+    TError,
+    { id: number; data: BodyType<UpdateLandlordCaseRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateLandlordCase>>,
+  TError,
+  { id: number; data: BodyType<UpdateLandlordCaseRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateLandlordCaseMutationOptions(options));
+};
+
+/**
+ * @summary Delete a landlord case
+ */
+export const getDeleteLandlordCaseUrl = (id: number) => {
+  return `/api/landlord-cases/${id}`;
+};
+
+export const deleteLandlordCase = async (
+  id: number,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteLandlordCaseUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteLandlordCaseMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteLandlordCase>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteLandlordCase>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteLandlordCase"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteLandlordCase>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteLandlordCase(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteLandlordCaseMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteLandlordCase>>
+>;
+
+export type DeleteLandlordCaseMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a landlord case
+ */
+export const useDeleteLandlordCase = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteLandlordCase>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteLandlordCase>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteLandlordCaseMutationOptions(options));
+};
+
+/**
+ * @summary Generate an AI demand letter for the case
+ */
+export const getGenerateDemandLetterUrl = (id: number) => {
+  return `/api/landlord-cases/${id}/generate-letter`;
+};
+
+export const generateDemandLetter = async (
+  id: number,
+  options?: RequestInit,
+): Promise<GenerateDemandLetter200> => {
+  return customFetch<GenerateDemandLetter200>(getGenerateDemandLetterUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getGenerateDemandLetterMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateDemandLetter>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof generateDemandLetter>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["generateDemandLetter"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof generateDemandLetter>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return generateDemandLetter(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type GenerateDemandLetterMutationResult = NonNullable<
+  Awaited<ReturnType<typeof generateDemandLetter>>
+>;
+
+export type GenerateDemandLetterMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Generate an AI demand letter for the case
+ */
+export const useGenerateDemandLetter = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof generateDemandLetter>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof generateDemandLetter>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getGenerateDemandLetterMutationOptions(options));
+};
+
+/**
+ * @summary Update status of a landlord case
+ */
+export const getUpdateLandlordCaseStatusUrl = (id: number) => {
+  return `/api/landlord-cases/${id}/status`;
+};
+
+export const updateLandlordCaseStatus = async (
+  id: number,
+  updateLandlordCaseStatusBody: UpdateLandlordCaseStatusBody,
+  options?: RequestInit,
+): Promise<LandlordCase> => {
+  return customFetch<LandlordCase>(getUpdateLandlordCaseStatusUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(updateLandlordCaseStatusBody),
+  });
+};
+
+export const getUpdateLandlordCaseStatusMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateLandlordCaseStatus>>,
+    TError,
+    { id: number; data: BodyType<UpdateLandlordCaseStatusBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateLandlordCaseStatus>>,
+  TError,
+  { id: number; data: BodyType<UpdateLandlordCaseStatusBody> },
+  TContext
+> => {
+  const mutationKey = ["updateLandlordCaseStatus"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateLandlordCaseStatus>>,
+    { id: number; data: BodyType<UpdateLandlordCaseStatusBody> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateLandlordCaseStatus(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateLandlordCaseStatusMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateLandlordCaseStatus>>
+>;
+export type UpdateLandlordCaseStatusMutationBody =
+  BodyType<UpdateLandlordCaseStatusBody>;
+export type UpdateLandlordCaseStatusMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update status of a landlord case
+ */
+export const useUpdateLandlordCaseStatus = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateLandlordCaseStatus>>,
+    TError,
+    { id: number; data: BodyType<UpdateLandlordCaseStatusBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateLandlordCaseStatus>>,
+  TError,
+  { id: number; data: BodyType<UpdateLandlordCaseStatusBody> },
+  TContext
+> => {
+  return useMutation(getUpdateLandlordCaseStatusMutationOptions(options));
 };
 
 /**

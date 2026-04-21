@@ -1,0 +1,205 @@
+import { Router } from "express";
+import { db, landlordCases } from "@workspace/db";
+import { eq, desc, sql } from "drizzle-orm";
+import {
+  CreateLandlordCaseBody,
+  UpdateLandlordCaseBody,
+  GetLandlordCaseParams,
+  UpdateLandlordCaseParams,
+  DeleteLandlordCaseParams,
+  UpdateLandlordCaseStatusParams,
+  UpdateLandlordCaseStatusBody,
+} from "@workspace/api-zod";
+import OpenAI from "openai";
+
+const router = Router();
+
+function getOpenAI() {
+  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+}
+
+function serializeCase(c: typeof landlordCases.$inferSelect) {
+  return {
+    ...c,
+    monthlyRent: c.monthlyRent ? Number(c.monthlyRent) : null,
+    claimAmount: Number(c.claimAmount),
+    judgmentAmount: c.judgmentAmount ? Number(c.judgmentAmount) : null,
+    recoveredAmount: c.recoveredAmount ? Number(c.recoveredAmount) : null,
+    createdAt: c.createdAt.toISOString(),
+    updatedAt: c.updatedAt.toISOString(),
+  };
+}
+
+router.get("/landlord-cases/stats", async (req, res) => {
+  try {
+    const cases = await db.select().from(landlordCases).orderBy(desc(landlordCases.createdAt));
+    const totalCases = cases.length;
+    const activeCases = cases.filter((c) =>
+      ["demand_sent", "no_response", "filed", "hearing_scheduled", "judgment", "collection"].includes(c.status)
+    ).length;
+    const totalClaimed = cases.reduce((sum, c) => sum + Number(c.claimAmount), 0);
+    const totalRecovered = cases.reduce((sum, c) => sum + (c.recoveredAmount ? Number(c.recoveredAmount) : 0), 0);
+    const wonCases = cases.filter((c) => c.status === "closed" && c.recoveredAmount && Number(c.recoveredAmount) > 0).length;
+    const pendingCases = cases.filter((c) => ["filed", "hearing_scheduled", "judgment"].includes(c.status)).length;
+    res.json({ totalCases, activeCases, totalClaimed, totalRecovered, wonCases, pendingCases });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch stats", message: String(err) });
+  }
+});
+
+router.get("/landlord-cases", async (req, res) => {
+  try {
+    const cases = await db.select().from(landlordCases).orderBy(desc(landlordCases.createdAt));
+    res.json(cases.map(serializeCase));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to list cases", message: String(err) });
+  }
+});
+
+router.post("/landlord-cases", async (req, res) => {
+  try {
+    const body = CreateLandlordCaseBody.parse(req.body);
+    const [created] = await db
+      .insert(landlordCases)
+      .values({
+        claimType: body.claimType,
+        state: body.state,
+        landlordName: body.landlordName,
+        landlordEmail: body.landlordEmail ?? null,
+        landlordPhone: body.landlordPhone ?? null,
+        tenantName: body.tenantName,
+        tenantEmail: body.tenantEmail ?? null,
+        tenantPhone: body.tenantPhone ?? null,
+        tenantAddress: body.tenantAddress ?? null,
+        propertyAddress: body.propertyAddress,
+        monthlyRent: body.monthlyRent?.toString() ?? null,
+        claimAmount: body.claimAmount.toString(),
+        description: body.description,
+        leaseStartDate: body.leaseStartDate ?? null,
+        leaseEndDate: body.leaseEndDate ?? null,
+        moveOutDate: body.moveOutDate ?? null,
+        notes: body.notes ?? null,
+        status: "draft",
+      })
+      .returning();
+    res.status(201).json(serializeCase(created));
+  } catch (err) {
+    res.status(400).json({ error: "Failed to create case", message: String(err) });
+  }
+});
+
+router.get("/landlord-cases/:id", async (req, res) => {
+  try {
+    const { id } = GetLandlordCaseParams.parse({ id: Number(req.params.id) });
+    const [found] = await db.select().from(landlordCases).where(eq(landlordCases.id, id));
+    if (!found) return res.status(404).json({ error: "not_found", message: "Case not found" });
+    res.json(serializeCase(found));
+  } catch (err) {
+    res.status(500).json({ error: "Failed to get case", message: String(err) });
+  }
+});
+
+router.put("/landlord-cases/:id", async (req, res) => {
+  try {
+    const { id } = UpdateLandlordCaseParams.parse({ id: Number(req.params.id) });
+    const body = UpdateLandlordCaseBody.parse(req.body);
+    const updateData: Partial<typeof landlordCases.$inferInsert> = {};
+    if (body.claimType !== undefined) updateData.claimType = body.claimType;
+    if (body.state !== undefined) updateData.state = body.state;
+    if (body.landlordName !== undefined) updateData.landlordName = body.landlordName;
+    if (body.landlordEmail !== undefined) updateData.landlordEmail = body.landlordEmail ?? null;
+    if (body.landlordPhone !== undefined) updateData.landlordPhone = body.landlordPhone ?? null;
+    if (body.tenantName !== undefined) updateData.tenantName = body.tenantName;
+    if (body.tenantEmail !== undefined) updateData.tenantEmail = body.tenantEmail ?? null;
+    if (body.tenantPhone !== undefined) updateData.tenantPhone = body.tenantPhone ?? null;
+    if (body.tenantAddress !== undefined) updateData.tenantAddress = body.tenantAddress ?? null;
+    if (body.propertyAddress !== undefined) updateData.propertyAddress = body.propertyAddress;
+    if (body.monthlyRent !== undefined) updateData.monthlyRent = body.monthlyRent?.toString() ?? null;
+    if (body.claimAmount !== undefined) updateData.claimAmount = body.claimAmount.toString();
+    if (body.description !== undefined) updateData.description = body.description;
+    if (body.leaseStartDate !== undefined) updateData.leaseStartDate = body.leaseStartDate ?? null;
+    if (body.leaseEndDate !== undefined) updateData.leaseEndDate = body.leaseEndDate ?? null;
+    if (body.moveOutDate !== undefined) updateData.moveOutDate = body.moveOutDate ?? null;
+    if (body.demandLetterText !== undefined) updateData.demandLetterText = body.demandLetterText ?? null;
+    if (body.status !== undefined) updateData.status = body.status;
+    if (body.courtDate !== undefined) updateData.courtDate = body.courtDate ?? null;
+    if (body.judgmentAmount !== undefined) updateData.judgmentAmount = body.judgmentAmount?.toString() ?? null;
+    if (body.recoveredAmount !== undefined) updateData.recoveredAmount = body.recoveredAmount?.toString() ?? null;
+    if (body.notes !== undefined) updateData.notes = body.notes ?? null;
+    updateData.updatedAt = new Date();
+    const [updated] = await db.update(landlordCases).set(updateData).where(eq(landlordCases.id, id)).returning();
+    if (!updated) return res.status(404).json({ error: "not_found", message: "Case not found" });
+    res.json(serializeCase(updated));
+  } catch (err) {
+    res.status(400).json({ error: "Failed to update case", message: String(err) });
+  }
+});
+
+router.delete("/landlord-cases/:id", async (req, res) => {
+  try {
+    const { id } = DeleteLandlordCaseParams.parse({ id: Number(req.params.id) });
+    await db.delete(landlordCases).where(eq(landlordCases.id, id));
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: "Failed to delete case", message: String(err) });
+  }
+});
+
+router.post("/landlord-cases/:id/generate-letter", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const [found] = await db.select().from(landlordCases).where(eq(landlordCases.id, id));
+    if (!found) return res.status(404).json({ error: "not_found", message: "Case not found" });
+
+    const claimTypeLabel: Record<string, string> = {
+      unpaid_rent: "unpaid rent",
+      property_damage: "property damage",
+      security_deposit: "security deposit refusal",
+      lease_break: "lease termination",
+      other: "breach of lease",
+    };
+
+    const prompt = `You are a legal document assistant. Write a formal demand letter from a landlord to a tenant. Be professional, firm, and clear.
+
+Landlord: ${found.landlordName}
+Tenant: ${found.tenantName}
+Property: ${found.propertyAddress}
+Claim Type: ${claimTypeLabel[found.claimType] || found.claimType}
+Amount Owed: $${Number(found.claimAmount).toLocaleString()}
+${found.description ? `Details: ${found.description}` : ""}
+${found.moveOutDate ? `Move-Out Date: ${found.moveOutDate}` : ""}
+
+Write a demand letter (3-4 paragraphs) requesting payment within 10 days or the landlord will pursue small claims court action. Include a reference to the state: ${found.state}. Do not include placeholders — write the full letter.`;
+
+    const openai = getOpenAI();
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [{ role: "user", content: prompt }],
+      max_tokens: 800,
+    });
+
+    const letter = completion.choices[0]?.message?.content ?? "";
+    await db.update(landlordCases).set({ demandLetterText: letter, updatedAt: new Date() }).where(eq(landlordCases.id, id));
+    res.json({ letter });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to generate letter", message: String(err) });
+  }
+});
+
+router.put("/landlord-cases/:id/status", async (req, res) => {
+  try {
+    const { id } = UpdateLandlordCaseStatusParams.parse({ id: Number(req.params.id) });
+    const body = UpdateLandlordCaseStatusBody.parse(req.body);
+    const [updated] = await db
+      .update(landlordCases)
+      .set({ status: body.status, notes: body.notes ?? undefined, updatedAt: new Date() })
+      .where(eq(landlordCases.id, id))
+      .returning();
+    if (!updated) return res.status(404).json({ error: "not_found", message: "Case not found" });
+    res.json(serializeCase(updated));
+  } catch (err) {
+    res.status(400).json({ error: "Failed to update status", message: String(err) });
+  }
+});
+
+export default router;
