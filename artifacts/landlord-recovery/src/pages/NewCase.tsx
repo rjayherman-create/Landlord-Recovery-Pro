@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useState, useEffect } from "react";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +29,8 @@ const newCaseSchema = z.object({
   claimType: z.enum(["unpaid_rent", "property_damage", "security_deposit", "lease_break", "other"] as const, { error: "Please select a claim type" }),
   state: z.string().min(2, "State is required"),
   claimAmount: z.coerce.number().min(1, "Claim amount must be greater than 0"),
+  monthlyRent: z.coerce.number().optional(),
+  monthsOwed: z.coerce.number().min(0).optional(),
   description: z.string().min(10, "Please provide a brief description"),
   
   landlordName: z.string().min(2, "Your name is required"),
@@ -41,7 +43,6 @@ const newCaseSchema = z.object({
   tenantAddress: z.string().optional(),
   
   propertyAddress: z.string().min(5, "Property address is required"),
-  monthlyRent: z.coerce.number().optional().or(z.literal("").transform(() => undefined)),
   leaseStartDate: z.string().optional(),
   leaseEndDate: z.string().optional(),
   moveOutDate: z.string().optional(),
@@ -63,6 +64,8 @@ export default function NewCase() {
       claimType: undefined,
       state: "",
       claimAmount: 0,
+      monthlyRent: undefined,
+      monthsOwed: 1,
       description: "",
       landlordName: "",
       landlordEmail: "",
@@ -72,7 +75,6 @@ export default function NewCase() {
       tenantPhone: "",
       tenantAddress: "",
       propertyAddress: "",
-      monthlyRent: undefined,
       leaseStartDate: "",
       leaseEndDate: "",
       moveOutDate: "",
@@ -80,6 +82,17 @@ export default function NewCase() {
     },
     mode: "onChange",
   });
+
+  const watchedClaimType = useWatch({ control: form.control, name: "claimType" });
+  const watchedMonthlyRent = useWatch({ control: form.control, name: "monthlyRent" });
+  const watchedMonthsOwed = useWatch({ control: form.control, name: "monthsOwed" });
+
+  useEffect(() => {
+    if (watchedClaimType === "unpaid_rent" && watchedMonthlyRent && watchedMonthsOwed) {
+      const total = Number(watchedMonthlyRent) * Number(watchedMonthsOwed);
+      if (total > 0) form.setValue("claimAmount", total, { shouldValidate: true });
+    }
+  }, [watchedClaimType, watchedMonthlyRent, watchedMonthsOwed]);
 
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
@@ -232,19 +245,95 @@ export default function NewCase() {
                     />
                   </div>
 
-                  <FormField
-                    control={form.control}
-                    name="claimAmount"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Total Claim Amount ($)</FormLabel>
-                        <FormControl>
-                          <Input type="number" placeholder="e.g. 2500" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  {watchedClaimType === "unpaid_rent" ? (
+                    <div className="space-y-4">
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="monthlyRent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Monthly Rent ($)</FormLabel>
+                              <FormControl>
+                                <Input type="number" placeholder="e.g. 2400" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="monthsOwed"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Months Unpaid</FormLabel>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-9 w-9 shrink-0"
+                                  onClick={() => field.onChange(Math.max(1, Number(field.value) - 1))}
+                                >
+                                  <Minus className="h-4 w-4" />
+                                </Button>
+                                <FormControl>
+                                  <Input
+                                    type="number"
+                                    min={1}
+                                    className="text-center font-semibold text-lg"
+                                    {...field}
+                                  />
+                                </FormControl>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-9 w-9 shrink-0"
+                                  onClick={() => field.onChange(Number(field.value) + 1)}
+                                >
+                                  <Plus className="h-4 w-4" />
+                                </Button>
+                              </div>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      {watchedMonthlyRent && watchedMonthsOwed && Number(watchedMonthlyRent) > 0 ? (
+                        <div className="rounded-lg border border-accent/30 bg-accent/5 p-4">
+                          <div className="text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wider">Rent Breakdown</div>
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm text-muted-foreground">
+                              ${Number(watchedMonthlyRent).toLocaleString()} &times; {watchedMonthsOwed} month{Number(watchedMonthsOwed) !== 1 ? "s" : ""}
+                            </div>
+                            <div className="text-xl font-bold text-foreground">
+                              ${(Number(watchedMonthlyRent) * Number(watchedMonthsOwed)).toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-1">This becomes your total claim amount</div>
+                        </div>
+                      ) : (
+                        <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+                          Enter monthly rent and months unpaid to calculate your claim amount.
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <FormField
+                      control={form.control}
+                      name="claimAmount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Total Claim Amount ($)</FormLabel>
+                          <FormControl>
+                            <Input type="number" placeholder="e.g. 2500" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
 
                   <FormField
                     control={form.control}

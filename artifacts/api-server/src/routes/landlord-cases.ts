@@ -1,6 +1,9 @@
 import { Router } from "express";
-import { db, landlordCases } from "@workspace/db";
-import { eq, desc, sql } from "drizzle-orm";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import { db, landlordCases, landlordCaseAttachments } from "@workspace/db";
+import { eq, desc } from "drizzle-orm";
 import {
   CreateLandlordCaseBody,
   UpdateLandlordCaseBody,
@@ -11,6 +14,34 @@ import {
   UpdateLandlordCaseStatusBody,
 } from "@workspace/api-zod";
 import OpenAI from "openai";
+
+const UPLOADS_DIR = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+
+const multerStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
+  filename: (_req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e6)}`;
+    const ext = path.extname(file.originalname);
+    cb(null, `lc-${unique}${ext}`);
+  },
+});
+
+const upload = multer({
+  storage: multerStorage,
+  limits: { fileSize: 25 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      "image/jpeg", "image/png", "image/gif", "image/webp", "image/heic",
+      "application/pdf",
+      "text/plain",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    if (allowed.includes(file.mimetype)) cb(null, true);
+    else cb(new Error("File type not allowed. Upload images, PDFs, or documents."));
+  },
+});
 
 const router = Router();
 
@@ -23,6 +54,7 @@ function serializeCase(c: typeof landlordCases.$inferSelect) {
     ...c,
     monthlyRent: c.monthlyRent ? Number(c.monthlyRent) : null,
     claimAmount: Number(c.claimAmount),
+    monthsOwed: c.monthsOwed ?? null,
     judgmentAmount: c.judgmentAmount ? Number(c.judgmentAmount) : null,
     recoveredAmount: c.recoveredAmount ? Number(c.recoveredAmount) : null,
     createdAt: c.createdAt.toISOString(),
@@ -74,6 +106,7 @@ router.post("/landlord-cases", async (req, res) => {
         propertyAddress: body.propertyAddress,
         monthlyRent: body.monthlyRent?.toString() ?? null,
         claimAmount: body.claimAmount.toString(),
+        monthsOwed: (body as any).monthsOwed ?? null,
         description: body.description,
         leaseStartDate: body.leaseStartDate ?? null,
         leaseEndDate: body.leaseEndDate ?? null,
@@ -126,6 +159,7 @@ router.put("/landlord-cases/:id", async (req, res) => {
     if (body.judgmentAmount !== undefined) updateData.judgmentAmount = body.judgmentAmount?.toString() ?? null;
     if (body.recoveredAmount !== undefined) updateData.recoveredAmount = body.recoveredAmount?.toString() ?? null;
     if (body.notes !== undefined) updateData.notes = body.notes ?? null;
+    if ((body as any).monthsOwed !== undefined) (updateData as any).monthsOwed = (body as any).monthsOwed ?? null;
     updateData.updatedAt = new Date();
     const [updated] = await db.update(landlordCases).set(updateData).where(eq(landlordCases.id, id)).returning();
     if (!updated) return res.status(404).json({ error: "not_found", message: "Case not found" });
@@ -200,6 +234,63 @@ router.put("/landlord-cases/:id/status", async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: "Failed to update status", message: String(err) });
   }
+});
+
+// ─── Attachments ────────────────────────────────────────────────────────────
+
+router.post("/landlord-cases/:id/attachments", upload.single("file"), async (req: any, res: any) => {
+  try {
+    const caseId = Number(req.params.id);
+    if (isNaN(caseId)) return res.status(400).json({ error: "bad_request", message: "Invalid case ID" });
+    const file = req.file;
+    if (!file) return res.status(400).json({ error: "bad_request", message: "No file provided" });
+    const category = req.body.category || "other";
+    const notes = req.body.notes || null;
+    const fileUrl = `/api/landlord-attachments/file/${file.filename}`;
+    const [created] = await db
+      .insert(landlordCaseAttachments)
+      .values({ caseId, category, fileUrl, fileName: file.originalname, fileSize: file.size, mimeType: file.mimetype, notes })
+      .returning();
+    res.status(201).json(created);
+  } catch (err: any) {
+    res.status(500).json({ error: "upload_error", message: err.message });
+  }
+});
+
+router.get("/landlord-cases/:id/attachments", async (req: any, res: any) => {
+  try {
+    const caseId = Number(req.params.id);
+    if (isNaN(caseId)) return res.status(400).json({ error: "bad_request", message: "Invalid case ID" });
+    const files = await db.select().from(landlordCaseAttachments)
+      .where(eq(landlordCaseAttachments.caseId, caseId))
+      .orderBy(landlordCaseAttachments.uploadedAt);
+    res.json(files);
+  } catch (err: any) {
+    res.status(500).json({ error: "list_error", message: err.message });
+  }
+});
+
+router.delete("/landlord-cases/:caseId/attachments/:attachmentId", async (req: any, res: any) => {
+  try {
+    const attachmentId = Number(req.params.attachmentId);
+    const [deleted] = await db.delete(landlordCaseAttachments)
+      .where(eq(landlordCaseAttachments.id, attachmentId))
+      .returning();
+    if (deleted) {
+      const diskPath = path.join(UPLOADS_DIR, path.basename(deleted.fileUrl));
+      if (fs.existsSync(diskPath)) fs.unlinkSync(diskPath);
+    }
+    res.status(204).send();
+  } catch (err: any) {
+    res.status(500).json({ error: "delete_error", message: err.message });
+  }
+});
+
+router.use("/landlord-attachments/file", (req: any, res: any) => {
+  const filename = path.basename(req.path);
+  const filePath = path.join(UPLOADS_DIR, filename);
+  if (!fs.existsSync(filePath)) return res.status(404).json({ error: "not_found" });
+  res.sendFile(filePath);
 });
 
 export default router;

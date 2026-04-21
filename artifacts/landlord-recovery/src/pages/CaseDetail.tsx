@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, Link } from "wouter";
 import { 
   useGetLandlordCase, 
@@ -8,8 +8,8 @@ import {
   useGenerateDemandLetter 
 } from "@workspace/api-client-react";
 import { 
-  ArrowLeft, FileText, Send, AlertTriangle, Scale, Calendar, CheckCircle2, 
-  Clock, Gavel, FileOutput, RefreshCw, Save, Trash2 
+  ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
+  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -53,6 +53,61 @@ export default function CaseDetail() {
   const [notes, setNotes] = useState("");
   const [isEditingLetter, setIsEditingLetter] = useState(false);
   const [letterText, setLetterText] = useState("");
+
+  // Attachments state
+  const [attachments, setAttachments] = useState<any[]>([]);
+  const [uploadCategory, setUploadCategory] = useState("lease");
+  const [uploadNotes, setUploadNotes] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const [isDeletingAttachment, setIsDeletingAttachment] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const fetchAttachments = useCallback(async () => {
+    if (!caseId) return;
+    try {
+      const res = await fetch(`/api/landlord-cases/${caseId}/attachments`);
+      if (res.ok) setAttachments(await res.json());
+    } catch {}
+  }, [caseId]);
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setIsUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("category", uploadCategory);
+      if (uploadNotes) fd.append("notes", uploadNotes);
+      const res = await fetch(`/api/landlord-cases/${caseId}/attachments`, { method: "POST", body: fd });
+      if (res.ok) {
+        toast({ title: "File Uploaded", description: file.name });
+        setUploadNotes("");
+        if (fileInputRef.current) fileInputRef.current.value = "";
+        fetchAttachments();
+      } else {
+        const err = await res.json();
+        toast({ title: "Upload Failed", description: err.message || "Unknown error", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Upload Failed", variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleDeleteAttachment = async (id: number) => {
+    setIsDeletingAttachment(id);
+    try {
+      await fetch(`/api/landlord-cases/${caseId}/attachments/${id}`, { method: "DELETE" });
+      setAttachments(prev => prev.filter(a => a.id !== id));
+      toast({ title: "File Removed" });
+    } catch {
+      toast({ title: "Delete Failed", variant: "destructive" });
+    } finally {
+      setIsDeletingAttachment(null);
+    }
+  };
   
   const initRef = useRef<number | null>(null);
 
@@ -61,8 +116,9 @@ export default function CaseDetail() {
       initRef.current = caseData.id;
       setNotes(caseData.notes || "");
       setLetterText(caseData.demandLetterText || "");
+      fetchAttachments();
     }
-  }, [caseData]);
+  }, [caseData, fetchAttachments]);
 
   if (isLoading) {
     return (
@@ -335,11 +391,29 @@ export default function CaseDetail() {
                         <dt className="text-muted-foreground">State</dt>
                         <dd className="font-medium">{caseData.state}</dd>
                       </div>
-                      <div className="flex justify-between border-b pb-1 border-border">
-                        <dt className="text-muted-foreground">Monthly Rent</dt>
-                        <dd className="font-medium">{formatCurrency(caseData.monthlyRent)}</dd>
-                      </div>
+                      {caseData.monthlyRent && (
+                        <div className="flex justify-between border-b pb-1 border-border">
+                          <dt className="text-muted-foreground">Monthly Rent</dt>
+                          <dd className="font-medium">{formatCurrency(caseData.monthlyRent)}</dd>
+                        </div>
+                      )}
+                      {caseData.claimType === "unpaid_rent" && caseData.monthsOwed && Number(caseData.monthsOwed) > 0 && (
+                        <div className="flex justify-between border-b pb-1 border-border">
+                          <dt className="text-muted-foreground">Months Unpaid</dt>
+                          <dd className="font-medium">{caseData.monthsOwed}</dd>
+                        </div>
+                      )}
                     </dl>
+                    {caseData.claimType === "unpaid_rent" && caseData.monthlyRent && caseData.monthsOwed && Number(caseData.monthsOwed) > 0 && (
+                      <div className="mt-3 rounded-md border border-accent/30 bg-accent/5 px-4 py-3 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">
+                            {formatCurrency(caseData.monthlyRent)} &times; {caseData.monthsOwed} month{Number(caseData.monthsOwed) !== 1 ? "s" : ""}
+                          </span>
+                          <span className="font-bold text-foreground text-base">{formatCurrency(caseData.claimAmount)}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   
                   <div>
@@ -371,6 +445,136 @@ export default function CaseDetail() {
                   </div>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+          {/* Attachments Section */}
+          <Card className="border-border shadow-sm">
+            <CardHeader className="pb-2 bg-muted/10 border-b">
+              <CardTitle className="text-lg flex items-center">
+                <Paperclip className="h-5 w-5 mr-2 text-primary" />
+                Attachments
+              </CardTitle>
+              <CardDescription>Lease, notices, photos, and supporting documents.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-5">
+              {/* Upload Row */}
+              <div className="rounded-lg border border-dashed p-4 space-y-3">
+                <div className="flex flex-wrap gap-3 items-end">
+                  <div className="flex-1 min-w-[140px]">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">Category</label>
+                    <select
+                      value={uploadCategory}
+                      onChange={e => setUploadCategory(e.target.value)}
+                      className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    >
+                      <option value="lease">Lease Agreement</option>
+                      <option value="5_day_notice">5-Day Notice to Pay</option>
+                      <option value="10_day_notice">10-Day Notice</option>
+                      <option value="14_day_notice">14-Day Notice</option>
+                      <option value="30_day_notice">30-Day Notice to Vacate</option>
+                      <option value="photos">Photos / Evidence</option>
+                      <option value="correspondence">Correspondence</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="flex-1 min-w-[160px]">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">Notes (optional)</label>
+                    <Input
+                      placeholder="e.g. Signed lease from 2023"
+                      value={uploadNotes}
+                      onChange={e => setUploadNotes(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.doc,.docx"
+                      onChange={handleUpload}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isUploading}
+                      onClick={() => fileInputRef.current?.click()}
+                      className="h-9"
+                    >
+                      {isUploading ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Upload className="h-4 w-4 mr-2" />
+                      )}
+                      {isUploading ? "Uploading..." : "Choose File"}
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Supports PDF, Word, images (JPG, PNG, WEBP). Max 25 MB.</p>
+              </div>
+
+              {/* File List */}
+              {attachments.length === 0 ? (
+                <div className="text-center py-6 text-sm text-muted-foreground">
+                  No files attached yet. Upload your lease, notices, and supporting documents above.
+                </div>
+              ) : (
+                <ul className="divide-y divide-border">
+                  {attachments.map((att: any) => {
+                    const isImage = att.mimeType?.startsWith("image/");
+                    const categoryLabel: Record<string, string> = {
+                      lease: "Lease", "5_day_notice": "5-Day Notice", "10_day_notice": "10-Day Notice",
+                      "14_day_notice": "14-Day Notice", "30_day_notice": "30-Day Notice",
+                      photos: "Photos", correspondence: "Correspondence", other: "Other"
+                    };
+                    return (
+                      <li key={att.id} className="flex items-start gap-3 py-3">
+                        <div className="mt-0.5 text-muted-foreground">
+                          {isImage ? <FileImage className="h-5 w-5" /> : <File className="h-5 w-5" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <a
+                            href={att.fileUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-medium text-primary hover:underline truncate block"
+                          >
+                            {att.fileName}
+                          </a>
+                          <div className="flex flex-wrap gap-2 mt-0.5">
+                            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                              {categoryLabel[att.category] || att.category}
+                            </span>
+                            {att.fileSize && (
+                              <span className="text-xs text-muted-foreground">
+                                {(att.fileSize / 1024).toFixed(0)} KB
+                              </span>
+                            )}
+                            {att.notes && (
+                              <span className="text-xs text-muted-foreground italic">{att.notes}</span>
+                            )}
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
+                          disabled={isDeletingAttachment === att.id}
+                          onClick={() => handleDeleteAttachment(att.id)}
+                        >
+                          {isDeletingAttachment === att.id ? (
+                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <X className="h-3.5 w-3.5" />
+                          )}
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </CardContent>
           </Card>
         </div>
