@@ -20,6 +20,7 @@ import { CaseDashboard } from "@/pages/CaseDashboard";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { NewClaimPage } from "@/pages/NewClaimPage";
 import CaseListPage from "@/pages/CaseListPage";
+import CaseResultPage from "@/pages/CaseResultPage";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ function Router() {
         <Route path="/terms" component={Terms} />
         <Route path="/refund" component={RefundPolicy} />
         <Route path="/what-happens-next" component={WhatHappensNext} />
+        <Route path="/cases/:id/result" component={CaseResultPage} />
         <Route path="/cases/:id" component={CaseDashboard} />
         <Route component={NotFound} />
       </Switch>
