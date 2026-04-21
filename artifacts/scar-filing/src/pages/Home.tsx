@@ -1,15 +1,10 @@
 import { useLocation, Link } from "wouter";
-import { Scale, FileText, MessageSquare, Sparkles, ArrowRight, Shield, Clock, CheckCircle } from "lucide-react";
+import { Scale, FileText, MessageSquare, Sparkles, ArrowRight, Shield, Clock, CheckCircle, Building2, DollarSign, Zap } from "lucide-react";
 
-const CLAIM_TYPES = [
-  { icon: "📄", label: "Breach of Contract" },
-  { icon: "🏠", label: "Security Deposit" },
-  { icon: "🔨", label: "Property Damage" },
-  { icon: "💼", label: "Unpaid Wages" },
-  { icon: "🛒", label: "Consumer Dispute" },
-  { icon: "🔑", label: "Landlord / Tenant" },
-  { icon: "⚖️", label: "Negligence" },
-  { icon: "📦", label: "Personal Property" },
+const SUPPORTING_BULLETS = [
+  { icon: Building2, text: "Designed for landlords and operators" },
+  { icon: DollarSign, text: "Built for smaller balances your lawyer may not handle first" },
+  { icon: Zap, text: "Generates usable next-step documents fast" },
 ];
 
 const HOW_IT_WORKS = [
@@ -33,48 +28,29 @@ export function Home() {
     <div className="min-h-[calc(100vh-4rem)]">
       <section className="bg-gradient-to-br from-primary/5 via-background to-background border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-16 sm:py-24 text-center">
-          <div className="inline-flex items-center gap-2 bg-primary/10 text-primary text-xs font-semibold px-3 py-1.5 rounded-full mb-6">
-            <Scale className="w-3.5 h-3.5" />
-            AI-Powered Small Claims Filing
-          </div>
           <h1 className="font-serif text-4xl sm:text-5xl font-bold text-foreground mb-4 leading-tight">
-            File Your Small Claims Case<br />
-            <span className="text-primary">With Confidence</span>
+            Recover tenant and resident balances faster.
           </h1>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto mb-8">
-            Our AI assistant guides you through every step of filing a small claims court case — from organizing your facts to generating a professional statement of claim.
+            Analyze the case, decide whether it is worth pursuing, and generate demand documents in minutes.
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-10">
             <button
-              onClick={() => setLocation("/file")}
+              onClick={() => setLocation("/new-claim")}
               className="inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground font-semibold px-6 py-3 rounded-lg hover:opacity-90 transition-opacity text-sm"
             >
-              Start Filing Now
+              Start a case
               <ArrowRight className="w-4 h-4" />
             </button>
-            <button
-              onClick={() => setLocation("/guide")}
-              className="inline-flex items-center justify-center gap-2 border border-border text-foreground font-medium px-6 py-3 rounded-lg hover:bg-secondary/50 transition-colors text-sm"
-            >
-              Learn How It Works
-            </button>
           </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Court-ready documents · <span className="font-semibold text-foreground">$29</span> one-time · No subscription
-          </p>
-        </div>
-      </section>
-
-      <section className="max-w-4xl mx-auto px-4 py-12">
-        <h2 className="font-serif text-2xl font-semibold text-foreground text-center mb-2">We Help With All Common Small Claims</h2>
-        <p className="text-muted-foreground text-sm text-center mb-8">Available for NY, NJ, FL, TX, CA and more states</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {CLAIM_TYPES.map((ct) => (
-            <div key={ct.label} className="bg-card border border-card-border rounded-lg p-4 text-center hover:border-primary/40 transition-colors cursor-default">
-              <div className="text-3xl mb-2">{ct.icon}</div>
-              <div className="text-sm font-medium text-foreground">{ct.label}</div>
-            </div>
-          ))}
+          <ul className="inline-flex flex-col items-start gap-3 text-sm text-muted-foreground">
+            {SUPPORTING_BULLETS.map(({ icon: Icon, text }) => (
+              <li key={text} className="flex items-center gap-2">
+                <Icon className="w-4 h-4 text-primary shrink-0" />
+                {text}
+              </li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -153,13 +129,13 @@ export function Home() {
 
       <section className="bg-primary text-primary-foreground">
         <div className="max-w-4xl mx-auto px-4 py-12 text-center">
-          <h2 className="font-serif text-2xl font-semibold mb-3">Ready to file your case?</h2>
-          <p className="text-primary-foreground/80 text-sm mb-6">It's free and takes less than 15 minutes.</p>
+          <h2 className="font-serif text-2xl font-semibold mb-3">Ready to recover your balance?</h2>
+          <p className="text-primary-foreground/80 text-sm mb-6">It takes just a few minutes to get started.</p>
           <button
-            onClick={() => setLocation("/file")}
+            onClick={() => setLocation("/new-claim")}
             className="inline-flex items-center gap-2 bg-white text-primary font-semibold px-6 py-3 rounded-lg hover:bg-white/90 transition-colors text-sm"
           >
-            Start Your Case
+            Start a case
             <ArrowRight className="w-4 h-4" />
           </button>
         </div>
