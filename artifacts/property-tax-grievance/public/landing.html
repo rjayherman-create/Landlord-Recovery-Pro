@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaxAppeal DIY — Stop Paying 50% Commission</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0f2447;
+      --blue: #1a4b8c;
+      --accent: #e8a020;
+      --accent-light: #fdf3e3;
+      --green: #22c55e;
+      --bg: #f5f7fc;
+      --white: #ffffff;
+      --gray: #64748b;
+      --light: #e2e8f0;
+      --radius: 14px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--navy);
+      overflow-x: hidden;
+    }
+
+    /* ── NAV ── */
+    nav {
+      background: var(--white);
+      border-bottom: 1px solid var(--light);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 44px;
+      height: 44px;
+      background: var(--navy);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .logo-icon svg { width: 22px; height: 22px; fill: var(--accent); }
+    .logo-text { line-height: 1.1; }
+    .logo-text strong { display: block; font-size: 18px; font-weight: 800; color: var(--navy); }
+    .logo-text span { font-size: 11px; color: var(--gray); letter-spacing: .06em; text-transform: uppercase; }
+    .nav-links { display: flex; gap: 8px; }
+    .nav-links a {
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--gray);
+      transition: all .2s;
+    }
+    .nav-links a:hover { color: var(--navy); background: var(--bg); }
+    .nav-ctas { display: flex; gap: 10px; align-items: center; }
+    .btn-ghost {
+      padding: 9px 20px;
+      border: 1.5px solid var(--light);
+      border-radius: 9px;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--navy);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .2s;
+    }
+    .btn-ghost:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-primary {
+      padding: 9px 22px;
+      border: none;
+      border-radius: 9px;
+      background: var(--navy);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all .2s;
+    }
+    .btn-primary:hover { background: var(--blue); }
+
+    /* ── HERO ── */
+    .hero {
+      background: linear-gradient(135deg, #0f2447 0%, #1a3a7a 60%, #1e4a8c 100%);
+      padding: 80px 24px 0;
+      overflow: hidden;
+      position: relative;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -80px;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(232,160,32,.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: flex-end;
+    }
+    .hero-left { padding-bottom: 70px; }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(232,160,32,.15);
+      border: 1px solid rgba(232,160,32,.4);
+      border-radius: 100px;
+      padding: 6px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 28px;
+    }
+    .hero-badge svg { width: 14px; height: 14px; fill: var(--accent); }
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 54px);
+      font-weight: 800;
+      color: var(--white);
+      line-height: 1.1;
+      margin-bottom: 6px;
+    }
+    .hero h1 .accent { color: var(--accent); font-family: 'Playfair Display', serif; font-style: italic; }
+    .hero-sub {
+      font-size: 16px;
+      color: rgba(255,255,255,.7);
+      margin: 20px 0 12px;
+      max-width: 440px;
+      line-height: 1.65;
+    }
+    .hero-tagline {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 17px;
+      color: rgba(255,255,255,.85);
+      margin-bottom: 36px;
+      position: relative;
+      display: inline-block;
+    }
+    .hero-tagline::after {
+      content: '';
+      display: block;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin-top: 6px;
+      opacity: .7;
+    }
+    .feature-list { list-style: none; margin-bottom: 40px; display: flex; flex-direction: column; gap: 16px; }
+    .feature-item { display: flex; align-items: flex-start; gap: 14px; }
+    .feat-icon {
+      width: 44px; height: 44px; min-width: 44px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .feat-icon svg { width: 20px; height: 20px; stroke: var(--accent); fill: none; stroke-width: 1.8; }
+    .feat-text strong { display: block; font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 2px; }
+    .feat-text p { font-size: 13px; color: rgba(255,255,255,.6); line-height: 1.5; }
+    .hero-ctas { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+    .btn-hero {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 15px 30px;
+      background: var(--accent);
+      color: var(--navy);
+      font-size: 15px; font-weight: 800;
+      border-radius: 12px;
+      text-decoration: none;
+      border: none; cursor: pointer;
+      transition: all .2s;
+      box-shadow: 0 4px 24px rgba(232,160,32,.4);
+    }
+    .btn-hero:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(232,160,32,.5); }
+    .btn-hero svg { width: 18px; height: 18px; }
+    .hero-video-link {
+      display: inline-flex; align-items: center; gap: 10px;
+      color: rgba(255,255,255,.75);
+      font-size: 14px; font-weight: 600;
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .hero-video-link:hover { color: var(--white); }
+    .play-circle {
+      width: 36px; height: 36px;
+      border: 2px solid rgba(255,255,255,.4);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .play-circle svg { width: 12px; height: 12px; fill: var(--white); margin-left: 2px; }
+    .hero-trust {
+      margin-top: 28px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: rgba(255,255,255,.5);
+    }
+    .hero-trust svg { width: 14px; height: 14px; fill: rgba(255,255,255,.4); }
+
+    /* ── PHONE MOCKUP ── */
+    .hero-right { display: flex; align-items: flex-end; justify-content: center; position: relative; }
+    .phone-wrap {
+      position: relative;
+      width: 280px;
+      z-index: 2;
+    }
+    .phone-frame {
+      background: var(--navy);
+      border-radius: 42px;
+      padding: 14px;
+      box-shadow: 0 40px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.08);
+      position: relative;
+    }
+    .phone-screen {
+      background: #f8fafc;
+      border-radius: 30px;
+      overflow: hidden;
+      min-height: 530px;
+    }
+    .phone-status {
+      background: var(--navy);
+      padding: 10px 20px 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .phone-time { font-size: 13px; font-weight: 700; color: var(--white); }
+    .phone-icons { display: flex; gap: 4px; align-items: center; }
+    .phone-icons span { width: 14px; height: 8px; background: rgba(255,255,255,.7); border-radius: 2px; display: block; }
+    .phone-icons span:nth-child(1) { height: 5px; }
+    .phone-icons span:nth-child(2) { height: 6px; }
+    .app-ui { padding: 16px; }
+    .app-greeting { font-size: 12px; color: var(--gray); margin-bottom: 2px; }
+    .app-name { font-size: 20px; font-weight: 800; color: var(--navy); margin-bottom: 14px; }
+    .app-card {
+      background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 12px;
+      color: var(--white);
+    }
+    .app-card-label { font-size: 11px; opacity: .7; margin-bottom: 4px; }
+    .app-card-value { font-size: 28px; font-weight: 800; margin-bottom: 2px; display: flex; align-items: baseline; gap: 8px; }
+    .badge-green {
+      font-size: 11px; font-weight: 700;
+      background: rgba(34,197,94,.25);
+      color: var(--green);
+      border-radius: 6px;
+      padding: 2px 8px;
+    }
+    .app-card-sub { font-size: 11px; opacity: .55; }
+    .app-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+    .app-stat { background: var(--white); border-radius: 12px; padding: 12px; border: 1px solid var(--light); }
+    .app-stat-label { font-size: 10px; color: var(--gray); margin-bottom: 4px; }
+    .app-stat-value { font-size: 18px; font-weight: 800; color: var(--navy); }
+    .app-stat-sub { font-size: 10px; color: var(--gray); margin-top: 2px; }
+    .app-steps { background: var(--white); border-radius: 12px; padding: 12px; border: 1px solid var(--light); }
+    .app-steps-title { font-size: 11px; font-weight: 700; color: var(--navy); margin-bottom: 10px; }
+    .step-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .step-num {
+      width: 20px; height: 20px; border-radius: 50%;
+      font-size: 10px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--light); color: var(--gray);
+      flex-shrink: 0;
+    }
+    .step-num.done { background: var(--green); color: var(--white); }
+    .step-num.active { background: var(--blue); color: var(--white); }
+    .step-label { font-size: 11px; color: var(--navy); flex: 1; }
+    .step-badge {
+      font-size: 9px; font-weight: 700;
+      border-radius: 5px; padding: 2px 7px;
+    }
+    .step-badge.done { background: rgba(34,197,94,.15); color: var(--green); }
+    .step-badge.active { background: rgba(26,75,140,.15); color: var(--blue); }
+    .step-badge.upcoming { background: var(--light); color: var(--gray); }
+    .phone-bottom-nav {
+      background: var(--white);
+      border-top: 1px solid var(--light);
+      padding: 10px 0 6px;
+      display: flex; justify-content: space-around;
+    }
+    .nav-tab { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+    .nav-tab span { font-size: 9px; color: var(--gray); }
+    .nav-tab svg { width: 18px; height: 18px; stroke: var(--gray); fill: none; stroke-width: 1.7; }
+    .nav-tab.active svg { stroke: var(--navy); }
+    .nav-tab.active span { color: var(--navy); font-weight: 600; }
+
+    /* Floating cards */
+    .float-card {
+      position: absolute;
+      background: var(--white);
+      border-radius: 16px;
+      padding: 18px 20px;
+      box-shadow: 0 8px 40px rgba(0,0,0,.18);
+      z-index: 3;
+    }
+    .float-right {
+      right: -130px; top: 40px;
+      width: 200px;
+    }
+    .float-card h4 { font-size: 13px; font-weight: 800; color: var(--navy); margin-bottom: 14px; }
+    .float-check { display: flex; align-items: center; gap: 8px; margin-bottom: 9px; }
+    .check-icon {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: rgba(34,197,94,.15);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .check-icon svg { width: 10px; height: 10px; stroke: var(--green); fill: none; stroke-width: 2.5; }
+    .float-check span { font-size: 12px; color: var(--gray); }
+    .float-note {
+      left: -110px; bottom: 80px;
+      width: 180px;
+      background: #fffbf0;
+      border: 1px solid rgba(232,160,32,.3);
+    }
+    .float-note p {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 14px;
+      color: var(--navy);
+      line-height: 1.45;
+    }
+    .float-note p strong { color: var(--accent); font-style: normal; font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 700; display: block; margin-top: 8px; }
+
+    /* ── TRUST STRIP ── */
+    .trust-strip {
+      background: var(--white);
+      border-bottom: 1px solid var(--light);
+    }
+    .trust-inner {
+      max-width: 1200px; margin: 0 auto; padding: 20px 24px;
+      display: flex; align-items: center; gap: 12px;
+      font-size: 14px; color: var(--gray);
+    }
+    .trust-inner svg { width: 16px; height: 16px; fill: var(--accent); flex-shrink: 0; }
+    .trust-inner a { color: var(--blue); font-weight: 600; text-decoration: none; }
+    .trust-inner a:hover { text-decoration: underline; }
+
+    /* ── STATS ── */
+    .stats-section {
+      background: var(--white);
+      padding: 60px 24px;
+      border-bottom: 1px solid var(--light);
+    }
+    .stats-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 40px;
+    }
+    .stat-item { text-align: center; }
+    .stat-num {
+      font-size: 42px; font-weight: 800; color: var(--navy);
+      font-family: 'Playfair Display', serif;
+      margin-bottom: 6px;
+    }
+    .stat-num span { color: var(--accent); }
+    .stat-label { font-size: 14px; color: var(--gray); }
+
+    /* ── HOW IT WORKS ── */
+    .how-section { padding: 80px 24px; background: var(--bg); }
+    .section-header { text-align: center; margin-bottom: 60px; }
+    .section-tag {
+      display: inline-block;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 12px; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      padding: 6px 16px; border-radius: 100px;
+      margin-bottom: 16px;
+    }
+    .section-header h2 {
+      font-size: clamp(28px, 4vw, 40px);
+      font-weight: 800; color: var(--navy);
+      line-height: 1.15; margin-bottom: 14px;
+    }
+    .section-header p { font-size: 16px; color: var(--gray); max-width: 500px; margin: 0 auto; line-height: 1.65; }
+    .steps-grid {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 28px;
+    }
+    .step-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      border: 1px solid var(--light);
+      position: relative;
+      transition: all .25s;
+    }
+    .step-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(15,36,71,.08); }
+    .step-card::after {
+      content: attr(data-step);
+      position: absolute; top: 24px; right: 24px;
+      font-size: 48px; font-weight: 800;
+      color: rgba(15,36,71,.05);
+      font-family: 'Playfair Display', serif;
+      line-height: 1;
+    }
+    .step-icon {
+      width: 52px; height: 52px; border-radius: 14px;
+      background: rgba(15,36,71,.06);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+    }
+    .step-icon svg { width: 26px; height: 26px; stroke: var(--navy); fill: none; stroke-width: 1.8; }
+    .step-card h3 { font-size: 16px; font-weight: 800; color: var(--navy); margin-bottom: 8px; }
+    .step-card p { font-size: 13px; color: var(--gray); line-height: 1.6; }
+
+    /* ── FEATURES ── */
+    .features-section { padding: 80px 24px; background: var(--white); }
+    .features-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+    }
+    .features-left h2 { font-size: clamp(28px, 3.5vw, 38px); font-weight: 800; color: var(--navy); line-height: 1.15; margin-bottom: 16px; }
+    .features-left h2 em { font-family: 'Playfair Display', serif; font-style: italic; color: var(--accent); }
+    .features-left p { font-size: 15px; color: var(--gray); line-height: 1.7; margin-bottom: 32px; }
+    .feat-cards { display: flex; flex-direction: column; gap: 14px; }
+    .feat-card {
+      display: flex; align-items: flex-start; gap: 14px;
+      background: var(--bg);
+      border-radius: 12px; padding: 16px;
+      border: 1px solid var(--light);
+      transition: all .2s;
+    }
+    .feat-card:hover { border-color: rgba(26,75,140,.2); background: var(--white); }
+    .feat-card-icon {
+      width: 40px; height: 40px; min-width: 40px;
+      background: rgba(15,36,71,.07);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .feat-card-icon svg { width: 20px; height: 20px; stroke: var(--navy); fill: none; stroke-width: 1.8; }
+    .feat-card-text strong { display: block; font-size: 14px; font-weight: 700; color: var(--navy); margin-bottom: 3px; }
+    .feat-card-text p { font-size: 13px; color: var(--gray); line-height: 1.5; }
+    .features-right {
+      background: linear-gradient(135deg, #0f2447 0%, #1a3a7a 100%);
+      border-radius: 24px;
+      padding: 36px;
+      color: var(--white);
+    }
+    .features-right h3 { font-size: 20px; font-weight: 800; margin-bottom: 24px; }
+    .checklist { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+    .checklist li { display: flex; align-items: center; gap: 12px; font-size: 14px; color: rgba(255,255,255,.85); }
+    .check-box {
+      width: 22px; height: 22px; border-radius: 6px;
+      background: rgba(34,197,94,.2);
+      border: 1px solid rgba(34,197,94,.4);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .check-box svg { width: 12px; height: 12px; stroke: var(--green); fill: none; stroke-width: 2.5; }
+    .dr-note {
+      margin-top: 28px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 14px;
+      padding: 20px;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 17px;
+      line-height: 1.5;
+      color: rgba(255,255,255,.9);
+    }
+    .dr-note strong { font-family: 'Inter', sans-serif; font-style: normal; font-weight: 700; font-size: 13px; display: block; margin-top: 10px; color: var(--accent); }
+
+    /* ── PRICING ── */
+    .pricing-section { padding: 80px 24px; background: var(--bg); }
+    .pricing-grid {
+      max-width: 960px; margin: 0 auto;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
+    }
+    .price-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 36px;
+      border: 1.5px solid var(--light);
+    }
+    .price-card.featured {
+      background: linear-gradient(135deg, #0f2447 0%, #1a3a7a 100%);
+      border-color: transparent;
+      color: var(--white);
+    }
+    .price-tag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; padding: 4px 12px; border-radius: 100px; margin-bottom: 16px; }
+    .price-card .price-tag { background: var(--bg); color: var(--gray); }
+    .price-card.featured .price-tag { background: rgba(232,160,32,.2); color: var(--accent); }
+    .price-amount {
+      font-size: 52px; font-weight: 800;
+      font-family: 'Playfair Display', serif;
+      margin-bottom: 4px;
+    }
+    .price-card .price-amount { color: var(--navy); }
+    .price-card.featured .price-amount { color: var(--white); }
+    .price-period { font-size: 13px; margin-bottom: 24px; }
+    .price-card .price-period { color: var(--gray); }
+    .price-card.featured .price-period { color: rgba(255,255,255,.6); }
+    .price-items { list-style: none; display: flex; flex-direction: column; gap: 12px; margin-bottom: 30px; }
+    .price-items li { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .price-card .price-items li { color: var(--gray); }
+    .price-card.featured .price-items li { color: rgba(255,255,255,.8); }
+    .pi-check { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+    .price-card .pi-check { background: rgba(34,197,94,.12); }
+    .price-card.featured .pi-check { background: rgba(34,197,94,.2); }
+    .pi-check svg { width: 10px; height: 10px; stroke: var(--green); fill: none; stroke-width: 2.5; }
+    .price-cta {
+      display: block; text-align: center;
+      padding: 13px; border-radius: 10px;
+      font-size: 14px; font-weight: 700;
+      text-decoration: none; cursor: pointer;
+      border: none; transition: all .2s;
+      width: 100%;
+    }
+    .price-card .price-cta { background: var(--navy); color: var(--white); }
+    .price-card .price-cta:hover { background: var(--blue); }
+    .price-card.featured .price-cta { background: var(--accent); color: var(--navy); }
+    .price-card.featured .price-cta:hover { opacity: .9; }
+
+    /* ── STATES ── */
+    .states-section { padding: 60px 24px; background: var(--white); border-top: 1px solid var(--light); }
+    .states-inner { max-width: 1200px; margin: 0 auto; }
+    .states-label { text-align: center; font-size: 13px; font-weight: 600; color: var(--gray); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 32px; }
+    .states-grid { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+    .state-pill {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--bg); border: 1.5px solid var(--light);
+      border-radius: 100px; padding: 12px 24px;
+      font-size: 15px; font-weight: 700; color: var(--navy);
+      transition: all .2s;
+    }
+    .state-pill:hover { border-color: var(--blue); background: rgba(26,75,140,.04); }
+    .state-flag {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--navy);
+      font-size: 14px; display: flex; align-items: center; justify-content: center;
+    }
+    .state-detail { font-size: 11px; color: var(--gray); font-weight: 400; display: block; }
+
+    /* ── CTA SECTION ── */
+    .cta-section { padding: 80px 24px; background: linear-gradient(135deg, #0f2447 0%, #1a3a7a 100%); }
+    .cta-inner { max-width: 700px; margin: 0 auto; text-align: center; }
+    .cta-inner h2 { font-size: clamp(28px, 4vw, 42px); font-weight: 800; color: var(--white); line-height: 1.15; margin-bottom: 14px; }
+    .cta-inner h2 em { font-family: 'Playfair Display', serif; font-style: italic; color: var(--accent); }
+    .cta-inner p { font-size: 16px; color: rgba(255,255,255,.7); margin-bottom: 36px; line-height: 1.6; }
+    .cta-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+    .btn-cta-primary {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 36px;
+      background: var(--accent); color: var(--navy);
+      font-size: 16px; font-weight: 800;
+      border-radius: 12px; text-decoration: none;
+      border: none; cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-cta-primary:hover { opacity: .9; transform: translateY(-2px); }
+    .btn-cta-ghost {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 16px 36px;
+      background: transparent;
+      border: 2px solid rgba(255,255,255,.3);
+      color: var(--white);
+      font-size: 16px; font-weight: 700;
+      border-radius: 12px; text-decoration: none;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-cta-ghost:hover { border-color: rgba(255,255,255,.6); }
+
+    /* ── FOOTER ── */
+    footer { background: #080e1c; padding: 48px 24px 28px; }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 40px; }
+    .footer-brand p { font-size: 13px; color: rgba(255,255,255,.4); line-height: 1.7; margin-top: 14px; max-width: 280px; }
+    .footer-col h4 { font-size: 13px; font-weight: 700; color: var(--white); margin-bottom: 16px; letter-spacing: .04em; }
+    .footer-col a { display: block; font-size: 13px; color: rgba(255,255,255,.45); text-decoration: none; margin-bottom: 10px; transition: color .2s; }
+    .footer-col a:hover { color: rgba(255,255,255,.85); }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,.07);
+      padding-top: 24px;
+      display: flex; align-items: center; justify-content: space-between;
+      font-size: 12px; color: rgba(255,255,255,.3);
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-bottom a { color: rgba(255,255,255,.3); text-decoration: none; }
+    .footer-bottom a:hover { color: rgba(255,255,255,.6); }
+    .footer-links { display: flex; gap: 20px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; }
+      .hero-right { display: none; }
+      .stats-inner { grid-template-columns: repeat(2, 1fr); }
+      .steps-grid { grid-template-columns: repeat(2, 1fr); }
+      .features-inner { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr 1fr; }
+      .float-right, .float-note { display: none; }
+      .nav-links { display: none; }
+    }
+    @media (max-width: 600px) {
+      .stats-inner { grid-template-columns: 1fr 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 3l9 4-9 4-9-4 9-4zm0 0v18m-9-14v10l9 4 9-4V7"/></svg>
+      </div>
+      <div class="logo-text">
+        <strong>TaxAppeal DIY</strong>
+        <span>NY · NJ · TX · FL</span>
+      </div>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#how">How It Works</a>
+      <a href="#states">States</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <div class="nav-ctas">
+      <a href="#" class="btn-ghost">Log In</a>
+      <a href="#" class="btn-primary">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hero-badge">
+        <svg viewBox="0 0 16 16"><path d="M8 1l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 9.8l-3.7 2.7 1.4-4.3L2 5.5h4.5z"/></svg>
+        #1 DIY Property Tax Appeal Platform
+      </div>
+      <h1>
+        Stop Paying<br>50% Commission<br>
+        <span class="accent">to Lower Your Taxes.</span>
+      </h1>
+      <p class="hero-sub">Tax appeal firms charge 50% of your first year's savings — typically $700–$1,200 on a winning case. TaxAppeal DIY pre-fills your official forms, finds comparable sales, and delivers a ready-to-file appeal package.</p>
+      <p class="hero-tagline">We guide you every step of the way.</p>
+
+      <ul class="feature-list">
+        <li class="feature-item">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+          </div>
+          <div class="feat-text">
+            <strong>Auto-Fill Official Forms</strong>
+            <p>RP-524 (NY), grievance forms for NJ, TX, FL — pre-populated from your property data.</p>
+          </div>
+        </li>
+        <li class="feature-item">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+          </div>
+          <div class="feat-text">
+            <strong>Find Comparable Sales</strong>
+            <p>One-click pull from NYS public sales database. Filter by neighborhood and square footage.</p>
+          </div>
+        </li>
+        <li class="feature-item">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="feat-text">
+            <strong>Case Strength Estimator</strong>
+            <p>Know your odds before you file. Confidence score based on equalization rate and market data.</p>
+          </div>
+        </li>
+        <li class="feature-item">
+          <div class="feat-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="feat-text">
+            <strong>Filing Deadlines Tracker</strong>
+            <p>Auto-computed county deadlines with calendar reminders. Never miss Grievance Day again.</p>
+          </div>
+        </li>
+      </ul>
+
+      <div class="hero-ctas">
+        <a href="#" class="btn-hero">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Start Your Appeal Now
+        </a>
+        <a href="#how" class="hero-video-link">
+          <div class="play-circle">
+            <svg viewBox="0 0 10 12"><polygon points="0,0 10,6 0,12" fill="white"/></svg>
+          </div>
+          See How It Works
+        </a>
+      </div>
+      <div class="hero-trust">
+        <svg viewBox="0 0 16 16"><path d="M8 1a4 4 0 100 8A4 4 0 008 1zm0 10c-4 0-7 2-7 3v1h14v-1c0-1-3-3-7-3z"/></svg>
+        Secure. Private. No lawyer needed.
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="phone-wrap">
+        <div class="phone-frame">
+          <div class="phone-screen">
+            <div class="phone-status">
+              <span class="phone-time">9:41</span>
+              <div class="phone-icons">
+                <span></span><span></span><span></span>
+              </div>
+            </div>
+            <div class="app-ui">
+              <p class="app-greeting">Welcome back,</p>
+              <p class="app-name">John</p>
+              <div class="app-card">
+                <p class="app-card-label">Total Est. Savings</p>
+                <div class="app-card-value">$4,820 <span class="badge-green">+18%</span></div>
+                <p class="app-card-sub">vs last assessment year</p>
+              </div>
+              <div class="app-stats">
+                <div class="app-stat">
+                  <p class="app-stat-label">Active Cases</p>
+                  <p class="app-stat-value">3</p>
+                  <p class="app-stat-sub">View all</p>
+                </div>
+                <div class="app-stat">
+                  <p class="app-stat-label">Overassessed By</p>
+                  <p class="app-stat-value">$48K</p>
+                  <p class="app-stat-sub">View all</p>
+                </div>
+              </div>
+              <div class="app-steps">
+                <p class="app-steps-title">Appeal Progress — 123 Maple St</p>
+                <div class="step-row">
+                  <div class="step-num done">✓</div>
+                  <span class="step-label">Property Verified</span>
+                  <span class="step-badge done">Done</span>
+                </div>
+                <div class="step-row">
+                  <div class="step-num done">✓</div>
+                  <span class="step-label">Comparables Found</span>
+                  <span class="step-badge done">Done</span>
+                </div>
+                <div class="step-row">
+                  <div class="step-num active">3</div>
+                  <span class="step-label">Print RP-524</span>
+                  <span class="step-badge active">In Progress</span>
+                </div>
+                <div class="step-row">
+                  <div class="step-num">4</div>
+                  <span class="step-label">File with County</span>
+                  <span class="step-badge upcoming">Upcoming</span>
+                </div>
+                <div class="step-row">
+                  <div class="step-num">5</div>
+                  <span class="step-label">Hearing & Result</span>
+                  <span class="step-badge upcoming">Upcoming</span>
+                </div>
+              </div>
+            </div>
+            <div class="phone-bottom-nav">
+              <div class="nav-tab active">
+                <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+                <span>Dashboard</span>
+              </div>
+              <div class="nav-tab">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span>Cases</span>
+              </div>
+              <div class="nav-tab">
+                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>
+                <span>Forms</span>
+              </div>
+              <div class="nav-tab">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+                <span>Deadlines</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Floating cards -->
+        <div class="float-card float-right">
+          <h4>What You Get</h4>
+          <div class="float-check">
+            <div class="check-icon"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+            <span>Know Your Rights</span>
+          </div>
+          <div class="float-check">
+            <div class="check-icon"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+            <span>Step-by-Step Guide</span>
+          </div>
+          <div class="float-check">
+            <div class="check-icon"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+            <span>Official Court Forms</span>
+          </div>
+          <div class="float-check">
+            <div class="check-icon"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+            <span>Filing Instructions</span>
+          </div>
+          <div class="float-check">
+            <div class="check-icon"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+            <span>Hearing Tips</span>
+          </div>
+        </div>
+
+        <div class="float-card float-note">
+          <p>You don't need a lawyer. We'll help you win.
+            <strong>— Prepared. Organized. Ready to File.</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST STRIP -->
+<div class="trust-strip">
+  <div class="trust-inner">
+    <svg viewBox="0 0 16 16"><path d="M8 1a4 4 0 100 8A4 4 0 008 1zm0 10c-4 0-7 2-7 3v1h14v-1c0-1-3-3-7-3z"/></svg>
+    Every year, homeowners save millions by challenging unfair assessments.
+    <a href="#">Let us help you get what you're owed. →</a>
+  </div>
+</div>
+
+<!-- STATS -->
+<section class="stats-section">
+  <div class="stats-inner">
+    <div class="stat-item">
+      <div class="stat-num">80<span>%</span></div>
+      <div class="stat-label">of DIY filers get a reduction</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">$<span>1,400</span></div>
+      <div class="stat-label">average annual savings per case</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">160<span>+</span></div>
+      <div class="stat-label">counties covered across 4 states</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">10<span>min</span></div>
+      <div class="stat-label">to generate your appeal package</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="section-header">
+    <div class="section-tag">How It Works</div>
+    <h2>File Your Appeal in 4 Simple Steps</h2>
+    <p>No lawyers, no 50% commissions. Just a clear, guided process from assessment to reduction.</p>
+  </div>
+  <div class="steps-grid">
+    <div class="step-card" data-step="1">
+      <div class="step-icon">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <h3>Look Up Your Property</h3>
+      <p>Enter your address and we auto-fill your parcel ID, assessed value, and tax history from NYS ORPS or county records.</p>
+    </div>
+    <div class="step-card" data-step="2">
+      <div class="step-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <h3>Pull Comparable Sales</h3>
+      <p>We fetch nearby sales from public databases, filtered by size and neighborhood, to build your evidence package.</p>
+    </div>
+    <div class="step-card" data-step="3">
+      <div class="step-icon">
+        <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M9 15h4"/></svg>
+      </div>
+      <h3>Generate Your Forms</h3>
+      <p>We pre-fill your official grievance form (RP-524 for NY and equivalent for NJ, TX, FL) — ready to sign and file.</p>
+    </div>
+    <div class="step-card" data-step="4">
+      <div class="step-icon">
+        <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <h3>File &amp; Win</h3>
+      <p>Submit to your county's Board of Assessment Review or online portal. We track deadlines and remind you every step.</p>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-section" id="features">
+  <div class="features-inner">
+    <div class="features-left">
+      <h2>Everything You Need to<br><em>Win Your Appeal</em></h2>
+      <p>We've built every tool a homeowner needs to challenge an unfair assessment — without paying a firm's commission.</p>
+      <div class="feat-cards">
+        <div class="feat-card">
+          <div class="feat-card-icon">
+            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div class="feat-card-text">
+            <strong>Confidence Score</strong>
+            <p>Know your odds before you file. Strong, Moderate, or Building — based on real assessment data.</p>
+          </div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-card-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <div class="feat-card-text">
+            <strong>Deadline Reminders</strong>
+            <p>Auto-computed county filing deadlines with bell reminders. Never miss Grievance Day again.</p>
+          </div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-card-icon">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <div class="feat-card-text">
+            <strong>Prior Year Comparison</strong>
+            <p>See year-over-year assessment changes. A 5%+ jump is strong grievance grounds — we flag it automatically.</p>
+          </div>
+        </div>
+        <div class="feat-card">
+          <div class="feat-card-icon">
+            <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          </div>
+          <div class="feat-card-text">
+            <strong>Mobile App Included</strong>
+            <p>Track your cases, get deadline alerts, and check your savings estimate — anywhere, anytime.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="features-right">
+      <h3>Your Appeal Package Includes</h3>
+      <ul class="checklist">
+        <li>
+          <div class="check-box"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Pre-filled official grievance form (RP-524 / state equivalent)
+        </li>
+        <li>
+          <div class="check-box"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Comparable sales analysis report (3–6 comps)
+        </li>
+        <li>
+          <div class="check-box"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Prior year assessment comparison
+        </li>
+        <li>
+          <div class="check-box"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          County-specific filing instructions
+        </li>
+        <li>
+          <div class="check-box"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Submission checklist and hearing tips
+        </li>
+        <li>
+          <div class="check-box"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Deadline calendar with reminders
+        </li>
+      </ul>
+      <div class="dr-note">
+        "You don't need to hire a firm. The process is designed for homeowners — we just make it foolproof."
+        <strong>— TaxAppeal DIY · $99 flat, no commission, ever.</strong>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATES COVERED -->
+<section class="states-section" id="states">
+  <div class="states-inner">
+    <p class="states-label">States We Cover</p>
+    <div class="states-grid">
+      <div class="state-pill">
+        <div class="state-flag">🗽</div>
+        <div>
+          New York
+          <span class="state-detail">62 counties · RP-524 form</span>
+        </div>
+      </div>
+      <div class="state-pill">
+        <div class="state-flag">🏙️</div>
+        <div>
+          New Jersey
+          <span class="state-detail">21 counties · Tax Court appeal</span>
+        </div>
+      </div>
+      <div class="state-pill">
+        <div class="state-flag">⭐</div>
+        <div>
+          Texas
+          <span class="state-detail">33 counties · ARB protest</span>
+        </div>
+      </div>
+      <div class="state-pill">
+        <div class="state-flag">🌴</div>
+        <div>
+          Florida
+          <span class="state-detail">44 counties · VAB petition</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="section-header">
+    <div class="section-tag">Pricing</div>
+    <h2>Simple, Flat Pricing</h2>
+    <p>No percentage fees. No hidden charges. You keep 100% of every dollar you save.</p>
+  </div>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <span class="price-tag">Free</span>
+      <div class="price-amount">$0</div>
+      <div class="price-period">Try it — no credit card needed</div>
+      <ul class="price-items">
+        <li>
+          <div class="pi-check"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Property lookup &amp; assessment review
+        </li>
+        <li>
+          <div class="pi-check"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Savings estimator
+        </li>
+        <li>
+          <div class="pi-check"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          View comparable sales
+        </li>
+        <li>
+          <div class="pi-check"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          County filing guide
+        </li>
+      </ul>
+      <a href="#" class="price-cta">Start for Free</a>
+    </div>
+    <div class="price-card featured">
+      <span class="price-tag">Pro</span>
+      <div class="price-amount">$99</div>
+      <div class="price-period">One-time flat fee per property · You keep 100% savings</div>
+      <ul class="price-items">
+        <li>
+          <div class="pi-check"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Everything in Free
+        </li>
+        <li>
+          <div class="pi-check"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Pre-filled RP-524 / official form PDF
+        </li>
+        <li>
+          <div class="pi-check"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Comparable sales analysis report
+        </li>
+        <li>
+          <div class="pi-check"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Prior year comparison + confidence score
+        </li>
+        <li>
+          <div class="pi-check"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Deadline reminders &amp; filing checklist
+        </li>
+        <li>
+          <div class="pi-check"><svg viewBox="0 0 12 12"><polyline points="2,6 5,9 10,3"/></svg></div>
+          Mobile app access
+        </li>
+      </ul>
+      <a href="#" class="price-cta">Get Full Access — $99</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <div class="cta-inner">
+    <h2>Ready to Lower Your<br><em>Property Taxes?</em></h2>
+    <p>Join thousands of homeowners who've stopped overpaying. File your own appeal today — in under 10 minutes.</p>
+    <div class="cta-buttons">
+      <a href="#" class="btn-cta-primary">
+        Start Your Appeal Now →
+      </a>
+      <a href="#how" class="btn-cta-ghost">
+        See How It Works
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <a href="#" class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 3l9 4-9 4-9-4 9-4zm0 0v18m-9-14v10l9 4 9-4V7"/></svg>
+          </div>
+          <div class="logo-text">
+            <strong style="color:white">TaxAppeal DIY</strong>
+            <span style="color:rgba(255,255,255,.4)">NY · NJ · TX · FL</span>
+          </div>
+        </a>
+        <p>Empowering homeowners to advocate for fair assessments — without lawyers, without commissions.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="#">Dashboard</a>
+        <a href="#">County Guide</a>
+        <a href="#">Filing Calendar</a>
+        <a href="#">How It Works</a>
+        <a href="#">Pricing</a>
+      </div>
+      <div class="footer-col">
+        <h4>States</h4>
+        <a href="#">New York</a>
+        <a href="#">New Jersey</a>
+        <a href="#">Texas</a>
+        <a href="#">Florida</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="#">Terms of Service</a>
+        <a href="#">Privacy Policy</a>
+        <a href="#">Disclaimer</a>
+        <a href="#">Refund Policy</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 TaxAppeal DIY. Not legal advice.</span>
+      <div class="footer-links">
+        <a href="#">Terms</a>
+        <a href="#">Privacy</a>
+        <a href="#">Disclaimer</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
