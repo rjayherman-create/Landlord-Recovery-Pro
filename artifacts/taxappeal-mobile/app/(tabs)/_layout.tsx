@@ -75,6 +75,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="documents"
+        options={{
+          title: "Documents",
+          tabBarIcon: ({ color }) => <Feather name="file-text" size={22} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: "Settings",
