@@ -1,7 +1,8 @@
 import { Link, useLocation } from "wouter";
-import { Scale, Home, FileText, Settings, LogOut, Menu, PieChart, Info, BookOpen, CreditCard, Library } from "lucide-react";
+import { Scale, Home, FileText, Settings, LogOut, Menu, PieChart, Info, BookOpen, CreditCard, Library, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useState } from "react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -9,29 +10,83 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const isMarketing = location === "/" || location === "/how-it-works" || location === "/resources" || location === "/pricing";
 
   if (isMarketing) {
+    const marketingLinks = [
+      { href: "/how-it-works", label: "How it Works" },
+      { href: "/resources", label: "Resources" },
+      { href: "/pricing", label: "Pricing" },
+    ];
+
     return (
       <div className="min-h-screen flex flex-col bg-background">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+            {/* Logo */}
             <Link href="/" className="flex items-center space-x-2">
               <div className="bg-primary text-primary-foreground p-1.5 rounded">
                 <Scale className="h-5 w-5" />
               </div>
               <span className="font-serif font-semibold text-lg">Landlord Recovery</span>
             </Link>
-            
+
+            {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
-              <Link href="/how-it-works" className={`transition-colors hover:text-foreground/80 ${location === '/how-it-works' ? 'text-foreground' : 'text-foreground/60'}`}>How it Works</Link>
-              <Link href="/resources" className={`transition-colors hover:text-foreground/80 ${location === '/resources' ? 'text-foreground' : 'text-foreground/60'}`}>Resources</Link>
-              <Link href="/pricing" className={`transition-colors hover:text-foreground/80 ${location === '/pricing' ? 'text-foreground' : 'text-foreground/60'}`}>Pricing</Link>
+              {marketingLinks.map(({ href, label }) => (
+                <Link key={href} href={href} className={`transition-colors hover:text-foreground/80 ${location === href ? 'text-foreground' : 'text-foreground/60'}`}>
+                  {label}
+                </Link>
+              ))}
             </nav>
-            
-            <div className="flex items-center gap-4">
-              <Link href="/dashboard" className="hidden md:block text-sm font-medium text-foreground/60 hover:text-foreground">Sign In</Link>
+
+            {/* Desktop CTA */}
+            <div className="hidden md:flex items-center gap-4">
+              <Link href="/dashboard" className="text-sm font-medium text-foreground/60 hover:text-foreground">Sign In</Link>
               <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Link href="/dashboard">Get Started</Link>
               </Button>
             </div>
+
+            {/* Mobile hamburger */}
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-72 p-0 flex flex-col">
+                {/* Sheet header */}
+                <div className="h-16 flex items-center px-6 border-b">
+                  <div className="flex items-center space-x-2">
+                    <div className="bg-primary text-primary-foreground p-1.5 rounded">
+                      <Scale className="h-4 w-4" />
+                    </div>
+                    <span className="font-serif font-semibold">Landlord Recovery</span>
+                  </div>
+                </div>
+
+                {/* Nav links */}
+                <nav className="flex-1 py-6 px-4 space-y-1">
+                  {marketingLinks.map(({ href, label }) => (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={`flex items-center px-3 py-3 rounded-md text-sm font-medium transition-colors ${location === href ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground/70 hover:bg-muted hover:text-foreground'}`}
+                    >
+                      {label}
+                    </Link>
+                  ))}
+                </nav>
+
+                {/* Mobile CTA */}
+                <div className="p-4 border-t space-y-3">
+                  <Button variant="outline" className="w-full" asChild>
+                    <Link href="/dashboard">Sign In</Link>
+                  </Button>
+                  <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" asChild>
+                    <Link href="/dashboard">Get Started</Link>
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </header>
         <main className="flex-1">
@@ -146,17 +201,41 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-64 bg-sidebar text-sidebar-foreground border-sidebar-border p-0">
+            <SheetContent side="left" className="w-72 bg-sidebar text-sidebar-foreground border-sidebar-border p-0 flex flex-col">
               <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-                <span className="font-serif font-semibold text-lg tracking-tight">Menu</span>
+                <div className="flex items-center space-x-2">
+                  <div className="bg-sidebar-primary text-sidebar-primary-foreground p-1.5 rounded">
+                    <Scale className="h-4 w-4" />
+                  </div>
+                  <span className="font-serif font-semibold text-lg tracking-tight">Landlord Recovery</span>
+                </div>
               </div>
-              <div className="py-4 px-2 space-y-1">
-                <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent/50">
-                  <PieChart className="h-4 w-4" /> Overview
-                </Link>
-                <Link href="/cases" className="flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-sidebar-accent/50">
-                  <FileText className="h-4 w-4" /> My Cases
-                </Link>
+              <div className="flex-1 py-6 px-3 space-y-1">
+                {[
+                  { href: "/dashboard", icon: <PieChart className="h-4 w-4" />, label: "Overview" },
+                  { href: "/cases", icon: <FileText className="h-4 w-4" />, label: "My Cases" },
+                  { href: "/documents", icon: <Library className="h-4 w-4" />, label: "Documents" },
+                ].map(({ href, icon, label }) => (
+                  <Link key={href} href={href} className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${(href === '/cases' ? location.startsWith('/cases') : location === href) ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
+                    {icon} {label}
+                  </Link>
+                ))}
+                <div className="pt-6 pb-2 px-3">
+                  <h4 className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">Resources</h4>
+                </div>
+                {[
+                  { href: "/how-it-works", icon: <Info className="h-4 w-4" />, label: "Guide" },
+                  { href: "/resources", icon: <BookOpen className="h-4 w-4" />, label: "State Limits" },
+                ].map(({ href, icon, label }) => (
+                  <Link key={href} href={href} className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${location === href ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
+                    {icon} {label}
+                  </Link>
+                ))}
+              </div>
+              <div className="p-4 border-t border-sidebar-border">
+                <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
+                  <LogOut className="h-4 w-4 mr-2" /> Sign Out
+                </Button>
               </div>
             </SheetContent>
           </Sheet>
