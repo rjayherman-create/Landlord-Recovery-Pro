@@ -17,10 +17,16 @@ const upload = multer({
   },
 });
 
-const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY,
-});
+let openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (!openai) {
+    openai = new OpenAI({
+      baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
+      apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "placeholder",
+    });
+  }
+  return openai;
+}
 
 const SYSTEM_PROMPT = `You are an expert OCR assistant specializing in property tax documents from all US states,
 with deep expertise in NY, NJ, TX, and FL assessment notices, tax bills, and grievance forms.
@@ -147,7 +153,7 @@ router.post("/ocr-tax-record", upload.single("file"), async (req, res) => {
       // Truncate to avoid token limits (keep ~6000 chars which is ~1500 tokens)
       const truncatedText = pdfText.length > 6000 ? pdfText.slice(0, 6000) + "\n...[truncated]" : pdfText;
 
-      const response = await openai.chat.completions.create({
+      const response = await getOpenAI().chat.completions.create({
         model: "gpt-5.2",
         max_completion_tokens: 2048,
         messages: [
@@ -181,7 +187,7 @@ router.post("/ocr-tax-record", upload.single("file"), async (req, res) => {
         image_url: { url: `data:${mediaType};base64,${b64}`, detail: "high" },
       };
 
-      const response = await openai.chat.completions.create({
+      const response = await getOpenAI().chat.completions.create({
         model: "gpt-5.2",
         max_completion_tokens: 2048,
         messages: [
