@@ -17,6 +17,8 @@ import { Terms } from "@/pages/Terms";
 import { RefundPolicy } from "@/pages/RefundPolicy";
 import { WhatHappensNext } from "@/pages/WhatHappensNext";
 import { CaseDashboard } from "@/pages/CaseDashboard";
+import { DashboardPage } from "@/pages/DashboardPage";
+import { NewClaimPage } from "@/pages/NewClaimPage";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -26,6 +28,8 @@ function Router() {
     <Layout>
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/dashboard" component={DashboardPage} />
+        <Route path="/new-claim" component={NewClaimPage} />
         <Route path="/file" component={FileWizard} />
         <Route path="/cases" component={Cases} />
         <Route path="/guide" component={Guide} />
