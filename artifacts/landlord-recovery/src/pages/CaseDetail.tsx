@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useParams, Link } from "wouter";
 import { 
   useGetLandlordCase, 
@@ -9,8 +9,9 @@ import {
 } from "@workspace/api-client-react";
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
-  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File
+  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library
 } from "lucide-react";
+import { DocumentLibrary } from "@/components/shared/DocumentLibrary";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +48,9 @@ export default function CaseDetail() {
   const updateStatus = useUpdateLandlordCaseStatus();
   const deleteCase = useDeleteLandlordCase();
   const generateLetter = useGenerateDemandLetter();
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"overview" | "documents">("overview");
 
   // Local state for edits
   const [isEditingNotes, setIsEditingNotes] = useState(false);
@@ -119,6 +123,22 @@ export default function CaseDetail() {
       fetchAttachments();
     }
   }, [caseData, fetchAttachments]);
+
+  const docInitialValues = useMemo(() => ({
+    landlord_name: caseData?.landlordName || "",
+    landlord_address: caseData?.landlordAddress || "",
+    tenant_name: caseData?.tenantName || "",
+    property_address: caseData?.propertyAddress || "",
+    tenant_mailing_address: caseData?.tenantAddress || "",
+    state: caseData?.state || "",
+    rent_amount: caseData?.claimAmount ? String(caseData.claimAmount) : "",
+    monthly_rent: caseData?.monthlyRent ? String(caseData.monthlyRent) : "",
+    months_count: caseData?.monthsOwed ? String(caseData.monthsOwed) : "",
+    total_owed: caseData?.claimAmount ? String(caseData.claimAmount) : "",
+    net_owed: caseData?.claimAmount ? String(caseData.claimAmount) : "",
+    repair_cost: caseData?.claimAmount ? String(caseData.claimAmount) : "",
+    move_out_date: caseData?.moveOutDate || "",
+  }), [caseData]);
 
   if (isLoading) {
     return (
@@ -196,46 +216,84 @@ export default function CaseDetail() {
   const currentStatusIndex = STATUS_PROGRESS.findIndex(s => s.id === caseData.status);
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-6 animate-in fade-in duration-500 pb-20">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <Button variant="ghost" size="sm" className="mb-2 -ml-3 text-muted-foreground hover:text-foreground" asChild>
-            <Link href="/cases">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cases
-            </Link>
-          </Button>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-serif font-bold text-foreground">{caseData.tenantName}</h1>
-            <CaseStatusBadge status={caseData.status} />
-            <ClaimTypeBadge type={caseData.claimType} />
+    <div className="flex flex-col min-h-full animate-in fade-in duration-500">
+      {/* Case Header — always visible */}
+      <div className="px-6 md:px-8 pt-6 md:pt-8 pb-0 max-w-5xl mx-auto w-full">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <Button variant="ghost" size="sm" className="mb-2 -ml-3 text-muted-foreground hover:text-foreground" asChild>
+              <Link href="/cases">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cases
+              </Link>
+            </Button>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-serif font-bold text-foreground">{caseData.tenantName}</h1>
+              <CaseStatusBadge status={caseData.status} />
+              <ClaimTypeBadge type={caseData.claimType} />
+            </div>
+            <p className="text-muted-foreground mt-1">{caseData.propertyAddress}</p>
           </div>
-          <p className="text-muted-foreground mt-1">{caseData.propertyAddress}</p>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="outline" className="text-destructive border-destructive/20 hover:bg-destructive/10">
-                <Trash2 className="h-4 w-4 mr-2" /> Delete
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete Case?</DialogTitle>
-                <DialogDescription>
-                  This action cannot be undone. This will permanently delete the case and all associated data.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button variant="outline">Cancel</Button>
-                <Button variant="destructive" onClick={handleDelete} disabled={deleteCase.isPending}>
-                  {deleteCase.isPending ? "Deleting..." : "Delete Case"}
+
+          <div className="flex items-center gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="text-destructive border-destructive/20 hover:bg-destructive/10">
+                  <Trash2 className="h-4 w-4 mr-2" /> Delete
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Delete Case?</DialogTitle>
+                  <DialogDescription>
+                    This action cannot be undone. This will permanently delete the case and all associated data.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                  <Button variant="outline">Cancel</Button>
+                  <Button variant="destructive" onClick={handleDelete} disabled={deleteCase.isPending}>
+                    {deleteCase.isPending ? "Deleting..." : "Delete Case"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
+        </div>
+
+        {/* Tab Bar */}
+        <div className="flex gap-1 mt-6 border-b border-border">
+          <button
+            onClick={() => setActiveTab("overview")}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === "overview"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <FileText className="h-4 w-4" /> Overview
+          </button>
+          <button
+            onClick={() => setActiveTab("documents")}
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+              activeTab === "documents"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Library className="h-4 w-4" /> Documents
+          </button>
         </div>
       </div>
+
+      {/* Documents Tab */}
+      {activeTab === "documents" && (
+        <div className="flex-1 min-h-0 border-t border-border">
+          <DocumentLibrary initialValues={docInitialValues} />
+        </div>
+      )}
+
+      {/* Overview Tab */}
+      {activeTab === "overview" && (
+      <div className="p-6 md:p-8 max-w-5xl mx-auto w-full space-y-6 pb-20">
 
       {/* Progress Tracker */}
       <Card className="border-border shadow-sm overflow-hidden">
@@ -668,6 +726,8 @@ export default function CaseDetail() {
 
         </div>
       </div>
+      </div>
+      )}
     </div>
   );
 }
