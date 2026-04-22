@@ -98,6 +98,8 @@ router.post("/landlord-cases", async (req, res) => {
         claimType: body.claimType,
         state: body.state,
         landlordName: body.landlordName,
+        landlordCompany: (body as any).landlordCompany ?? null,
+        landlordAddress: (body as any).landlordAddress ?? null,
         landlordEmail: body.landlordEmail ?? null,
         landlordPhone: body.landlordPhone ?? null,
         tenantName: body.tenantName,
@@ -142,6 +144,8 @@ router.put("/landlord-cases/:id", async (req, res) => {
     if (body.claimType !== undefined) updateData.claimType = body.claimType;
     if (body.state !== undefined) updateData.state = body.state;
     if (body.landlordName !== undefined) updateData.landlordName = body.landlordName;
+    if ((body as any).landlordCompany !== undefined) updateData.landlordCompany = (body as any).landlordCompany ?? null;
+    if ((body as any).landlordAddress !== undefined) updateData.landlordAddress = (body as any).landlordAddress ?? null;
     if (body.landlordEmail !== undefined) updateData.landlordEmail = body.landlordEmail ?? null;
     if (body.landlordPhone !== undefined) updateData.landlordPhone = body.landlordPhone ?? null;
     if (body.tenantName !== undefined) updateData.tenantName = body.tenantName;
@@ -226,9 +230,13 @@ router.post("/landlord-cases/:id/generate-letter", async (req, res) => {
       other: "breach of lease",
     };
 
+    const landlordLine = (found as any).landlordCompany
+      ? `${found.landlordName} / ${(found as any).landlordCompany}`
+      : found.landlordName;
     const prompt = `You are a legal document assistant. Write a formal demand letter from a landlord to a tenant. Be professional, firm, and clear.
 
-Landlord: ${found.landlordName}
+Landlord: ${landlordLine}
+${(found as any).landlordAddress ? `Landlord Address: ${(found as any).landlordAddress}` : ""}
 Tenant: ${found.tenantName}
 Property: ${found.propertyAddress}
 Claim Type: ${claimTypeLabel[found.claimType] || found.claimType}
@@ -236,7 +244,7 @@ Amount Owed: $${Number(found.claimAmount).toLocaleString()}
 ${found.description ? `Details: ${found.description}` : ""}
 ${found.moveOutDate ? `Move-Out Date: ${found.moveOutDate}` : ""}
 
-Write a demand letter (3-4 paragraphs) requesting payment within 10 days or the landlord will pursue small claims court action. Include a reference to the state: ${found.state}. Do not include placeholders — write the full letter.`;
+Write a demand letter (3-4 paragraphs) requesting payment within 10 days or the landlord will pursue small claims court action. Include a reference to the state: ${found.state}. Use the landlord's full name and address in the letter header. Do not include placeholders — write the full letter.`;
 
     const openai = getOpenAI();
     const completion = await openai.chat.completions.create({

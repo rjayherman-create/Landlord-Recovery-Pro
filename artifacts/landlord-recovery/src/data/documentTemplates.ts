@@ -28,7 +28,8 @@ export const CATEGORIES = [
 ] as const;
 
 const COMMON_PARTY_FIELDS: TemplateField[] = [
-  { key: "landlord_name", label: "Landlord / Property Owner Name", placeholder: "John Smith", type: "text", required: true },
+  { key: "landlord_name", label: "Landlord Full Legal Name", placeholder: "John Smith", type: "text", required: true },
+  { key: "landlord_company", label: "Company / LLC Name (if applicable)", placeholder: "Smith Properties LLC", type: "text", required: false },
   { key: "landlord_address", label: "Landlord Mailing Address", placeholder: "123 Main St, Brooklyn, NY 11201", type: "text", required: true },
   { key: "tenant_name", label: "Tenant Full Name", placeholder: "Jane Doe", type: "text", required: true },
   { key: "property_address", label: "Rental Property Address", placeholder: "456 Oak Ave, Unit 2B, Brooklyn, NY 11215", type: "text", required: true },

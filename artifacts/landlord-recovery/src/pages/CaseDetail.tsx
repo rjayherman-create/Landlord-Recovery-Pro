@@ -99,9 +99,10 @@ export default function CaseDetail() {
       tenantPhone: caseData.tenantPhone || "",
       tenantAddress: caseData.tenantAddress || "",
       landlordName: caseData.landlordName || "",
+      landlordCompany: (caseData as any).landlordCompany || "",
+      landlordAddress: (caseData as any).landlordAddress || "",
       landlordEmail: caseData.landlordEmail || "",
       landlordPhone: caseData.landlordPhone || "",
-      landlordAddress: caseData.landlordAddress || "",
       propertyAddress: caseData.propertyAddress || "",
       state: caseData.state || "",
       claimType: caseData.claimType || "",
@@ -123,9 +124,10 @@ export default function CaseDetail() {
       tenantPhone: editForm.tenantPhone || null,
       tenantAddress: editForm.tenantAddress || null,
       landlordName: editForm.landlordName,
+      landlordCompany: editForm.landlordCompany || null,
+      landlordAddress: editForm.landlordAddress || null,
       landlordEmail: editForm.landlordEmail || null,
       landlordPhone: editForm.landlordPhone || null,
-      landlordAddress: editForm.landlordAddress || null,
       propertyAddress: editForm.propertyAddress,
       state: editForm.state,
       claimType: editForm.claimType,
@@ -224,7 +226,8 @@ export default function CaseDetail() {
 
   const docInitialValues = useMemo(() => ({
     landlord_name: caseData?.landlordName || "",
-    landlord_address: caseData?.landlordAddress || "",
+    landlord_company: (caseData as any)?.landlordCompany || "",
+    landlord_address: (caseData as any)?.landlordAddress || "",
     tenant_name: caseData?.tenantName || "",
     property_address: caseData?.propertyAddress || "",
     tenant_mailing_address: caseData?.tenantAddress || "",
@@ -512,8 +515,16 @@ export default function CaseDetail() {
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Landlord (Plaintiff)</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-sm mb-1 block">Full Name *</Label>
+                      <Label className="text-sm mb-1 block">Full Legal Name *</Label>
                       <Input value={editForm.landlordName || ""} onChange={e => setEditForm(f => ({ ...f, landlordName: e.target.value }))} />
+                    </div>
+                    <div>
+                      <Label className="text-sm mb-1 block">Company / LLC Name</Label>
+                      <Input placeholder="Doe Properties LLC" value={editForm.landlordCompany || ""} onChange={e => setEditForm(f => ({ ...f, landlordCompany: e.target.value }))} />
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="text-sm mb-1 block">Mailing Address <span className="text-muted-foreground font-normal text-xs">(appears on all letters)</span></Label>
+                      <Input placeholder="123 Main St, City, ST 12345" value={editForm.landlordAddress || ""} onChange={e => setEditForm(f => ({ ...f, landlordAddress: e.target.value }))} />
                     </div>
                     <div>
                       <Label className="text-sm mb-1 block">Email</Label>
@@ -522,10 +533,6 @@ export default function CaseDetail() {
                     <div>
                       <Label className="text-sm mb-1 block">Phone</Label>
                       <Input value={editForm.landlordPhone || ""} onChange={e => setEditForm(f => ({ ...f, landlordPhone: e.target.value }))} />
-                    </div>
-                    <div>
-                      <Label className="text-sm mb-1 block">Mailing Address</Label>
-                      <Input value={editForm.landlordAddress || ""} onChange={e => setEditForm(f => ({ ...f, landlordAddress: e.target.value }))} />
                     </div>
                   </div>
                 </div>
@@ -968,6 +975,8 @@ export default function CaseDetail() {
               <div className="border-t border-border pt-4">
                 <span className="text-xs text-muted-foreground font-semibold uppercase tracking-wider block mb-1">Plaintiff (Landlord)</span>
                 <div className="font-medium">{caseData.landlordName}</div>
+                {(caseData as any).landlordCompany && <div className="text-muted-foreground mt-0.5">{(caseData as any).landlordCompany}</div>}
+                {(caseData as any).landlordAddress && <div className="text-muted-foreground mt-0.5">{(caseData as any).landlordAddress}</div>}
                 {caseData.landlordEmail && <div className="text-muted-foreground mt-0.5">{caseData.landlordEmail}</div>}
                 {caseData.landlordPhone && <div className="text-muted-foreground mt-0.5">{caseData.landlordPhone}</div>}
               </div>

@@ -17,6 +17,8 @@ export const landlordCases = pgTable("landlord_cases", {
   claimType: varchar("claim_type", { length: 60 }).notNull(),
   state: varchar("state", { length: 10 }).notNull().default("NY"),
   landlordName: varchar("landlord_name", { length: 255 }).notNull(),
+  landlordCompany: varchar("landlord_company", { length: 255 }),
+  landlordAddress: text("landlord_address"),
   landlordEmail: varchar("landlord_email", { length: 255 }),
   landlordPhone: varchar("landlord_phone", { length: 50 }),
   tenantName: varchar("tenant_name", { length: 255 }).notNull(),

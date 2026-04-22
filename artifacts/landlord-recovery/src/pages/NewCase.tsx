@@ -61,6 +61,8 @@ const newCaseSchema = z.object({
   description: z.string().min(10, "Please provide a brief description"),
   
   landlordName: z.string().min(2, "Your name is required"),
+  landlordCompany: z.string().optional(),
+  landlordAddress: z.string().optional(),
   landlordEmail: z.string().email("Invalid email").optional().or(z.literal("")),
   landlordPhone: z.string().optional(),
   
@@ -96,6 +98,8 @@ export default function NewCase() {
       rentPeriod: "",
       description: "",
       landlordName: "",
+      landlordCompany: "",
+      landlordAddress: "",
       landlordEmail: "",
       landlordPhone: "",
       tenantName: "",
@@ -480,14 +484,14 @@ export default function NewCase() {
                 <div className="grid gap-8 animate-in fade-in slide-in-from-right-4 duration-300">
                   {/* Landlord */}
                   <div>
-                    <h3 className="text-lg font-semibold border-b pb-2 mb-4">Your Information (Landlord)</h3>
+                    <h3 className="text-lg font-semibold border-b pb-2 mb-4">Your Information (Landlord / Plaintiff)</h3>
                     <div className="grid md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="landlordName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Full Name / Company</FormLabel>
+                            <FormLabel>Full Legal Name *</FormLabel>
                             <FormControl>
                               <Input placeholder="John Doe" {...field} />
                             </FormControl>
@@ -495,34 +499,60 @@ export default function NewCase() {
                           </FormItem>
                         )}
                       />
-                      <div className="grid grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="landlordCompany"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Company / LLC Name <span className="text-muted-foreground font-normal">(if applicable)</span></FormLabel>
+                            <FormControl>
+                              <Input placeholder="Doe Properties LLC" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <div className="md:col-span-2">
                         <FormField
                           control={form.control}
-                          name="landlordEmail"
+                          name="landlordAddress"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Email (Optional)</FormLabel>
+                              <FormLabel>Your Mailing Address <span className="text-muted-foreground font-normal">(appears on all letters)</span></FormLabel>
                               <FormControl>
-                                <Input type="email" placeholder="john@example.com" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="landlordPhone"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Phone (Optional)</FormLabel>
-                              <FormControl>
-                                <Input placeholder="(555) 123-4567" {...field} />
+                                <Input placeholder="123 Main St, Brooklyn, NY 11201" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
                           )}
                         />
                       </div>
+                      <FormField
+                        control={form.control}
+                        name="landlordEmail"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email (Optional)</FormLabel>
+                            <FormControl>
+                              <Input type="email" placeholder="john@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="landlordPhone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone (Optional)</FormLabel>
+                            <FormControl>
+                              <Input placeholder="(555) 123-4567" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </div>
 
