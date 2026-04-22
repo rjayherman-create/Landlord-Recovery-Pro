@@ -1,0 +1,88 @@
+import { useState } from "react";
+
+export default function ServeTenant() {
+  const [method, setMethod] = useState("");
+  const [date, setDate] = useState("");
+  const [notes, setNotes] = useState("");
+  const [file, setFile] = useState(null);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    const data = {
+      method,
+      date,
+      notes,
+      file
+    };
+
+    console.log("SERVICE DATA:", data);
+
+    alert("Service recorded successfully ✅");
+  }
+
+  return (
+    <div className="p-6 max-w-3xl mx-auto">
+      <h1 className="text-2xl font-bold mb-4">Serve the Tenant</h1>
+
+      <div className="bg-yellow-50 border border-yellow-200 p-4 rounded mb-6">
+        <p className="text-sm">
+          You must legally serve the tenant before your case can proceed.
+          If service is done incorrectly, your case may be dismissed.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-4">
+
+        <div>
+          <label className="block font-semibold mb-1">Service Method</label>
+          <select
+            className="w-full border p-2 rounded"
+            value={method}
+            onChange={(e) => setMethod(e.target.value)}
+            required
+          >
+            <option value="">Select method</option>
+            <option>Sheriff</option>
+            <option>Licensed Process Server</option>
+            <option>Certified Mail</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block font-semibold mb-1">Date Served</label>
+          <input
+            type="date"
+            className="w-full border p-2 rounded"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block font-semibold mb-1">Notes</label>
+          <textarea
+            className="w-full border p-2 rounded"
+            placeholder="Where was tenant served? Any issues?"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label className="block font-semibold mb-1">Upload Proof of Service</label>
+          <input
+            type="file"
+            onChange={(e) => setFile(e.target.files[0])}
+          />
+        </div>
+
+        <button className="bg-blue-600 text-white px-4 py-2 rounded">
+          Save Service
+        </button>
+
+      </form>
+    </div>
+  );
+}

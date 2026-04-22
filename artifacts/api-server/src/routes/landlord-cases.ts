@@ -161,6 +161,9 @@ router.put("/landlord-cases/:id", async (req, res) => {
     if (body.moveOutDate !== undefined) updateData.moveOutDate = body.moveOutDate ?? null;
     if (body.demandLetterText !== undefined) updateData.demandLetterText = body.demandLetterText ?? null;
     if (body.status !== undefined) updateData.status = body.status;
+    if ((body as any).serviceMethod !== undefined) updateData.serviceMethod = (body as any).serviceMethod ?? null;
+    if ((body as any).serviceDate !== undefined) updateData.serviceDate = (body as any).serviceDate ?? null;
+    if ((body as any).serviceNotes !== undefined) updateData.serviceNotes = (body as any).serviceNotes ?? null;
     if (body.courtDate !== undefined) updateData.courtDate = body.courtDate ?? null;
     if (body.judgmentAmount !== undefined) updateData.judgmentAmount = body.judgmentAmount?.toString() ?? null;
     if (body.recoveredAmount !== undefined) updateData.recoveredAmount = body.recoveredAmount?.toString() ?? null;

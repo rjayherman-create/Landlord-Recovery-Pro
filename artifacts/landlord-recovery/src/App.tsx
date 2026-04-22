@@ -14,6 +14,7 @@ import HowItWorks from "@/pages/HowItWorks";
 import Resources from "@/pages/Resources";
 import Pricing from "@/pages/Pricing";
 import Documents from "@/pages/Documents";
+import ServeTenant from "@/pages/ServeTenant";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,6 +34,7 @@ function Router() {
         <Route path="/cases" component={Cases} />
         <Route path="/cases/new" component={NewCase} />
         <Route path="/cases/:id" component={CaseDetail} />
+        <Route path="/cases/:id/serve-tenant" component={ServeTenant} />
         <Route path="/how-it-works" component={HowItWorks} />
         <Route path="/resources" component={Resources} />
         <Route path="/pricing" component={Pricing} />

@@ -737,6 +737,58 @@ export default function CaseDetail() {
             </CardContent>
           </Card>
 
+          {/* Serve Tenant */}
+          {["filed", "hearing_scheduled", "judgment", "collection", "closed"].includes(caseData.status) && (
+            <Card className="border-border shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 bg-muted/10 border-b">
+                <div>
+                  <CardTitle className="text-lg flex items-center">
+                    <Send className="h-5 w-5 mr-2 text-primary" />
+                    Service of Process
+                  </CardTitle>
+                  <CardDescription>Official notification of the lawsuit to the tenant.</CardDescription>
+                </div>
+                {!(caseData as any).serviceMethod && (
+                  <Button size="sm" variant="outline" asChild>
+                    <Link to={`/cases/${caseId}/serve-tenant`}>Record Service</Link>
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="pt-5">
+                {(caseData as any).serviceMethod ? (
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle2 className="h-5 w-5 text-green-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-sm">Service recorded</p>
+                        <p className="text-sm text-muted-foreground">
+                          {(caseData as any).serviceMethod?.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase())}
+                          {(caseData as any).serviceDate && ` — served on ${(caseData as any).serviceDate}`}
+                        </p>
+                        {(caseData as any).serviceNotes && (
+                          <p className="text-sm text-muted-foreground mt-1">{(caseData as any).serviceNotes}</p>
+                        )}
+                      </div>
+                    </div>
+                    <Button size="sm" variant="ghost" className="text-xs h-7" asChild>
+                      <Link to={`/cases/${caseId}/serve-tenant`}>Update Service Record</Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border-2 border-dashed rounded-md bg-muted/10">
+                    <AlertTriangle className="h-8 w-8 text-amber-500 mx-auto mb-2 opacity-60" />
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Service has not been recorded. The tenant must be officially served before your hearing.
+                    </p>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to={`/cases/${caseId}/serve-tenant`}>Record Tenant Service</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Fact Sheet */}
           <Card className="border-border shadow-sm">
             <CardHeader className="pb-2 bg-muted/10 border-b">
