@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { getStripeSync, getStripeSecretKey } from "./stripeClient";
-import { db, smallClaimsCasesTable, evidenceTable, landlordCases } from "@workspace/db";
+import { db, smallClaimsCasesTable, evidenceTable, landlordCases, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { generateCourtPDF } from "./services/pdfFill";
 import { Resend } from "resend";
@@ -49,7 +49,31 @@ export class WebhookHandlers {
       }
     }
 
-    // ── 3. Let the Replit Stripe sync handle its own events ──────────────────
+    // ── 3. Handle subscription lifecycle events ──────────────────────────────
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.mode === "subscription" && session.metadata?.type === "landlord-subscription") {
+        const userId = session.metadata?.userId;
+        if (userId) {
+          await WebhookHandlers.handleSubscriptionActivated(userId, session.customer as string);
+        }
+      }
+    }
+
+    if (event.type === "customer.subscription.deleted") {
+      const sub = event.data.object as Stripe.Subscription;
+      await WebhookHandlers.handleSubscriptionCanceled(sub.customer as string);
+    }
+
+    if (event.type === "customer.subscription.updated") {
+      const sub = event.data.object as Stripe.Subscription;
+      const status = sub.status === "active" ? "active" : sub.status === "canceled" ? "canceled" : null;
+      if (status) {
+        await WebhookHandlers.handleSubscriptionStatusUpdate(sub.customer as string, status);
+      }
+    }
+
+    // ── 4. Let the Replit Stripe sync handle its own events ──────────────────
     try {
       const sync = await getStripeSync();
       await sync.processWebhook(payload, signature);
@@ -57,6 +81,30 @@ export class WebhookHandlers {
       // Stripe sync may reject events it doesn't own — that's OK
       logger.debug({ err }, "StripeSync ignored event (expected for small-claims events)");
     }
+  }
+
+  private static async handleSubscriptionActivated(userId: string, customerId: string): Promise<void> {
+    await db
+      .update(usersTable)
+      .set({ subscriptionStatus: "active", stripeCustomerId: customerId, updatedAt: new Date() })
+      .where(eq(usersTable.id, userId));
+    logger.info({ userId }, "Webhook: subscription activated");
+  }
+
+  private static async handleSubscriptionCanceled(customerId: string): Promise<void> {
+    await db
+      .update(usersTable)
+      .set({ subscriptionStatus: "canceled", updatedAt: new Date() })
+      .where(eq(usersTable.stripeCustomerId, customerId));
+    logger.info({ customerId }, "Webhook: subscription canceled");
+  }
+
+  private static async handleSubscriptionStatusUpdate(customerId: string, status: string): Promise<void> {
+    await db
+      .update(usersTable)
+      .set({ subscriptionStatus: status, updatedAt: new Date() })
+      .where(eq(usersTable.stripeCustomerId, customerId));
+    logger.info({ customerId, status }, "Webhook: subscription status updated");
   }
 
   private static async handleLandlordFilingKitPayment(caseId: number, sessionId: string): Promise<void> {

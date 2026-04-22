@@ -25,6 +25,7 @@ import courtRouter from "./court";
 import courtsRouter from "./courts";
 import landlordCasesRouter from "./landlord-cases";
 import landlordPdfRouter from "./landlord-pdf";
+import landlordSubscriptionRouter from "./landlord-subscription";
 
 const router: IRouter = Router();
 
@@ -54,5 +55,6 @@ router.use(courtRouter);
 router.use(courtsRouter);
 router.use(landlordCasesRouter);
 router.use(landlordPdfRouter);
+router.use(landlordSubscriptionRouter);
 
 export default router;

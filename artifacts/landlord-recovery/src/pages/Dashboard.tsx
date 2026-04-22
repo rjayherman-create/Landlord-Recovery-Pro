@@ -3,8 +3,9 @@ import { useGetLandlordStats, useListLandlordCases } from "@workspace/api-client
 import { Link } from "wouter";
 import {
   PlusCircle, TrendingUp, AlertCircle, CheckCircle2, ArrowRight,
-  Briefcase, Trophy, DollarSign, Clock, ChevronRight, X, FileText, Map, BookOpen, Scale,
+  Briefcase, Trophy, DollarSign, Clock, ChevronRight, X, FileText, Map, BookOpen, Scale, Zap,
 } from "lucide-react";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { CaseStatusBadge, ClaimTypeBadge } from "@/components/shared/CaseStatusBadge";
@@ -75,6 +76,7 @@ const ONBOARDING_STEPS = [
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useGetLandlordStats();
   const { data: cases, isLoading: casesLoading } = useListLandlordCases();
+  const { data: subscription } = useSubscription();
   const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(() => {
     try { return localStorage.getItem("lr_onboarding_dismissed") === "true"; } catch { return false; }
   });
@@ -107,7 +109,14 @@ export default function Dashboard() {
       {/* ── Header ── */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold text-foreground">Dashboard</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-serif font-bold text-foreground">Dashboard</h1>
+            {subscription?.isPro && (
+              <span className="inline-flex items-center gap-1 bg-accent/15 text-accent border border-accent/30 text-xs font-semibold px-2.5 py-1 rounded-full">
+                <Zap className="h-3 w-3" /> Pro
+              </span>
+            )}
+          </div>
           <p className="text-muted-foreground mt-1">Overview of your recovery efforts.</p>
         </div>
         <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm gap-2">

@@ -1,0 +1,175 @@
+PART 1 — STRIPE SETUP (ONE TIME)
+
+In Stripe dashboard:
+
+1. Create Product
+Name: Tenant Recovery Pro
+2. Add Price
+$49/month
+Copy the PRICE ID
+STRIPE_PRICE_ID=price_12345
+🚀 PART 2 — ENV VARIABLES
+STRIPE_SECRET_KEY=sk_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_ID=price_...
+APP_URL=https://your-app.up.railway.app
+🚀 PART 3 — DATABASE UPDATE
+
+Add to your users table:
+
+subscriptionStatus: text("subscription_status"), // active, canceled
+stripeCustomerId: text("stripe_customer_id"),
+🚀 PART 4 — CREATE SUBSCRIPTION CHECKOUT
+/api/stripe/create-subscription
+import { Router } from "express";
+import Stripe from "stripe";
+import { requireAuth } from "@clerk/express";
+
+const router = Router();
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-06-20",
+});
+
+router.post("/create-subscription", requireAuth(), async (req, res) => {
+  const session = await stripe.checkout.sessions.create({
+    mode: "subscription",
+
+    payment_method_types: ["card"],
+
+    line_items: [
+      {
+        price: process.env.STRIPE_PRICE_ID!,
+        quantity: 1,
+      },
+    ],
+
+    success_url: `${process.env.APP_URL}/success`,
+    cancel_url: `${process.env.APP_URL}/cancel`,
+
+    metadata: {
+      userId: req.auth.userId,
+    },
+  });
+
+  res.json({ url: session.url });
+});
+
+export default router;
+🚀 PART 5 — FRONTEND BUTTON
+const upgradeToPro = async () => {
+  const res = await fetch("/api/stripe/create-subscription", {
+    method: "POST",
+  });
+
+  const data = await res.json();
+  window.location.href = data.url;
+};
+UI
+<button
+  onClick={upgradeToPro}
+  className="bg-purple-600 text-white px-6 py-3 rounded-lg"
+>
+  Go Pro — Unlimited Cases ($49/mo)
+</button>
+🚀 PART 6 — WEBHOOK (CRITICAL)
+/api/stripe/webhook
+
+Add handling for subscriptions:
+
+if (event.type === "checkout.session.completed") {
+  const session = event.data.object as any;
+
+  if (session.mode === "subscription") {
+    const userId = session.metadata.userId;
+
+    await db
+      .update(users)
+      .set({
+        subscriptionStatus: "active",
+        stripeCustomerId: session.customer,
+      })
+      .where(eq(users.id, userId));
+  }
+}
+Handle cancellation / expiration
+if (event.type === "customer.subscription.deleted") {
+  const sub = event.data.object as any;
+
+  await db
+    .update(users)
+    .set({ subscriptionStatus: "canceled" })
+    .where(eq(users.stripeCustomerId, sub.customer));
+}
+🚀 PART 7 — ACCESS CONTROL (IMPORTANT)
+
+Now modify your logic:
+
+Unlock rules
+const user = await db.query.users.findFirst({
+  where: eq(users.id, userId),
+});
+
+const isPro = user?.subscriptionStatus === "active";
+const hasPaidCase = user?.hasPaid;
+
+if (!isPro && !hasPaidCase) {
+  return res.status(403).json({ error: "Payment required" });
+}
+🚀 PART 8 — UI LOGIC (SMART UPSELL)
+
+When user clicks unlock:
+
+Show BOTH options
+Unlock this case for $29
+
+OR
+
+Go Pro — Unlimited Cases for $49/month
+🚀 PART 9 — DASHBOARD BADGE
+
+Add:
+
+{user.subscriptionStatus === "active" && (
+  <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs">
+    Pro Plan
+  </span>
+)}
+🚀 PART 10 — (OPTIONAL BUT STRONG)
+Add “Manage Billing” button
+
+Use Stripe Customer Portal:
+
+const portal = await stripe.billingPortal.sessions.create({
+  customer: user.stripeCustomerId,
+  return_url: APP_URL,
+});
+🔥 WHAT YOU JUST BUILT
+
+✔ Monthly subscription system
+✔ Automatic unlock
+✔ Works with your existing Stripe payments
+✔ Supports BOTH:
+
+per-case users
+power landlords
+🔥 BUSINESS IMPACT
+
+Before:
+
+one-time $29
+
+After:
+
+$49/month recurring
+high lifetime value users
+🏁 FINAL POSITION
+
+You now have:
+
+✔ Auth (Clerk)
+✔ Payments (Stripe one-time)
+✔ Subscriptions (Stripe monthly)
+✔ Secure document system
+
+This is now a real SaaS business engine

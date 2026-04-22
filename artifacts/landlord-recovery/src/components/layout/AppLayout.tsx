@@ -1,9 +1,10 @@
 import { Link, useLocation } from "wouter";
-import { Home, FileText, Settings, Menu, PieChart, Info, BookOpen, CreditCard, Library, X, User } from "lucide-react";
+import { Home, FileText, Settings, Menu, PieChart, Info, BookOpen, CreditCard, Library, X, User, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { Show, UserButton, SignInButton } from "@clerk/react";
+import { useSubscription, openBillingPortal } from "@/hooks/useSubscription";
 
 const logoUrl = `${import.meta.env.BASE_URL}logo.svg`;
 
@@ -20,6 +21,7 @@ function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const { data: subscription } = useSubscription();
 
   const isMarketing = location === "/" || location === "/how-it-works" || location === "/resources" || location === "/pricing" || location === "/documents";
 
@@ -189,7 +191,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           </nav>
         </div>
 
-        <div className="p-4 border-t border-sidebar-border">
+        <div className="p-4 border-t border-sidebar-border space-y-2">
+          {subscription?.isPro ? (
+            <button
+              onClick={() => openBillingPortal().catch(() => {})}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-accent bg-accent/10 hover:bg-accent/20 transition-colors"
+            >
+              <Zap className="h-3.5 w-3.5" />
+              Pro Plan — Manage Billing
+            </button>
+          ) : (
+            <Link
+              href="/pricing"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+            >
+              <Zap className="h-3.5 w-3.5" />
+              Upgrade to Pro
+            </Link>
+          )}
           <Show when="signed-in">
             <div className="flex items-center gap-3 px-1">
               <UserButton
@@ -253,7 +272,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   </Link>
                 ))}
               </div>
-              <div className="p-4 border-t border-sidebar-border">
+              <div className="p-4 border-t border-sidebar-border space-y-2">
+                {subscription?.isPro ? (
+                  <button
+                    onClick={() => openBillingPortal().catch(() => {})}
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-accent bg-accent/10 hover:bg-accent/20 transition-colors"
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                    Pro Plan — Manage Billing
+                  </button>
+                ) : (
+                  <Link
+                    href="/pricing"
+                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                    Upgrade to Pro
+                  </Link>
+                )}
                 <Show when="signed-in">
                   <div className="flex items-center gap-3 px-1">
                     <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
