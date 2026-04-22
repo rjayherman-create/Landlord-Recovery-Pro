@@ -10,7 +10,7 @@ import {
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
   FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin, TrendingUp, Search, ChevronRight,
-  Eye, Download, Lock
+  Eye, Download, Lock, BookmarkPlus, FolderOpen, PenLine, ChevronDown
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -207,7 +207,49 @@ export default function CaseDetail() {
   const [isEditingNotes, setIsEditingNotes] = useState(false);
   const [notes, setNotes] = useState("");
   const [isEditingLetter, setIsEditingLetter] = useState(false);
+  const [isScratchMode, setIsScratchMode] = useState(false);
   const [letterText, setLetterText] = useState("");
+
+  // Template state
+  type LetterTemplate = { id: string; name: string; text: string; createdAt: string };
+  const TEMPLATE_KEY = "landlord_letter_templates";
+  const loadTemplates = (): LetterTemplate[] => {
+    try { return JSON.parse(localStorage.getItem(TEMPLATE_KEY) || "[]"); } catch { return []; }
+  };
+  const [templates, setTemplates] = useState<LetterTemplate[]>(() => loadTemplates());
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [showLoadTemplateDialog, setShowLoadTemplateDialog] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+
+  const handleSaveTemplate = () => {
+    if (!templateName.trim() || !letterText.trim()) return;
+    const newTemplate: LetterTemplate = {
+      id: Date.now().toString(),
+      name: templateName.trim(),
+      text: letterText,
+      createdAt: new Date().toISOString(),
+    };
+    const updated = [newTemplate, ...loadTemplates()];
+    localStorage.setItem(TEMPLATE_KEY, JSON.stringify(updated));
+    setTemplates(updated);
+    setTemplateName("");
+    setShowSaveTemplateDialog(false);
+    toast({ title: "Template Saved", description: `"${newTemplate.name}" saved for future use.` });
+  };
+
+  const handleDeleteTemplate = (templateId: string) => {
+    const updated = loadTemplates().filter(t => t.id !== templateId);
+    localStorage.setItem(TEMPLATE_KEY, JSON.stringify(updated));
+    setTemplates(updated);
+  };
+
+  const handleApplyTemplate = (template: LetterTemplate) => {
+    setLetterText(template.text);
+    setShowLoadTemplateDialog(false);
+    setIsEditingLetter(true);
+    setIsScratchMode(false);
+    toast({ title: "Template Loaded", description: `"${template.name}" applied. Edit as needed.` });
+  };
 
   // Attachments state
   const [attachments, setAttachments] = useState<any[]>([]);
@@ -868,50 +910,91 @@ export default function CaseDetail() {
                 </CardTitle>
                 <CardDescription>Formal request for payment before filing.</CardDescription>
               </div>
-              {!isEditingLetter && !caseData.demandLetterText && (
-                <Button 
-                  size="sm" 
-                  onClick={handleGenerateLetter} 
-                  disabled={generateLetter.isPending}
-                  className="bg-accent text-accent-foreground hover:bg-accent/90"
-                >
-                  {generateLetter.isPending ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <FileOutput className="h-4 w-4 mr-2" />}
-                  Generate with AI
-                </Button>
-              )}
             </CardHeader>
             <CardContent className="pt-6">
-              {isEditingLetter ? (
-                <div className="space-y-4">
-                  <Textarea 
-                    value={letterText} 
+              {(isEditingLetter || isScratchMode) ? (
+                <div className="space-y-3">
+                  {/* Editing toolbar */}
+                  <div className="flex flex-wrap gap-2 p-3 bg-muted/20 rounded-md border">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setShowLoadTemplateDialog(true)}
+                      disabled={templates.length === 0}
+                    >
+                      <FolderOpen className="h-3.5 w-3.5 mr-1.5" />
+                      Load Template
+                      {templates.length > 0 && (
+                        <span className="ml-1.5 bg-primary/10 text-primary text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                          {templates.length}
+                        </span>
+                      )}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={handleGenerateLetter}
+                      disabled={generateLetter.isPending}
+                    >
+                      {generateLetter.isPending
+                        ? <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                        : <Sparkles className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
+                      }
+                      {letterText.trim() ? "Regenerate with AI" : "Generate with AI"}
+                    </Button>
+                    <span className="ml-auto text-xs text-muted-foreground self-center">
+                      {letterText.length} characters
+                    </span>
+                  </div>
+                  <Textarea
+                    value={letterText}
                     onChange={(e) => setLetterText(e.target.value)}
-                    className="min-h-[400px] font-mono text-sm leading-relaxed"
+                    placeholder="Write your demand letter here..."
+                    className="min-h-[420px] font-mono text-sm leading-relaxed"
                   />
-                  <div className="flex gap-2 justify-end">
+                  <div className="flex flex-wrap gap-2 justify-between">
                     <Button variant="outline" onClick={() => {
                       setIsEditingLetter(false);
+                      setIsScratchMode(false);
                       setLetterText(caseData.demandLetterText || "");
-                    }}>Cancel</Button>
-                    <Button onClick={handleSaveLetter} disabled={updateCase.isPending}>
-                      <Save className="h-4 w-4 mr-2" /> Save Letter
+                    }}>
+                      Cancel
                     </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => { setTemplateName(""); setShowSaveTemplateDialog(true); }}
+                        disabled={!letterText.trim()}
+                      >
+                        <BookmarkPlus className="h-4 w-4 mr-2" /> Save as Template
+                      </Button>
+                      <Button onClick={handleSaveLetter} disabled={updateCase.isPending || !letterText.trim()}>
+                        <Save className="h-4 w-4 mr-2" /> Save Letter
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ) : letterText ? (
                 <div>
-                  <div className="bg-muted/20 border p-6 rounded-md font-serif text-sm leading-relaxed whitespace-pre-wrap h-[300px] overflow-y-auto relative">
+                  <div className="bg-muted/20 border p-6 rounded-md font-serif text-sm leading-relaxed whitespace-pre-wrap h-[300px] overflow-y-auto">
                     {letterText}
                   </div>
-                  <div className="mt-4 flex gap-2">
+                  <div className="mt-4 flex flex-wrap gap-2">
                     <Button variant="outline" size="sm" onClick={() => setIsEditingLetter(true)}>
-                      Edit Letter
+                      <Pencil className="h-3.5 w-3.5 mr-1.5" /> Edit Letter
                     </Button>
                     <Button variant="outline" size="sm" onClick={() => {
                       navigator.clipboard.writeText(letterText);
                       toast({ title: "Copied to clipboard" });
                     }}>
                       Copy Text
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setTemplateName(""); setShowSaveTemplateDialog(true); }}
+                    >
+                      <BookmarkPlus className="h-3.5 w-3.5 mr-1.5" /> Save as Template
                     </Button>
                     {caseData.status === 'draft' && (
                       <Button size="sm" onClick={() => handleStatusChange('demand_sent')} className="ml-auto bg-primary text-primary-foreground">
@@ -921,20 +1004,114 @@ export default function CaseDetail() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-10 border-2 border-dashed rounded-md bg-muted/10">
+                <div className="text-center py-12 border-2 border-dashed rounded-md bg-muted/10">
                   <FileOutput className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-20" />
-                  <p className="text-muted-foreground mb-4">No demand letter generated yet.</p>
-                  <Button 
-                    variant="outline"
-                    onClick={handleGenerateLetter} 
-                    disabled={generateLetter.isPending}
-                  >
-                    {generateLetter.isPending ? "Generating..." : "Generate AI Demand Letter"}
-                  </Button>
+                  <p className="text-sm text-muted-foreground mb-6">No demand letter yet. Write one yourself or let AI draft it.</p>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => { setLetterText(""); setIsScratchMode(true); }}
+                    >
+                      <PenLine className="h-4 w-4 mr-2" /> Write from Scratch
+                    </Button>
+                    {templates.length > 0 && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowLoadTemplateDialog(true)}
+                      >
+                        <FolderOpen className="h-4 w-4 mr-2" /> Use a Template
+                      </Button>
+                    )}
+                    <Button
+                      onClick={handleGenerateLetter}
+                      disabled={generateLetter.isPending}
+                      className="bg-accent text-accent-foreground hover:bg-accent/90"
+                    >
+                      {generateLetter.isPending
+                        ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        : <Sparkles className="h-4 w-4 mr-2" />
+                      }
+                      {generateLetter.isPending ? "Generating..." : "Generate with AI"}
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>
           </Card>
+
+          {/* Save as Template Dialog */}
+          <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Save as Template</DialogTitle>
+                <DialogDescription>
+                  Give this letter a name so you can reuse it in future cases.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="py-2">
+                <Label htmlFor="template-name" className="text-sm font-medium mb-1.5 block">Template Name</Label>
+                <Input
+                  id="template-name"
+                  value={templateName}
+                  onChange={(e) => setTemplateName(e.target.value)}
+                  placeholder='e.g. "Unpaid Rent — Standard"'
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveTemplate(); }}
+                  autoFocus
+                />
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowSaveTemplateDialog(false)}>Cancel</Button>
+                <Button onClick={handleSaveTemplate} disabled={!templateName.trim()}>
+                  <BookmarkPlus className="h-4 w-4 mr-2" /> Save Template
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Load Template Dialog */}
+          <Dialog open={showLoadTemplateDialog} onOpenChange={setShowLoadTemplateDialog}>
+            <DialogContent className="max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Load a Template</DialogTitle>
+                <DialogDescription>
+                  Select a saved template to use as the starting point for this letter.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-2 max-h-80 overflow-y-auto py-1">
+                {templates.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-6">No templates saved yet.</p>
+                ) : (
+                  templates.map((t) => (
+                    <div key={t.id} className="flex items-start gap-3 p-3 rounded-md border hover:bg-muted/30 group">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{t.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 font-mono">{t.text.slice(0, 120)}...</p>
+                        <p className="text-[10px] text-muted-foreground/60 mt-1">
+                          Saved {new Date(t.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <Button size="sm" onClick={() => handleApplyTemplate(t)}>
+                          Use
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive h-7 px-2"
+                          onClick={() => handleDeleteTemplate(t.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowLoadTemplateDialog(false)}>Close</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
 
           {/* Court Locator */}
           {["no_response", "filed", "hearing_scheduled", "judgment", "collection", "closed"].includes(caseData.status) && (
