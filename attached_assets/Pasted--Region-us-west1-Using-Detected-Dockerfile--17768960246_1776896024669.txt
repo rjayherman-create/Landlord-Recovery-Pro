@@ -1,0 +1,94 @@
+ 
+[Region: us-west1]
+=========================
+Using Detected Dockerfile
+=========================
+
+context: 6nvq-O9Nk
+
+internal
+load build definition from Dockerfile
+0ms
+
+internal
+load metadata for docker.io/library/node:20-slim
+155ms
+
+internal
+load .dockerignore
+0ms
+
+internal
+load build context
+0ms
+
+builder
+FROM docker.io/library/node:20-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 cached
+57ms
+
+builder
+RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
+3s
+Preparing pnpm@10.26.1 for immediate activation...
+
+runner
+WORKDIR /app
+1s
+
+builder
+WORKDIR /app
+358ms
+
+builder
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+486ms
+
+builder
+COPY .npmrc .npmrc
+72ms
+
+builder
+COPY lib/ lib/
+158ms
+
+builder
+COPY artifacts/api-server/ artifacts/api-server/
+305ms
+
+builder
+COPY artifacts/property-tax-grievance/ artifacts/property-tax-grievance/
+214ms
+
+builder
+RUN pnpm install --no-frozen-lockfile
+27s
+Done in 26.8s using pnpm v10.26.1
+
+builder
+RUN BASE_PATH=/ NODE_ENV=production pnpm --filter @workspace/property-tax-grievance run build
+14s
+✓ built in 12.91s
+
+builder
+RUN pnpm --filter @workspace/api-server run build
+1s
+⚡ Done in 964ms
+
+builder
+RUN rm -rf artifacts/api-server/public &&     mkdir -p artifacts/api-server/public &&     cp -r artifacts/property-tax-grievance/dist/public/* artifacts/api-server/public/
+102ms
+
+builder
+RUN pnpm --filter @workspace/api-server deploy --prod /tmp/api-deploy
+838ms
+ ERR_PNPM_DEPLOY_NONINJECTED_WORKSPACE  By default, starting from pnpm v10, we only deploy from workspaces that have "inject-workspace-packages=true" set
+If you want to deploy without using injected dependencies, run "pnpm deploy" with the "--legacy" flag or set "force-legacy-deploy" to true
+Dockerfile:25
+-------------------
+23 |
+24 |     # Bundle production deps (pdfkit etc.) into a standalone folder — no devDeps, no symlinks
+25 | >>> RUN pnpm --filter @workspace/api-server deploy --prod /tmp/api-deploy
+26 |
+27 |     FROM node:20-slim AS runner
+-------------------
+ERROR: failed to build: failed to solve: process "/bin/sh -c pnpm --filter @workspace/api-server deploy --prod /tmp/api-deploy" did not complete successfully: exit code: 1
