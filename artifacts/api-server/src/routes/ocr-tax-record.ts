@@ -2,9 +2,9 @@ import { createRequire } from "module";
 import { Router, type IRouter } from "express";
 import multer from "multer";
 import OpenAI from "openai";
-// Use createRequire to import CJS module from pdf-parse without triggering its test-file side effect
-const require = createRequire(import.meta.url);
-const pdfParse: (buf: Buffer) => Promise<{ text: string }> = require("pdf-parse/lib/pdf-parse.js");
+// Import directly from the lib path to skip pdf-parse's own test-file side effect
+const _require = createRequire(import.meta.url);
+const pdfParse: (buf: Buffer) => Promise<{ text: string }> = _require("pdf-parse/lib/pdf-parse.js");
 
 const router: IRouter = Router();
 

@@ -1,8 +1,8 @@
 import fs from "fs";
-// Import from the internal lib path to avoid pdf-parse running its own test
-// file on module load (which crashes when the CWD lacks the test fixture).
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require("pdf-parse/lib/pdf-parse.js");
+import { createRequire } from "module";
+// Import directly from the lib path to skip pdf-parse's own test-file side effect
+const _require = createRequire(import.meta.url);
+const pdfParse: (buf: Buffer) => Promise<{ text: string }> = _require("pdf-parse/lib/pdf-parse.js");
 
 export async function extractTextFromPDF(filePath: string): Promise<string> {
   const buffer = fs.readFileSync(filePath);
