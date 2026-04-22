@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, Minus, Plus } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,8 +22,34 @@ const STEPS = [
 ];
 
 const STATES = [
-  "CA", "FL", "GA", "IL", "NC", "NJ", "NY", "OH", "PA", "TX", "Other"
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
+  "KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ",
+  "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
+  "VA","WA","WV","WI","WY","DC","Other"
 ];
+
+const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+function formatRentPeriod(months: string[]): string {
+  if (months.length === 0) return "";
+  const sorted = [...months].sort();
+  const byYear: Record<string, string[]> = {};
+  for (const m of sorted) {
+    const [y, mo] = m.split("-");
+    if (!byYear[y]) byYear[y] = [];
+    byYear[y].push(MONTH_NAMES[parseInt(mo) - 1]);
+  }
+  const parts: string[] = [];
+  for (const [year, names] of Object.entries(byYear)) {
+    if (names.length === 1) parts.push(`${names[0]} ${year}`);
+    else {
+      const last = names[names.length - 1];
+      parts.push(`${names.slice(0, -1).join(", ")}, and ${last} ${year}`);
+    }
+  }
+  return parts.join("; ");
+}
 
 const newCaseSchema = z.object({
   claimType: z.enum(["unpaid_rent", "property_damage", "security_deposit", "lease_break", "other"] as const, { error: "Please select a claim type" }),
@@ -31,6 +57,7 @@ const newCaseSchema = z.object({
   claimAmount: z.coerce.number().min(1, "Claim amount must be greater than 0"),
   monthlyRent: z.coerce.number().optional(),
   monthsOwed: z.coerce.number().min(0).optional(),
+  rentPeriod: z.string().optional(),
   description: z.string().min(10, "Please provide a brief description"),
   
   landlordName: z.string().min(2, "Your name is required"),
@@ -65,7 +92,8 @@ export default function NewCase() {
       state: "",
       claimAmount: 0,
       monthlyRent: undefined,
-      monthsOwed: 1,
+      monthsOwed: 0,
+      rentPeriod: "",
       description: "",
       landlordName: "",
       landlordEmail: "",
@@ -85,14 +113,29 @@ export default function NewCase() {
 
   const watchedClaimType = useWatch({ control: form.control, name: "claimType" });
   const watchedMonthlyRent = useWatch({ control: form.control, name: "monthlyRent" });
-  const watchedMonthsOwed = useWatch({ control: form.control, name: "monthsOwed" });
+
+  const today = new Date();
+  const [selectedYear, setSelectedYear] = useState(today.getFullYear());
+  const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set());
+
+  const toggleMonth = (key: string) => {
+    setSelectedMonths(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   useEffect(() => {
-    if (watchedClaimType === "unpaid_rent" && watchedMonthlyRent && watchedMonthsOwed) {
-      const total = Number(watchedMonthlyRent) * Number(watchedMonthsOwed);
+    const count = selectedMonths.size;
+    form.setValue("monthsOwed", count, { shouldValidate: false });
+    form.setValue("rentPeriod", formatRentPeriod([...selectedMonths]), { shouldValidate: false });
+    if (watchedClaimType === "unpaid_rent" && watchedMonthlyRent && count > 0) {
+      const total = Number(watchedMonthlyRent) * count;
       if (total > 0) form.setValue("claimAmount", total, { shouldValidate: true });
     }
-  }, [watchedClaimType, watchedMonthlyRent, watchedMonthsOwed]);
+  }, [selectedMonths, watchedMonthlyRent, watchedClaimType]);
 
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
@@ -114,7 +157,7 @@ export default function NewCase() {
   };
 
   const onSubmit = (data: FormValues) => {
-    createCase.mutate({ data }, {
+    createCase.mutate({ data: data as any }, {
       onSuccess: (newCase) => {
         toast({
           title: "Case Created",
@@ -247,75 +290,104 @@ export default function NewCase() {
 
                   {watchedClaimType === "unpaid_rent" ? (
                     <div className="space-y-4">
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="monthlyRent"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Monthly Rent ($)</FormLabel>
-                              <FormControl>
-                                <Input type="number" placeholder="e.g. 2400" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        <FormField
-                          control={form.control}
-                          name="monthsOwed"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Months Unpaid</FormLabel>
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-9 w-9 shrink-0"
-                                  onClick={() => field.onChange(Math.max(1, Number(field.value) - 1))}
-                                >
-                                  <Minus className="h-4 w-4" />
-                                </Button>
-                                <FormControl>
-                                  <Input
-                                    type="number"
-                                    min={1}
-                                    className="text-center font-semibold text-lg"
-                                    {...field}
-                                  />
-                                </FormControl>
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-9 w-9 shrink-0"
-                                  onClick={() => field.onChange(Number(field.value) + 1)}
-                                >
-                                  <Plus className="h-4 w-4" />
-                                </Button>
-                              </div>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
+                      <FormField
+                        control={form.control}
+                        name="monthlyRent"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Monthly Rent ($)</FormLabel>
+                            <FormControl>
+                              <Input type="number" placeholder="e.g. 2400" className="max-w-xs" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      {/* Month / Year Picker */}
+                      <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-3">
+                        <Label className="text-sm font-medium">Months Owed — check each month rent was not paid</Label>
+
+                        {/* Year Navigation */}
+                        <div className="flex items-center justify-between max-w-xs">
+                          <Button
+                            type="button" variant="ghost" size="icon" className="h-8 w-8"
+                            onClick={() => setSelectedYear(y => y - 1)}
+                            disabled={selectedYear <= today.getFullYear() - 3}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <span className="font-semibold text-sm tabular-nums">{selectedYear}</span>
+                          <Button
+                            type="button" variant="ghost" size="icon" className="h-8 w-8"
+                            onClick={() => setSelectedYear(y => y + 1)}
+                            disabled={selectedYear >= today.getFullYear()}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        {/* Month Grid */}
+                        <div className="grid grid-cols-4 gap-2">
+                          {MONTH_SHORT.map((name, idx) => {
+                            const monthNum = String(idx + 1).padStart(2, "0");
+                            const key = `${selectedYear}-${monthNum}`;
+                            const isFuture = selectedYear === today.getFullYear() && idx > today.getMonth();
+                            const isSelected = selectedMonths.has(key);
+                            return (
+                              <button
+                                key={key}
+                                type="button"
+                                disabled={isFuture}
+                                onClick={() => toggleMonth(key)}
+                                className={`rounded-md border px-2 py-2 text-sm font-medium transition-all
+                                  ${isFuture ? "opacity-30 cursor-not-allowed border-border text-muted-foreground" :
+                                    isSelected
+                                      ? "border-accent bg-accent text-accent-foreground shadow-sm"
+                                      : "border-border hover:border-primary/50 hover:bg-muted text-foreground"
+                                  }`}
+                              >
+                                {name}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {selectedMonths.size > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setSelectedMonths(new Set())}
+                            className="text-xs text-muted-foreground hover:text-foreground underline"
+                          >
+                            Clear selection
+                          </button>
+                        )}
                       </div>
-                      {watchedMonthlyRent && watchedMonthsOwed && Number(watchedMonthlyRent) > 0 ? (
+
+                      {/* Calculation Summary */}
+                      {selectedMonths.size > 0 && watchedMonthlyRent && Number(watchedMonthlyRent) > 0 ? (
                         <div className="rounded-lg border border-accent/30 bg-accent/5 p-4">
                           <div className="text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wider">Rent Breakdown</div>
+                          <div className="text-xs text-muted-foreground mb-2 leading-relaxed">
+                            {formatRentPeriod([...selectedMonths])}
+                          </div>
                           <div className="flex items-center justify-between">
                             <div className="text-sm text-muted-foreground">
-                              ${Number(watchedMonthlyRent).toLocaleString()} &times; {watchedMonthsOwed} month{Number(watchedMonthsOwed) !== 1 ? "s" : ""}
+                              ${Number(watchedMonthlyRent).toLocaleString()} &times; {selectedMonths.size} month{selectedMonths.size !== 1 ? "s" : ""}
                             </div>
                             <div className="text-xl font-bold text-foreground">
-                              ${(Number(watchedMonthlyRent) * Number(watchedMonthsOwed)).toLocaleString()}
+                              ${(Number(watchedMonthlyRent) * selectedMonths.size).toLocaleString()}
                             </div>
                           </div>
                           <div className="text-xs text-muted-foreground mt-1">This becomes your total claim amount</div>
                         </div>
+                      ) : selectedMonths.size > 0 ? (
+                        <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                          {selectedMonths.size} month{selectedMonths.size !== 1 ? "s" : ""} selected — enter monthly rent above to calculate total.
+                        </div>
                       ) : (
-                        <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
-                          Enter monthly rent and months unpaid to calculate your claim amount.
+                        <div className="rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground">
+                          Select the months rent was not paid above.
                         </div>
                       )}
                     </div>
@@ -570,12 +642,18 @@ export default function NewCase() {
                       </div>
                       <div>
                         <dt className="text-muted-foreground">Claim Amount</dt>
-                        <dd className="font-medium font-mono text-base">${form.getValues().claimAmount}</dd>
+                        <dd className="font-medium font-mono text-base">${Number(form.getValues().claimAmount).toLocaleString()}</dd>
                       </div>
                       <div>
                         <dt className="text-muted-foreground">State</dt>
                         <dd className="font-medium">{form.getValues().state}</dd>
                       </div>
+                      {form.getValues().rentPeriod && (
+                        <div className="md:col-span-2">
+                          <dt className="text-muted-foreground">Rent Period</dt>
+                          <dd className="font-medium mt-1">{form.getValues().rentPeriod}</dd>
+                        </div>
+                      )}
                       <div className="md:col-span-2">
                         <dt className="text-muted-foreground">Description</dt>
                         <dd className="font-medium mt-1">{form.getValues().description}</dd>

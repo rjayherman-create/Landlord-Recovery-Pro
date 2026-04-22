@@ -31,6 +31,7 @@ export const landlordCases = pgTable("landlord_cases", {
   leaseEndDate: date("lease_end_date"),
   moveOutDate: date("move_out_date"),
   monthsOwed: integer("months_owed").default(0),
+  rentPeriod: text("rent_period"),
   demandLetterText: text("demand_letter_text"),
   status: varchar("status", { length: 60 }).notNull().default("draft"),
   courtDate: date("court_date"),

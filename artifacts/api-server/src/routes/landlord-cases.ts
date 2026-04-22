@@ -107,6 +107,7 @@ router.post("/landlord-cases", async (req, res) => {
         monthlyRent: body.monthlyRent?.toString() ?? null,
         claimAmount: body.claimAmount.toString(),
         monthsOwed: (body as any).monthsOwed ?? null,
+        rentPeriod: (body as any).rentPeriod ?? null,
         description: body.description,
         leaseStartDate: body.leaseStartDate ?? null,
         leaseEndDate: body.leaseEndDate ?? null,
@@ -160,6 +161,7 @@ router.put("/landlord-cases/:id", async (req, res) => {
     if (body.recoveredAmount !== undefined) updateData.recoveredAmount = body.recoveredAmount?.toString() ?? null;
     if (body.notes !== undefined) updateData.notes = body.notes ?? null;
     if ((body as any).monthsOwed !== undefined) (updateData as any).monthsOwed = (body as any).monthsOwed ?? null;
+    if ((body as any).rentPeriod !== undefined) (updateData as any).rentPeriod = (body as any).rentPeriod ?? null;
     if ((body as any).archived !== undefined) (updateData as any).archived = (body as any).archived;
     updateData.updatedAt = new Date();
     const [updated] = await db.update(landlordCases).set(updateData).where(eq(landlordCases.id, id)).returning();
