@@ -102,6 +102,7 @@ async function buildAll() {
       "electron",
       "pdf-parse",
       "pdf-parse/*",
+      "pdfkit",
     ],
     sourcemap: "linked",
     plugins: [

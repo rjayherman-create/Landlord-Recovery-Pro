@@ -1,0 +1,198 @@
+FINAL FLOW
+User clicks "Unlock Filing"
+
+→ Stripe Checkout
+
+→ Payment Success
+
+→ Webhook updates user.hasPaid = true
+
+→ User can download FINAL PDF
+🚀 PART 1 — INSTALL STRIPE
+
+Backend:
+
+pnpm add stripe
+🚀 PART 2 — ENV VARIABLES (RAILWAY)
+STRIPE_SECRET_KEY=sk_live_or_test
+STRIPE_WEBHOOK_SECRET=whsec_...
+APP_URL=https://your-app.up.railway.app
+
+Frontend:
+
+VITE_STRIPE_PUBLISHABLE_KEY=pk_test_...
+🚀 PART 3 — CREATE CHECKOUT SESSION
+/api/stripe/create-checkout
+import { Router } from "express";
+import Stripe from "stripe";
+import { requireAuth } from "@clerk/express";
+
+const router = Router();
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-06-20",
+});
+
+router.post("/create-checkout", requireAuth(), async (req, res) => {
+  const session = await stripe.checkout.sessions.create({
+    payment_method_types: ["card"],
+
+    line_items: [
+      {
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: "Tenant Recovery Filing",
+          },
+          unit_amount: 2900, // $29
+        },
+        quantity: 1,
+      },
+    ],
+
+    mode: "payment",
+
+    success_url: `${process.env.APP_URL}/success`,
+    cancel_url: `${process.env.APP_URL}/cancel`,
+
+    metadata: {
+      userId: req.auth.userId,
+    },
+  });
+
+  res.json({ url: session.url });
+});
+
+export default router;
+🚀 PART 4 — FRONTEND BUTTON
+const handleCheckout = async () => {
+  const res = await fetch("/api/stripe/create-checkout", {
+    method: "POST",
+  });
+
+  const data = await res.json();
+
+  window.location.href = data.url;
+};
+UI
+<button
+  onClick={handleCheckout}
+  className="bg-black text-white px-6 py-3 rounded-lg"
+>
+  Unlock Filing & Download ($29)
+</button>
+🚀 PART 5 — WEBHOOK (CRITICAL)
+
+This is what unlocks the user.
+
+/api/stripe/webhook
+import express from "express";
+import Stripe from "stripe";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+
+const router = express.Router();
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: "2024-06-20",
+});
+
+router.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  async (req, res) => {
+    const sig = req.headers["stripe-signature"]!;
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(
+        req.body,
+        sig,
+        process.env.STRIPE_WEBHOOK_SECRET!
+      );
+    } catch (err) {
+      return res.status(400).send("Webhook error");
+    }
+
+    if (event.type === "checkout.session.completed") {
+      const session = event.data.object as any;
+
+      const userId = session.metadata.userId;
+
+      // 🔥 UNLOCK USER
+      await db
+        .update(users)
+        .set({ hasPaid: true })
+        .where(eq(users.id, userId));
+    }
+
+    res.json({ received: true });
+  }
+);
+
+export default router;
+🚀 PART 6 — IMPORTANT (EXPRESS ORDER)
+
+Webhook MUST come BEFORE json middleware:
+
+app.use("/api/stripe/webhook", webhookRoute);
+
+app.use(express.json()); // AFTER
+🚀 PART 7 — PROTECT PDF ROUTE
+
+Update your PDF route:
+
+const userId = req.auth.userId;
+
+const user = await db.query.users.findFirst({
+  where: eq(users.id, userId),
+});
+
+if (!user?.hasPaid) {
+  return res.status(403).json({ error: "Payment required" });
+}
+🚀 PART 8 — SUCCESS PAGE
+/success
+export default function Success() {
+  return (
+    <div className="p-10 text-center">
+      <h1 className="text-2xl font-bold">
+        Payment Successful
+      </h1>
+
+      <p className="mt-2">
+        Your filing documents are now unlocked
+      </p>
+
+      <a href="/dashboard" className="text-blue-600 mt-4 block">
+        Go to Dashboard →
+      </a>
+    </div>
+  );
+}
+🚀 PART 9 — TESTING (DO THIS)
+
+Use Stripe test card:
+
+4242 4242 4242 4242
+🔥 WHAT YOU JUST BUILT
+
+✔ Real payment system
+✔ Automatic unlock
+✔ Secure PDF gating
+✔ Works on Railway
+✔ Scales to all apps
+
+🔥 HOW THIS FEELS TO USER
+User builds case
+
+→ Sees value
+
+→ Pays
+
+→ Instantly gets:
+   ✔ PDF
+   ✔ Court steps
+   ✔ Full system

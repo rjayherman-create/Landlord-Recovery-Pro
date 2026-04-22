@@ -1,0 +1,218 @@
+🧠 ARCHITECTURE (KEEP THIS SIMPLE)
+Frontend → requests preview PDF
+Backend → returns WATERMARKED PDF
+
+After payment:
+Frontend → requests final PDF
+Backend → returns CLEAN PDF via signed URL
+🚀 PART 1 — INSTALL
+
+In your API server:
+
+pnpm add pdfkit
+🚀 PART 2 — PDF GENERATOR (CORE)
+/artifacts/api-server/src/utils/pdfGenerator.ts
+import PDFDocument from "pdfkit";
+
+export function generateCasePDF({
+  tenant,
+  address,
+  amount,
+  watermark,
+}: {
+  tenant: string;
+  address: string;
+  amount: number;
+  watermark?: string;
+}) {
+  const doc = new PDFDocument();
+  const buffers: Buffer[] = [];
+
+  doc.on("data", buffers.push.bind(buffers));
+
+  return new Promise<Buffer>((resolve) => {
+    doc.on("end", () => {
+      resolve(Buffer.concat(buffers));
+    });
+
+    // CONTENT
+    doc.fontSize(20).text("Small Claims Filing", { align: "center" });
+
+    doc.moveDown();
+    doc.fontSize(12).text(`Tenant: ${tenant}`);
+    doc.text(`Address: ${address}`);
+    doc.text(`Amount: $${amount}`);
+
+    // WATERMARK
+    if (watermark) {
+      doc.fillColor("red")
+        .opacity(0.2)
+        .fontSize(50)
+        .rotate(45, { origin: [300, 300] })
+        .text(watermark, 100, 300, {
+          align: "center",
+        })
+        .rotate(-45)
+        .opacity(1)
+        .fillColor("black");
+    }
+
+    doc.end();
+  });
+}
+🚀 PART 3 — PREVIEW (WATERMARKED)
+Route: /api/pdf/preview
+import { Router } from "express";
+import { generateCasePDF } from "../utils/pdfGenerator";
+
+const router = Router();
+
+router.post("/preview", async (req, res) => {
+  const { tenant, address, amount } = req.body;
+
+  const pdf = await generateCasePDF({
+    tenant,
+    address,
+    amount,
+    watermark: "PREVIEW – NOT FOR FILING",
+  });
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.send(pdf);
+});
+
+export default router;
+🚀 PART 4 — FINAL PDF (PROTECTED)
+Route: /api/pdf/final
+import { requireAuth } from "@clerk/express";
+
+router.post("/final", requireAuth(), async (req, res) => {
+  const { tenant, address, amount } = req.body;
+
+  // TODO: check Stripe payment here
+  const hasPaid = true;
+
+  if (!hasPaid) {
+    return res.status(403).json({ error: "Payment required" });
+  }
+
+  const pdf = await generateCasePDF({
+    tenant,
+    address,
+    amount,
+  });
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.send(pdf);
+});
+🚀 PART 5 — SIGNED DOWNLOAD (OPTIONAL BUT STRONG)
+
+Instead of direct download:
+
+const token = crypto.randomUUID();
+
+// store in memory/db
+downloadTokens[token] = {
+  userId,
+  expires: Date.now() + 5 * 60 * 1000,
+};
+
+return `/api/pdf/download/${token}`;
+Download route
+router.get("/download/:token", async (req, res) => {
+  const tokenData = downloadTokens[req.params.token];
+
+  if (!tokenData || tokenData.expires < Date.now()) {
+    return res.status(403).send("Expired link");
+  }
+
+  // generate clean PDF
+});
+🚀 PART 6 — FRONTEND
+Preview button
+const preview = async () => {
+  const res = await fetch("/api/pdf/preview", {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+  });
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+
+  window.open(url);
+};
+Final download (after payment)
+const download = async () => {
+  const res = await fetch("/api/pdf/final", {
+    method: "POST",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+  });
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "claim.pdf";
+  a.click();
+};
+🔥 PART 7 — WATERMARK UPGRADE (SMART)
+
+Instead of generic:
+
+PREVIEW – NOT FOR FILING
+
+Use:
+
+Generated for john@email.com
+Preview Only
+
+👉 discourages sharing
+
+🔥 PART 8 — PAYMENT LOCK (IMPORTANT)
+
+Replace:
+
+const hasPaid = true;
+
+With:
+
+const userId = req.auth.userId;
+
+const user = await db.query.users.findFirst({
+  where: eq(users.id, userId),
+});
+
+if (!user?.hasPaid) {
+  return res.status(403).json({ error: "Payment required" });
+}
+🔥 WHAT THIS GIVES YOU
+
+✔ No raw PDF exposed
+✔ No frontend template theft
+✔ Watermarked previews
+✔ Paid unlock system
+✔ Short-lived access
+
+⚠️ REALITY CHECK (IMPORTANT)
+
+Even with all this:
+
+👉 Someone can still screenshot
+
+BUT:
+
+They won’t get:
+
+clean document
+full system
+structured workflow
+🏁 FINAL POSITION
+
+You are now:
+
+Protecting access, not fighting copying
+
+That’s how real SaaS works.

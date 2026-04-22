@@ -9,7 +9,8 @@ import {
 } from "@workspace/api-client-react";
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
-  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin, TrendingUp, Search, ChevronRight
+  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin, TrendingUp, Search, ChevronRight,
+  Eye, Download, Lock
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -56,6 +57,54 @@ export default function CaseDetail() {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<"overview" | "documents" | "advisor" | "recovery" | "locate">("overview");
+
+  // Filing Kit state
+  const [filingKitCheckoutLoading, setFilingKitCheckoutLoading] = useState(false);
+  const [filingKitDownloadLoading, setFilingKitDownloadLoading] = useState(false);
+
+  async function handleFilingKitCheckout() {
+    setFilingKitCheckoutLoading(true);
+    try {
+      const res = await fetch(`/api/landlord/pdf/${caseId}/checkout`, { method: "POST" });
+      const data = await res.json();
+      if (data.alreadyPaid) {
+        handleFilingKitDownload();
+        return;
+      }
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error(data.message ?? "Could not create checkout session.");
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setFilingKitCheckoutLoading(false);
+    }
+  }
+
+  async function handleFilingKitDownload() {
+    setFilingKitDownloadLoading(true);
+    try {
+      const res = await fetch(`/api/landlord/pdf/${caseId}/download`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.message ?? "Download failed.");
+      }
+      const blob = await res.blob();
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `filing-kit-case-${caseId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(link.href);
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally {
+      setFilingKitDownloadLoading(false);
+    }
+  }
 
   // Edit case dialog state
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -650,7 +699,81 @@ export default function CaseDetail() {
 
       {/* Documents Tab */}
       {activeTab === "documents" && (
-        <div className="flex-1 min-h-0 border-t border-border">
+        <div className="flex-1 min-h-0 border-t border-border overflow-y-auto">
+          {/* Filing Kit Card */}
+          <div className="px-6 pt-6 max-w-3xl mx-auto">
+            <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden mb-6">
+              <div className="bg-[#1a2d44] px-5 py-3 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-[#c9a231]" />
+                <span className="text-white font-semibold text-sm tracking-wide">Filing Kit</span>
+                {(caseData as any).filingKitPaidAt && (
+                  <span className="ml-auto text-xs bg-green-600 text-white px-2 py-0.5 rounded-full font-medium">Purchased</span>
+                )}
+              </div>
+              <div className="p-5">
+                <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium mb-1">Demand Letter + Court Filing Guide</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      A two-page PDF: a print-ready formal demand letter addressed to{" "}
+                      <span className="font-medium">{caseData.tenantName}</span>, plus a step-by-step{" "}
+                      {caseData.state} small claims filing guide with fee schedules and a court checklist.
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      {[
+                        "Formal demand letter (print, sign, send)",
+                        `${caseData.state} small claims filing guide`,
+                        "Evidence & document checklist",
+                      ].map((item) => (
+                        <li key={item} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="flex flex-col gap-2 sm:min-w-[160px]">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => window.open(`/api/landlord/pdf/${caseId}/preview`, "_blank")}
+                    >
+                      <Eye className="h-3.5 w-3.5 mr-1.5" />
+                      Preview
+                    </Button>
+                    {(caseData as any).filingKitPaidAt ? (
+                      <Button
+                        size="sm"
+                        className="w-full bg-[#1a2d44] hover:bg-[#243d5e]"
+                        onClick={handleFilingKitDownload}
+                        disabled={filingKitDownloadLoading}
+                      >
+                        {filingKitDownloadLoading ? (
+                          <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Downloading...</>
+                        ) : (
+                          <><Download className="h-3.5 w-3.5 mr-1.5" />Download PDF</>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        className="w-full bg-[#c9a231] hover:bg-[#b8912a] text-white"
+                        onClick={handleFilingKitCheckout}
+                        disabled={filingKitCheckoutLoading}
+                      >
+                        {filingKitCheckoutLoading ? (
+                          <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Loading...</>
+                        ) : (
+                          <><Lock className="h-3.5 w-3.5 mr-1.5" />Unlock — $29</>
+                        )}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
           <DocumentLibrary initialValues={docInitialValues} />
         </div>
       )}

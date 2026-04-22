@@ -44,6 +44,8 @@ export const landlordCases = pgTable("landlord_cases", {
   serviceNotes: text("service_notes"),
   notes: text("notes"),
   archived: boolean("archived").notNull().default(false),
+  filingKitPaidAt: timestamp("filing_kit_paid_at"),
+  filingKitStripeSessionId: varchar("filing_kit_stripe_session_id", { length: 255 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

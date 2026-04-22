@@ -55,6 +55,14 @@ artifacts-monorepo/
 - Backend routes: `/api/landlord-cases` (CRUD + stats + generate-letter + status update + archive)
 - AI chat backend: `artifacts/api-server/src/routes/openai-conversations.ts` (SSE streaming, conversation history)
 - DB schema: `lib/db/src/schema/landlord-cases.ts`
+- **Filing Kit PDF flow** (Stripe-gated, $29):
+  - `GET /api/landlord/pdf/:id/preview` — free watermarked 2-page PDF (demand letter + filing guide) via pdfkit
+  - `POST /api/landlord/pdf/:id/checkout` — creates Stripe checkout session; redirects to success with `caseId` + `session_id`
+  - `GET /api/landlord/pdf/:id/download?session_id=xxx` — verifies Stripe payment, marks `filingKitPaidAt` on case, serves clean PDF
+  - `GET /api/landlord/pdf/:id/status` — returns `{ paid, paidAt }` for the case
+  - After payment, CheckoutSuccess page auto-triggers download; subsequent downloads via Documents tab
+  - pdfkit externalized in `build.mjs` to preserve font file paths at runtime
+  - `landlord_cases` table has `filing_kit_paid_at` + `filing_kit_stripe_session_id` columns (added via raw SQL)
 
 **SmallClaims AI** (`/scar-filing/`):
 - 10-state small claims filing wizard (NY, NJ, FL, TX, CA, PA, IL, OH, GA, NC)

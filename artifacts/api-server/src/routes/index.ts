@@ -24,6 +24,7 @@ import parseRouter from "./parse";
 import courtRouter from "./court";
 import courtsRouter from "./courts";
 import landlordCasesRouter from "./landlord-cases";
+import landlordPdfRouter from "./landlord-pdf";
 
 const router: IRouter = Router();
 
@@ -52,5 +53,6 @@ router.use(parseRouter);
 router.use(courtRouter);
 router.use(courtsRouter);
 router.use(landlordCasesRouter);
+router.use(landlordPdfRouter);
 
 export default router;

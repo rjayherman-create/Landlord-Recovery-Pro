@@ -1,6 +1,6 @@
 import Stripe from "stripe";
 import { getStripeSync, getStripeSecretKey } from "./stripeClient";
-import { db, smallClaimsCasesTable, evidenceTable } from "@workspace/db";
+import { db, smallClaimsCasesTable, evidenceTable, landlordCases } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { generateCourtPDF } from "./services/pdfFill";
 import { Resend } from "resend";
@@ -33,14 +33,19 @@ export class WebhookHandlers {
       event = JSON.parse(payload.toString()) as Stripe.Event;
     }
 
-    // ── 2. Handle small claims payment ──────────────────────────────────────
+    // ── 2. Handle checkout payments ──────────────────────────────────────────
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
       const caseId = session.metadata?.caseId;
+      const type = session.metadata?.type;
 
       if (caseId && session.payment_status === "paid") {
-        const plan = session.metadata?.plan ?? "basic";
-        await WebhookHandlers.handleSmallClaimsPayment(Number(caseId), session.id, plan);
+        if (type === "landlord-filing-kit") {
+          await WebhookHandlers.handleLandlordFilingKitPayment(Number(caseId), session.id);
+        } else {
+          const plan = session.metadata?.plan ?? "basic";
+          await WebhookHandlers.handleSmallClaimsPayment(Number(caseId), session.id, plan);
+        }
       }
     }
 
@@ -52,6 +57,31 @@ export class WebhookHandlers {
       // Stripe sync may reject events it doesn't own — that's OK
       logger.debug({ err }, "StripeSync ignored event (expected for small-claims events)");
     }
+  }
+
+  private static async handleLandlordFilingKitPayment(caseId: number, sessionId: string): Promise<void> {
+    const [found] = await db.select().from(landlordCases).where(eq(landlordCases.id, caseId));
+
+    if (!found) {
+      logger.warn({ caseId }, "Webhook: landlord case not found for filing kit payment");
+      return;
+    }
+
+    if (found.filingKitPaidAt) {
+      logger.info({ caseId }, "Webhook: landlord filing kit already marked paid, skipping");
+      return;
+    }
+
+    await db
+      .update(landlordCases)
+      .set({
+        filingKitPaidAt: new Date(),
+        filingKitStripeSessionId: sessionId,
+        updatedAt: new Date(),
+      })
+      .where(eq(landlordCases.id, caseId));
+
+    logger.info({ caseId }, "Webhook: landlord filing kit marked as paid");
   }
 
   private static async handleSmallClaimsPayment(caseId: number, sessionId: string, plan = "basic"): Promise<void> {
