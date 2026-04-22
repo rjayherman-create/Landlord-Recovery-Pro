@@ -1,0 +1,148 @@
+🚀 What you’re building
+Simple Sign Up / Sign In
+Protect your API routes
+Attach cases to a user
+
+That’s it. No complexity.
+
+🔥 STEP 1 — Create Clerk Account
+Go to Clerk dashboard
+Create app
+Copy keys:
+CLERK_PUBLISHABLE_KEY=pk_...
+CLERK_SECRET_KEY=sk_...
+🔥 STEP 2 — FRONTEND SETUP (React)
+Install:
+pnpm add @clerk/clerk-react
+Wrap your app
+
+main.tsx
+
+import { ClerkProvider } from "@clerk/clerk-react";
+import App from "./App";
+
+const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+<ClerkProvider publishableKey={clerkPubKey}>
+  <App />
+</ClerkProvider>;
+Add Sign In / Sign Up
+import { SignIn, SignUp, UserButton } from "@clerk/clerk-react";
+Example page
+export function AuthPage() {
+  return (
+    <div className="flex justify-center mt-20">
+      <SignIn />
+    </div>
+  );
+}
+Show user when logged in
+<UserButton />
+🔥 STEP 3 — PROTECT ROUTES
+
+Wrap your app:
+
+import { SignedIn, SignedOut } from "@clerk/clerk-react";
+
+<SignedIn>
+  <Dashboard />
+</SignedIn>
+
+<SignedOut>
+  <AuthPage />
+</SignedOut>
+🔥 STEP 4 — BACKEND (EXPRESS)
+Install:
+pnpm add @clerk/express
+Add middleware
+
+/api-server/src/index.ts
+
+import { clerkMiddleware, requireAuth } from "@clerk/express";
+
+app.use(clerkMiddleware());
+Protect routes
+app.get("/api/cases", requireAuth(), async (req, res) => {
+  res.json({ message: "Protected route works" });
+});
+🔥 STEP 5 — SAVE USER DATA (IMPORTANT)
+
+Clerk gives you:
+
+req.auth.userId
+
+Use that in your DB:
+
+Example (Drizzle)
+cases = {
+  id,
+  userId, // <-- THIS
+  tenantName,
+  amount
+}
+Save case
+const userId = req.auth.userId;
+
+await db.insert(cases).values({
+  userId,
+  tenantName: "John Doe",
+  amount: 3000,
+});
+Fetch only user’s cases
+.where(eq(cases.userId, userId))
+🔥 STEP 6 — ENV (RAILWAY)
+
+Add in Railway:
+
+CLERK_SECRET_KEY=sk_...
+VITE_CLERK_PUBLISHABLE_KEY=pk_...
+🔥 HOW TO KEEP THIS FRICTIONLESS
+1. Use MAGIC LINK ONLY
+
+In Clerk dashboard:
+
+Disable passwords
+Enable email link login
+
+👉 User clicks email → done
+
+2. Don’t overbuild roles/permissions yet
+
+No:
+
+admin system
+roles
+permissions
+
+Just:
+
+user → their cases
+3. Add auth LAST in UI flow
+
+Let users:
+
+explore homepage
+click “Start Case”
+
+THEN:
+👉 prompt login
+
+🔥 UX FLOW (PERFECT FOR YOU)
+User clicks: Start Recovery
+
+→ fills some info
+
+→ clicks Continue
+
+→ THEN show login
+
+→ after login → resume where they left off
+🔥 WHY THIS WON’T BREAK YOUR APP
+
+Compared to what you had before:
+
+Problem	Fixed
+Replit auth domain issues	✅ Clerk works anywhere
+Complex backend sessions	✅ handled for you
+Login UI building	✅ built-in
+Blocking development	✅ add in 30–60 mins

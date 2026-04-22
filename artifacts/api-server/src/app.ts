@@ -8,8 +8,9 @@ import path from "path";
 import { fileURLToPath } from "url";
 import router from "./routes";
 import { logger } from "./lib/logger";
-import { authMiddleware } from "./middlewares/authMiddleware";
 import { WebhookHandlers } from "./webhookHandlers";
+import { clerkMiddleware } from "@clerk/express";
+import { CLERK_PROXY_PATH, clerkProxyMiddleware } from "./middlewares/clerkProxyMiddleware";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -20,6 +21,9 @@ const app: Express = express();
 app.get("/healthz", (_req, res) => res.json({ status: "ok" }));
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Clerk proxy — must be before express.json() (production only)
+app.use(CLERK_PROXY_PATH, clerkProxyMiddleware());
 
 // Stripe webhook MUST be registered before express.json() — needs raw Buffer body
 app.post(
@@ -62,7 +66,8 @@ app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(authMiddleware);
+// Clerk middleware — attaches auth state to req; does NOT block unauthenticated requests
+app.use(clerkMiddleware());
 
 app.use("/api", router);
 

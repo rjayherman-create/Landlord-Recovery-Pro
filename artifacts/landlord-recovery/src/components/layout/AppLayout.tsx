@@ -1,8 +1,9 @@
 import { Link, useLocation } from "wouter";
-import { Scale, Home, FileText, Settings, LogOut, Menu, PieChart, Info, BookOpen, CreditCard, Library, X } from "lucide-react";
+import { Scale, Home, FileText, Settings, Menu, PieChart, Info, BookOpen, CreditCard, Library, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import { Show, UserButton, SignInButton } from "@clerk/react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -40,7 +41,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
             {/* Desktop CTA */}
             <div className="hidden md:flex items-center gap-4">
-              <Link href="/dashboard" className="text-sm font-medium text-foreground/60 hover:text-foreground">Sign In</Link>
+              <Show when="signed-out">
+                <SignInButton mode="modal">
+                  <button className="text-sm font-medium text-foreground/60 hover:text-foreground">Sign In</button>
+                </SignInButton>
+              </Show>
+              <Show when="signed-in">
+                <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
+              </Show>
               <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Link href="/cases/new">Get Started</Link>
               </Button>
@@ -79,9 +87,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
                 {/* Mobile CTA */}
                 <div className="p-4 border-t space-y-3">
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href="/dashboard">Sign In</Link>
-                  </Button>
+                  <Show when="signed-out">
+                    <SignInButton mode="modal">
+                      <Button variant="outline" className="w-full">Sign In</Button>
+                    </SignInButton>
+                  </Show>
+                  <Show when="signed-in">
+                    <div className="flex items-center gap-3 px-1 py-1">
+                      <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
+                      <span className="text-sm text-foreground/70">Account</span>
+                    </div>
+                  </Show>
                   <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" asChild>
                     <Link href="/cases/new">Get Started</Link>
                   </Button>
@@ -182,10 +198,27 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
         
         <div className="p-4 border-t border-sidebar-border">
-          <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
+          <Show when="signed-in">
+            <div className="flex items-center gap-3 px-1">
+              <UserButton
+                appearance={{
+                  elements: {
+                    avatarBox: "w-8 h-8",
+                    userButtonTrigger: "focus:shadow-none",
+                  },
+                }}
+              />
+              <span className="text-sm text-sidebar-foreground/70">Account</span>
+            </div>
+          </Show>
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
+                <User className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+            </SignInButton>
+          </Show>
         </div>
       </aside>
 
@@ -234,9 +267,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 ))}
               </div>
               <div className="p-4 border-t border-sidebar-border">
-                <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
-                  <LogOut className="h-4 w-4 mr-2" /> Sign Out
-                </Button>
+                <Show when="signed-in">
+                  <div className="flex items-center gap-3 px-1">
+                    <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
+                    <span className="text-sm text-sidebar-foreground/70">Account</span>
+                  </div>
+                </Show>
+                <Show when="signed-out">
+                  <SignInButton mode="modal">
+                    <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
+                      <User className="h-4 w-4 mr-2" />
+                      Sign In
+                    </Button>
+                  </SignInButton>
+                </Show>
               </div>
             </SheetContent>
           </Sheet>

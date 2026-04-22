@@ -16,7 +16,7 @@ TaxAppeal DIY (formerly NY Property Tax Grievance Assistant) — a full-stack we
 - **API codegen**: Orval (from OpenAPI spec)
 - **Build**: esbuild (CJS bundle)
 - **Frontend**: React + Vite, Tailwind CSS, TanStack Query, react-hook-form, framer-motion
-- **Auth**: Replit Auth (OpenID Connect + PKCE), `openid-client` v6, PostgreSQL session store
+- **Auth**: Clerk (`@clerk/react` v6, `@clerk/express`, `@clerk/themes`) — soft auth (app fully accessible without sign-in; auth gates can be added later). Old OIDC/Replit Auth removed from api-server.
 
 ## Structure
 
