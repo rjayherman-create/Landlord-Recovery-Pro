@@ -2,7 +2,7 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { db, landlordCases, landlordCaseAttachments, landlordCasePayments } from "@workspace/db";
+import { db, landlordCases, landlordCaseAttachments, landlordCasePayments, tenantLeads, tenantContactAttempts } from "@workspace/db";
 import { eq, desc, sum } from "drizzle-orm";
 import {
   CreateLandlordCaseBody,
@@ -410,6 +410,152 @@ router.delete("/landlord-cases/:id/payments/:paymentId", async (req, res) => {
 
     res.status(204).send();
   } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
+});
+
+// ── Tenant Locator — Leads ────────────────────────────────────────────────────
+
+router.get("/landlord-cases/:id/leads", async (req, res) => {
+  try {
+    const caseId = parseInt(req.params.id, 10);
+    const rows = await db.select().from(tenantLeads).where(eq(tenantLeads.caseId, caseId)).orderBy(desc(tenantLeads.createdAt));
+    res.json(rows);
+  } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
+});
+
+router.post("/landlord-cases/:id/leads", async (req, res) => {
+  try {
+    const caseId = parseInt(req.params.id, 10);
+    const { type, value, source, status, notes } = req.body as {
+      type: string; value: string; source?: string; status?: string; notes?: string;
+    };
+    if (!type || !value) return res.status(400).json({ error: "type and value required" });
+    const [inserted] = await db.insert(tenantLeads).values({
+      caseId, type, value, source: source ?? null, status: status ?? "unverified", notes: notes ?? null,
+    }).returning();
+    res.status(201).json(inserted);
+  } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
+});
+
+router.patch("/landlord-cases/:id/leads/:leadId", async (req, res) => {
+  try {
+    const leadId = parseInt(req.params.leadId, 10);
+    const { status, notes } = req.body as { status?: string; notes?: string };
+    const updates: Record<string, any> = {};
+    if (status) updates.status = status;
+    if (notes !== undefined) updates.notes = notes;
+    const [updated] = await db.update(tenantLeads).set(updates).where(eq(tenantLeads.id, leadId)).returning();
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
+});
+
+router.delete("/landlord-cases/:id/leads/:leadId", async (req, res) => {
+  try {
+    const leadId = parseInt(req.params.leadId, 10);
+    await db.delete(tenantLeads).where(eq(tenantLeads.id, leadId));
+    res.status(204).send();
+  } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
+});
+
+// ── Tenant Locator — Contact Attempts ─────────────────────────────────────────
+
+router.get("/landlord-cases/:id/contacts", async (req, res) => {
+  try {
+    const caseId = parseInt(req.params.id, 10);
+    const rows = await db.select().from(tenantContactAttempts).where(eq(tenantContactAttempts.caseId, caseId)).orderBy(desc(tenantContactAttempts.contactedAt));
+    res.json(rows);
+  } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
+});
+
+router.post("/landlord-cases/:id/contacts", async (req, res) => {
+  try {
+    const caseId = parseInt(req.params.id, 10);
+    const { method, result, contactedAt } = req.body as { method: string; result?: string; contactedAt?: string };
+    if (!method) return res.status(400).json({ error: "method required" });
+    const [inserted] = await db.insert(tenantContactAttempts).values({
+      caseId,
+      method,
+      result: result ?? null,
+      contactedAt: contactedAt ? new Date(contactedAt) : new Date(),
+    }).returning();
+    res.status(201).json(inserted);
+  } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
+});
+
+router.delete("/landlord-cases/:id/contacts/:contactId", async (req, res) => {
+  try {
+    const contactId = parseInt(req.params.contactId, 10);
+    await db.delete(tenantContactAttempts).where(eq(tenantContactAttempts.id, contactId));
+    res.status(204).send();
+  } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
+});
+
+// ── Tenant Locator — AI Search Suggestions ────────────────────────────────────
+
+router.post("/landlord-cases/:id/locate/ai-suggest", async (req, res) => {
+  try {
+    const caseId = parseInt(req.params.id, 10);
+    const [c] = await db.select().from(landlordCases).where(eq(landlordCases.id, caseId));
+    if (!c) return res.status(404).json({ error: "not_found" });
+
+    const leadsRows = await db.select().from(tenantLeads).where(eq(tenantLeads.caseId, caseId));
+    const knownLeads = leadsRows.length > 0
+      ? leadsRows.map((l) => `${l.type}: ${l.value} (${l.status})`).join("\n")
+      : "None recorded yet";
+
+    const openai = getOpenAI();
+    const response = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content: "You are a research assistant helping a landlord locate a former tenant to serve legal papers or enforce a court judgment. Provide practical, safe, legal search strategies only. Never suggest accessing restricted databases or illegal methods.",
+        },
+        {
+          role: "user",
+          content: `Help me locate this tenant:
+
+Tenant Name: ${c.tenantName}
+Last Known Address: ${c.tenantAddress ?? "Unknown"}
+Phone on File: ${c.tenantPhone ?? "Unknown"}
+Email on File: ${c.tenantEmail ?? "Unknown"}
+Property State: ${c.state}
+Claim Type: ${c.claimType.replace(/_/g, " ")}
+
+Known leads so far:
+${knownLeads}
+
+Please provide:
+1. 3–5 specific Google search queries to try (use exact formats with quotes)
+2. Top 3 social media platforms to check and what to look for
+3. Any other practical steps based on what's already known
+4. A brief note on what to do once a new address or employer is confirmed
+
+Keep it concise, actionable, and numbered.`,
+        },
+      ],
+      max_tokens: 600,
+    });
+
+    const suggestions = response.choices[0]?.message?.content ?? "No suggestions available.";
+    res.json({ suggestions });
+  } catch (err: any) {
+    console.error("[locate/ai-suggest] Error:", err);
     res.status(500).json({ error: "server_error", message: err.message });
   }
 });

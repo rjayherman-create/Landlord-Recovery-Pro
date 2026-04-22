@@ -9,13 +9,14 @@ import {
 } from "@workspace/api-client-react";
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
-  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin, TrendingUp
+  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin, TrendingUp, Search
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { DocumentLibrary } from "@/components/shared/DocumentLibrary";
 import { CaseAdvisorChat } from "@/components/shared/CaseAdvisorChat";
 import JudgmentRecovery from "@/pages/JudgmentRecovery";
+import TenantLocator from "@/pages/TenantLocator";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,7 +55,7 @@ export default function CaseDetail() {
   const generateLetter = useGenerateDemandLetter();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"overview" | "documents" | "advisor" | "recovery">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "documents" | "advisor" | "recovery" | "locate">("overview");
 
   // Edit case dialog state
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -592,6 +593,18 @@ export default function CaseDetail() {
               <TrendingUp className="h-4 w-4" /> Recovery
             </button>
           )}
+          {["no_response", "filed", "hearing_scheduled", "judgment", "collection", "closed"].includes(caseData.status) && (
+            <button
+              onClick={() => setActiveTab("locate")}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                activeTab === "locate"
+                  ? "border-orange-600 text-orange-700"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Search className="h-4 w-4" /> Locate Tenant
+            </button>
+          )}
         </div>
       </div>
 
@@ -637,6 +650,28 @@ export default function CaseDetail() {
               caseId={caseId}
               tenantName={caseData.tenantName}
               judgmentAmount={caseData.judgmentAmount ? Number(caseData.judgmentAmount) : Number(caseData.claimAmount)}
+              state={caseData.state}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Locate Tenant Tab */}
+      {activeTab === "locate" && (
+        <div className="flex-1 min-h-0 border-t border-border bg-background">
+          <div className="max-w-2xl mx-auto px-4 py-6">
+            <div className="mb-5">
+              <h2 className="text-xl font-bold tracking-tight">Locate Tenant</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Organize leads, log contact attempts, and use the step-by-step search playbook to find {caseData.tenantName}.
+              </p>
+            </div>
+            <TenantLocator
+              caseId={caseId}
+              tenantName={caseData.tenantName}
+              tenantPhone={(caseData as any).tenantPhone}
+              tenantEmail={(caseData as any).tenantEmail}
+              tenantAddress={(caseData as any).tenantAddress}
               state={caseData.state}
             />
           </div>

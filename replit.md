@@ -162,6 +162,33 @@ Expo React Native app (iOS/Android/Web) — offline-first, separate from the web
 - `artifacts/taxappeal-mobile/app/(tabs)/settings.tsx` — Settings
 - `artifacts/taxappeal-mobile/context/CasesContext.tsx` — AsyncStorage-backed case state
 
+## Landlord Recovery — Tenant Locator Engine
+
+### DB Tables
+- `tenant_leads` — caseId, type (address/phone/employer/relative/social/other), value, source, status (unverified/verified/dead), notes
+- `tenant_contact_attempts` — caseId, method (call/text/email/visit/certified_mail/neighbor/relative), result, contactedAt
+
+### API Routes (Tenant Locator)
+- `GET /api/landlord-cases/:id/leads` — list all leads for a case
+- `POST /api/landlord-cases/:id/leads` — add a new lead
+- `PATCH /api/landlord-cases/:id/leads/:leadId` — update lead status/notes
+- `DELETE /api/landlord-cases/:id/leads/:leadId` — remove a lead
+- `GET /api/landlord-cases/:id/contacts` — list all contact attempts
+- `POST /api/landlord-cases/:id/contacts` — log a contact attempt
+- `DELETE /api/landlord-cases/:id/contacts/:contactId` — remove a contact attempt
+- `POST /api/landlord-cases/:id/locate/ai-suggest` — AI-generated search queries and platform strategy (GPT-4.1-mini)
+
+### Frontend
+- `artifacts/landlord-recovery/src/pages/TenantLocator.tsx` — full Tenant Locator component
+  - Tenant profile summary card (last known address, phone, email from case data)
+  - Next-action engine (reads leads + contacts to suggest the next step)
+  - AI search suggestions panel (custom Google queries, social platforms, follow-up actions)
+  - Lead tracker (type, value, source, status: unverified/verified/dead, notes; verify/dead/delete actions)
+  - Contact log (method, result, datetime; delete support)
+  - 8-step search playbook (collapsible)
+  - FDCPA / legal disclaimer
+- **Locate Tenant tab** in CaseDetail — appears from `no_response` status onwards (orange tab highlight)
+
 ## Bug Fixes Applied
 
 - **TypeScript `composite` flag** — `lib/replit-auth-web/tsconfig.json` fixed (was incorrectly named `composite-false`)
