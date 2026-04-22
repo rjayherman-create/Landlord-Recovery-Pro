@@ -9,7 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
-  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore
+  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -58,6 +58,38 @@ export default function CaseDetail() {
   // Edit case dialog state
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
+  const [generatingEditDesc, setGeneratingEditDesc] = useState(false);
+
+  const handleGenerateEditDesc = async () => {
+    if (!editForm.claimType || !editForm.state || !editForm.claimAmount) return;
+    setGeneratingEditDesc(true);
+    try {
+      const resp = await fetch("/api/landlord-cases/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          claimType: editForm.claimType,
+          state: editForm.state,
+          claimAmount: parseFloat(editForm.claimAmount),
+          monthlyRent: editForm.monthlyRent ? parseFloat(editForm.monthlyRent) : null,
+          rentPeriod: null,
+          tenantName: editForm.tenantName || null,
+          propertyAddress: editForm.propertyAddress || null,
+          leaseStartDate: editForm.leaseStartDate || null,
+          moveOutDate: editForm.moveOutDate || null,
+        }),
+      });
+      const data = await resp.json();
+      if (data.description) {
+        setEditForm(f => ({ ...f, description: data.description }));
+        toast({ title: "Description generated", description: "Review and edit as needed." });
+      }
+    } catch {
+      toast({ title: "Generation failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setGeneratingEditDesc(false);
+    }
+  };
 
   const openEdit = () => {
     if (!caseData) return;
@@ -409,8 +441,23 @@ export default function CaseDetail() {
                     )}
                   </div>
                   <div className="mt-3">
-                    <Label className="text-sm mb-1 block">Description</Label>
-                    <Textarea value={editForm.description || ""} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="min-h-[70px] text-sm" />
+                    <div className="flex items-center justify-between mb-1">
+                      <Label className="text-sm">Description</Label>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                        disabled={generatingEditDesc || !editForm.claimType || !editForm.state || !editForm.claimAmount}
+                        onClick={handleGenerateEditDesc}
+                      >
+                        {generatingEditDesc
+                          ? <><Loader2 className="h-3 w-3 animate-spin" /> Generating…</>
+                          : <><Sparkles className="h-3 w-3" /> Generate with AI</>
+                        }
+                      </Button>
+                    </div>
+                    <Textarea value={editForm.description || ""} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} className="min-h-[70px] text-sm" placeholder="Describe the case, or click Generate with AI above." />
                   </div>
                 </div>
 

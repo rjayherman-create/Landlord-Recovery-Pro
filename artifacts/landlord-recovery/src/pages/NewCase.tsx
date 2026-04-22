@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -113,6 +113,39 @@ export default function NewCase() {
 
   const watchedClaimType = useWatch({ control: form.control, name: "claimType" });
   const watchedMonthlyRent = useWatch({ control: form.control, name: "monthlyRent" });
+  const [generatingDesc, setGeneratingDesc] = useState(false);
+
+  const handleGenerateDesc = async () => {
+    const vals = form.getValues();
+    if (!vals.claimType || !vals.state || !vals.claimAmount) return;
+    setGeneratingDesc(true);
+    try {
+      const resp = await fetch("/api/landlord-cases/generate-description", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          claimType: vals.claimType,
+          state: vals.state,
+          claimAmount: vals.claimAmount,
+          monthlyRent: vals.monthlyRent || null,
+          rentPeriod: vals.rentPeriod || null,
+          tenantName: vals.tenantName || null,
+          propertyAddress: vals.propertyAddress || null,
+          leaseStartDate: vals.leaseStartDate || null,
+          moveOutDate: vals.moveOutDate || null,
+        }),
+      });
+      const data = await resp.json();
+      if (data.description) {
+        form.setValue("description", data.description, { shouldValidate: true });
+        toast({ title: "Description generated", description: "Review and edit as needed." });
+      }
+    } catch {
+      toast({ title: "Generation failed", description: "Please try again.", variant: "destructive" });
+    } finally {
+      setGeneratingDesc(false);
+    }
+  };
 
   const today = new Date();
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
@@ -412,10 +445,25 @@ export default function NewCase() {
                     name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Brief Description</FormLabel>
+                        <div className="flex items-center justify-between">
+                          <FormLabel>Brief Description</FormLabel>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                            disabled={generatingDesc || !form.getValues("claimType") || !form.getValues("state") || !form.getValues("claimAmount")}
+                            onClick={handleGenerateDesc}
+                          >
+                            {generatingDesc
+                              ? <><Loader2 className="h-3 w-3 animate-spin" /> Generating…</>
+                              : <><Sparkles className="h-3 w-3" /> Generate with AI</>
+                            }
+                          </Button>
+                        </div>
                         <FormControl>
                           <Textarea 
-                            placeholder="Briefly describe what happened (e.g., Tenant stopped paying rent in March and moved out leaving damage)." 
+                            placeholder="Briefly describe what happened, or click Generate with AI above to draft one from your case details." 
                             className="min-h-[100px]"
                             {...field} 
                           />

@@ -14,6 +14,7 @@ import {
   UpdateLandlordCaseStatusBody,
 } from "@workspace/api-zod";
 import OpenAI from "openai";
+import { generateCaseDescription } from "../services/ai";
 
 const UPLOADS_DIR = path.join(process.cwd(), "uploads");
 if (!fs.existsSync(UPLOADS_DIR)) fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -179,6 +180,35 @@ router.delete("/landlord-cases/:id", async (req, res) => {
     res.status(204).send();
   } catch (err) {
     res.status(500).json({ error: "Failed to delete case", message: String(err) });
+  }
+});
+
+router.post("/landlord-cases/generate-description", async (req, res) => {
+  try {
+    const {
+      claimType, state, claimAmount, monthlyRent, rentPeriod,
+      tenantName, propertyAddress, leaseStartDate, moveOutDate,
+    } = req.body as any;
+
+    if (!claimType || !state || !claimAmount) {
+      return res.status(400).json({ error: "claimType, state, and claimAmount are required" });
+    }
+
+    const description = await generateCaseDescription({
+      claimType,
+      state,
+      claimAmount: Number(claimAmount),
+      monthlyRent: monthlyRent ? Number(monthlyRent) : null,
+      rentPeriod: rentPeriod || null,
+      tenantName: tenantName || null,
+      propertyAddress: propertyAddress || null,
+      leaseStartDate: leaseStartDate || null,
+      moveOutDate: moveOutDate || null,
+    });
+
+    res.json({ description });
+  } catch (err) {
+    res.status(500).json({ error: "Failed to generate description", message: String(err) });
   }
 });
 
