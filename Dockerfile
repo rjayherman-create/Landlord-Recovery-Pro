@@ -9,31 +9,28 @@ COPY .npmrc .npmrc
 
 COPY lib/ lib/
 COPY artifacts/api-server/ artifacts/api-server/
-COPY artifacts/property-tax-grievance/ artifacts/property-tax-grievance/
+COPY artifacts/landlord-recovery/ artifacts/landlord-recovery/
 
 RUN pnpm install --no-frozen-lockfile
 
-RUN BASE_PATH=/ NODE_ENV=production pnpm --filter @workspace/property-tax-grievance run build
+# Build the landlord-recovery frontend at root base path for production
+RUN BASE_PATH=/ NODE_ENV=production pnpm --filter @workspace/landlord-recovery run build
 
+# Build the API server
 RUN pnpm --filter @workspace/api-server run build
 
-RUN rm -rf artifacts/api-server/public && \
-    mkdir -p artifacts/api-server/public && \
-    cp -r artifacts/property-tax-grievance/dist/public/* artifacts/api-server/public/
-
-# Remove dev-only packages to keep image lean before copying to runner
+# Remove devDependencies before copying node_modules to runner
 RUN pnpm prune --prod
 
 FROM node:20-slim AS runner
 
 WORKDIR /app
 
-# Copy the pruned node_modules — pdfkit and other runtime-external packages live here
-# pnpm uses relative symlinks inside node_modules so they survive the multi-stage copy
+# pnpm uses relative symlinks inside node_modules — they survive multi-stage copy
 COPY --from=builder /app/node_modules ./node_modules
 
 COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
-COPY --from=builder /app/artifacts/api-server/public ./artifacts/api-server/public
+COPY --from=builder /app/artifacts/landlord-recovery/dist/public ./artifacts/landlord-recovery/dist/public
 
 ENV NODE_ENV=production
 ENV PORT=8080
