@@ -39,9 +39,10 @@ async function initStripe() {
 
 const PORT = Number(process.env.PORT) || 8080;
 
-await initStripe();
-
+// Start listening immediately so health checks pass while init runs in the background
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
   startReminderRunner();
+  // Non-blocking background init — server is already accepting requests
+  initStripe().catch((err) => console.error("Stripe init error:", err));
 });

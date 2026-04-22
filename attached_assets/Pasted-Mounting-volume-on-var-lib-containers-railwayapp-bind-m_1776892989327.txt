@@ -1,0 +1,22 @@
+Mounting volume on: /var/lib/containers/railwayapp/bind-mounts/56338d75-074f-4554-ba4b-d68e3ea16168/vol_net57z3d5fw7jz77
+2026-04-22 21:07:16.080 UTC [7] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-04-22 21:07:16.089 UTC [33] LOG:  database system was interrupted; last known up at 2026-04-22 21:03:18 UTC
+Certificate will not expire
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+2026-04-22 21:07:16.070 UTC [7] LOG:  starting PostgreSQL 18.3 (Debian 18.3-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+2026-04-22 21:07:16.070 UTC [7] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-04-22 21:07:16.070 UTC [7] LOG:  listening on IPv6 address "::", port 5432
+2026-04-22 21:07:16.470 UTC [31] LOG:  checkpoint starting: end-of-recovery immediate wait
+2026-04-22 21:07:16.491 UTC [31] LOG:  checkpoint complete: wrote 0 buffers (0.0%), wrote 3 SLRU buffers; 0 WAL file(s) added, 0 removed, 0 recycled; write=0.007 s, sync=0.004 s, total=0.024 s; sync files=2, longest=0.002 s, average=0.002 s; distance=0 kB, estimate=0 kB; lsn=0/1BEF7C8, redo lsn=0/1BEF7C8
+2026-04-22 21:07:16.456 UTC [33] LOG:  database system was not properly shut down; automatic recovery in progress
+2026-04-22 21:07:16.462 UTC [33] LOG:  redo starts at 0/1BEF790
+2026-04-22 21:07:16.462 UTC [33] LOG:  invalid record length at 0/1BEF7C8: expected at least 24, got 0
+2026-04-22 21:07:16.462 UTC [33] LOG:  redo done at 0/1BEF790 system usage: CPU: user: 0.00 s, system: 0.00 s, elapsed: 0.00 s
+2026-04-22 21:07:16.498 UTC [7] LOG:  database system is ready to accept connections
+Starting Container
+2026-04-22 21:08:36.727 UTC [40] LOG:  invalid length of startup packet
+2026-04-22 21:08:36.307 UTC [37] LOG:  invalid length of startup packet
+2026-04-22 21:08:36.429 UTC [38] LOG:  invalid length of startup packet
+2026-04-22 21:08:36.551 UTC [39] LOG:  invalid length of startup packet
+2026-04-22 21:08:36.849 UTC [41] LOG:  invalid length of startup packet
+2026-04-22 21:08:36.971 UTC [42] LOG:  invalid length of startup packet
