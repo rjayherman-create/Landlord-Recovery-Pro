@@ -1,0 +1,172 @@
+import { useState } from "react";
+
+export default function CaseDetail() {
+  const [payments, setPayments] = useState<any[]>([]);
+
+  const caseData = {
+    tenant: "David Kim",
+    address: "14 Ocean Ave, Unit 1, Brooklyn, NY",
+    amount: 4350,
+    recovered: 800,
+    status: "Filed",
+  };
+
+  const remaining = caseData.amount - caseData.recovered;
+
+  const addPayment = () => {
+    const val = prompt("Enter payment amount:");
+    if (!val) return;
+
+    const amount = Number(val);
+    setPayments([...payments, { amount }]);
+  };
+
+  return (
+    <div className="p-6 bg-gray-50 min-h-screen">
+      {/* HEADER */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold">
+          {caseData.tenant}
+        </h1>
+        <p className="text-gray-500">{caseData.address}</p>
+      </div>
+
+      {/* SUMMARY CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <Card title="Claim Amount" value={caseData.amount} />
+        <Card title="Recovered" value={caseData.recovered} green />
+        <Card title="Remaining" value={remaining} />
+        <StatusCard status={caseData.status} />
+      </div>
+
+      {/* NEXT ACTION */}
+      <div className="bg-white p-4 rounded-xl shadow mb-6">
+        <h2 className="font-semibold mb-2">Next Step</h2>
+
+        <div className="flex justify-between items-center border p-3 rounded-lg">
+          <div>
+            <p className="font-medium">Serve Tenant</p>
+            <p className="text-sm text-gray-500">
+              Required before case proceeds
+            </p>
+          </div>
+
+          <button className="bg-blue-600 text-white px-4 py-2 rounded">
+            View Instructions
+          </button>
+        </div>
+      </div>
+
+      {/* COLLECTION SECTION */}
+      <div className="bg-white p-4 rounded-xl shadow mb-6">
+        <h2 className="font-semibold mb-3">
+          Judgment & Collection
+        </h2>
+
+        <div className="space-y-2">
+          <button className="w-full border p-3 rounded text-left hover:bg-gray-50">
+            Wage Garnishment Guide →
+          </button>
+
+          <button className="w-full border p-3 rounded text-left hover:bg-gray-50">
+            Payment Plan Template →
+          </button>
+
+          <button className="w-full border p-3 rounded text-left hover:bg-gray-50">
+            Locate Tenant →
+          </button>
+        </div>
+      </div>
+
+      {/* PAYMENTS */}
+      <div className="bg-white p-4 rounded-xl shadow mb-6">
+        <div className="flex justify-between mb-3">
+          <h2 className="font-semibold">Payments</h2>
+
+          <button
+            onClick={addPayment}
+            className="text-blue-600"
+          >
+            + Add Payment
+          </button>
+        </div>
+
+        {payments.length === 0 && (
+          <p className="text-gray-500 text-sm">
+            No payments recorded yet
+          </p>
+        )}
+
+        <ul className="space-y-2">
+          {payments.map((p, i) => (
+            <li
+              key={i}
+              className="border p-2 rounded flex justify-between"
+            >
+              <span>${p.amount}</span>
+              <span className="text-gray-500 text-sm">
+                Recorded
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* TIMELINE */}
+      <div className="bg-white p-4 rounded-xl shadow">
+        <h2 className="font-semibold mb-3">
+          Case Timeline
+        </h2>
+
+        <ul className="space-y-3 text-sm">
+          <li>✔ Case created</li>
+          <li>✔ Filed in court</li>
+          <li>⏳ Awaiting service</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+/* COMPONENTS */
+
+function Card({
+  title,
+  value,
+  green,
+}: {
+  title: string;
+  value: number;
+  green?: boolean;
+}) {
+  return (
+    <div className="bg-white p-4 rounded-xl shadow">
+      <p className="text-sm text-gray-500">{title}</p>
+      <p
+        className={`text-xl font-bold ${
+          green ? "text-green-600" : ""
+        }`}
+      >
+        ${value.toLocaleString()}
+      </p>
+    </div>
+  );
+}
+
+function StatusCard({ status }: { status: string }) {
+  const color =
+    status === "Won"
+      ? "text-green-600"
+      : status === "Filed"
+      ? "text-blue-600"
+      : "text-gray-600";
+
+  return (
+    <div className="bg-white p-4 rounded-xl shadow">
+      <p className="text-sm text-gray-500">Status</p>
+      <p className={`text-xl font-bold ${color}`}>
+        {status}
+      </p>
+    </div>
+  );
+}
