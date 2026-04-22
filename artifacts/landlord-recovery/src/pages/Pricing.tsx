@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 
-const FALLBACK_PRICE_ID = "price_1TOz9gQ8y9ngfv5WSObikSrk";
+const FALLBACK_PRICE_ID = "price_1TOzGmAYpygKlmLIeC4dB0oM";
 
 async function fetchProPrice(): Promise<{ priceId: string; unitAmount: number }> {
   try {

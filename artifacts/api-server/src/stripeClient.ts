@@ -1,8 +1,13 @@
 import Stripe from 'stripe';
 
-let connectionSettings: any;
+async function getCredentials(): Promise<{ secretKey: string; publishableKey: string }> {
+  if (process.env.STRIPE_API_KEY) {
+    return {
+      secretKey: process.env.STRIPE_API_KEY,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
+    };
+  }
 
-async function getCredentials() {
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
   const xReplitToken = process.env.REPL_IDENTITY
     ? 'repl ' + process.env.REPL_IDENTITY
@@ -10,8 +15,8 @@ async function getCredentials() {
       ? 'depl ' + process.env.WEB_REPL_RENEWAL
       : null;
 
-  if (!xReplitToken) {
-    throw new Error('X-Replit-Token not found for repl/depl');
+  if (!xReplitToken || !hostname) {
+    throw new Error('No Stripe credentials found. Set STRIPE_API_KEY or configure the Stripe connector.');
   }
 
   const connectorName = 'stripe';
@@ -31,15 +36,15 @@ async function getCredentials() {
   });
 
   const data = await response.json();
-  connectionSettings = data.items?.[0];
+  const conn = data.items?.[0];
 
-  if (!connectionSettings || !connectionSettings.settings.publishable || !connectionSettings.settings.secret) {
-    throw new Error(`Stripe ${targetEnvironment} connection not found`);
+  if (!conn?.settings?.secret) {
+    throw new Error(`Stripe ${targetEnvironment} connector connection not found.`);
   }
 
   return {
-    publishableKey: connectionSettings.settings.publishable,
-    secretKey: connectionSettings.settings.secret,
+    publishableKey: conn.settings.publishable ?? '',
+    secretKey: conn.settings.secret,
   };
 }
 
