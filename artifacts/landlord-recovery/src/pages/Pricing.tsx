@@ -9,16 +9,20 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQuery } from "@tanstack/react-query";
 
-async function fetchProPrice(): Promise<{ priceId: string; unitAmount: number } | null> {
-  const res = await fetch("/api/stripe/products");
-  if (!res.ok) return null;
-  const { data } = await res.json();
-  const pro = (data as any[]).find((p: any) =>
-    p.name?.toLowerCase().includes("recovery pro") || p.name?.toLowerCase().includes("pro")
-  );
-  if (!pro) return null;
-  const price = pro.prices?.[0];
-  return price ? { priceId: price.id, unitAmount: price.unit_amount } : null;
+const FALLBACK_PRICE_ID = "price_1TOz9gQ8y9ngfv5WSObikSrk";
+
+async function fetchProPrice(): Promise<{ priceId: string; unitAmount: number }> {
+  try {
+    const res = await fetch("/api/stripe/products");
+    if (!res.ok) throw new Error("api error");
+    const { data } = await res.json();
+    const pro = (data as any[]).find((p: any) =>
+      p.name?.toLowerCase().includes("recovery pro") || p.name?.toLowerCase().includes("pro")
+    );
+    const price = pro?.prices?.[0];
+    if (price?.id) return { priceId: price.id, unitAmount: price.unit_amount };
+  } catch {}
+  return { priceId: FALLBACK_PRICE_ID, unitAmount: 9900 };
 }
 
 export default function Pricing() {

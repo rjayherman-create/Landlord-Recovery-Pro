@@ -1,7 +1,7 @@
 import app from "./app.js";
 import { startReminderRunner } from "./services/reminders.js";
 import { runMigrations } from "stripe-replit-sync";
-import { getStripeSync } from "./stripeClient.js";
+import { getStripeSync, resetStripeSync } from "./stripeClient.js";
 
 process.on("uncaughtException", (err) => {
   console.error("UNCAUGHT EXCEPTION:", err);
@@ -22,6 +22,8 @@ async function initStripe() {
     await runMigrations({ databaseUrl, schema: "stripe" });
     console.log("Stripe schema ready");
 
+    // Reset singleton so it picks up the fully-initialized schema
+    resetStripeSync();
     const stripeSync = await getStripeSync();
     const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0]}`;
     await stripeSync.findOrCreateManagedWebhook(`${webhookBaseUrl}/api/stripe/webhook`);

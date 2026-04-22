@@ -60,6 +60,10 @@ export async function getStripeSecretKey(): Promise<string> {
 
 let stripeSync: any = null;
 
+export function resetStripeSync() {
+  stripeSync = null;
+}
+
 export async function getStripeSync() {
   if (!stripeSync) {
     const { StripeSync } = await import('stripe-replit-sync');
