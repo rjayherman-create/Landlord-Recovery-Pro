@@ -1,0 +1,223 @@
+YSTEM: “Tenant Locator Engine” (SAFE + POWERFUL)
+
+Your role:
+
+“Help landlords organize information, guide searches, and track leads to locate former tenants.”
+
+🔷 CORE IDEA
+
+Instead of “we find the tenant,” your system is:
+
+✅ Lead Collection
+✅ Search Guidance
+✅ Data Organization
+✅ Follow-up Tracking
+🔷 MODULE 1 — TENANT PROFILE (START HERE)
+Database Table
+tenantProfiles = {
+  id,
+  userId,
+
+  fullName,
+  phone,
+  email,
+
+  lastKnownAddress,
+  employer,
+  relatives,
+
+  notes
+}
+UI
+Tenant: John Smith
+
+Last Known Address:
+123 Main St, Hempstead, NY
+
+Phone: (555) 123-4567
+Employer: Unknown
+
+[ Add Info ]
+🔷 MODULE 2 — LEAD TRACKING SYSTEM (THIS IS KEY)
+Table
+tenantLeads = {
+  id,
+  tenantId,
+
+  type: "address" | "phone" | "employer" | "relative",
+  value,
+  source,
+  status: "unverified" | "verified",
+  createdAt
+}
+UI
+Leads:
+
+✔ 45 Oak St – possible new address (Craigslist listing)
+✔ Employer: ABC Construction (old lease reference)
+✔ Phone: disconnected
+
+[ Add New Lead ]
+🔷 MODULE 3 — SEARCH PLAYBOOK (THE MAGIC)
+
+This is what users actually follow.
+
+🔍 Step-by-Step Search Guide
+1. Check Previous Application Data
+rental application
+references
+employer
+2. Search Online Listings
+Facebook Marketplace
+Craigslist
+Zillow rentals
+
+Look for:
+
+similar name
+same phone number
+same employer
+3. Google Search
+"John Smith" Hempstead NY
+"John Smith" apartment
+phone number search
+4. Contact References
+emergency contacts
+relatives
+5. Visit Last Known Address
+ask neighbors
+check mail forwarding
+🔷 MODULE 4 — AI SEARCH ASSISTANT
+
+You can add:
+
+Input:
+Tenant Name + Last Address
+Output:
+Suggested search queries
+Likely platforms to check
+Strategy tips
+
+Example:
+
+“Search Facebook groups in Nassau County. Try variations of the tenant’s name.”
+
+🔷 MODULE 5 — PROGRESS TRACKER
+Status: Searching
+
+Leads Found: 5
+Verified: 1
+
+Last Activity: 2 days ago
+🔷 MODULE 6 — CONTACT LOG
+Table
+contactAttempts = {
+  id,
+  tenantId,
+
+  method: "call" | "visit" | "message",
+  result,
+  date
+}
+UI
+Contact Attempts:
+
+✔ Called – no answer
+✔ Text sent – no reply
+✔ Spoke to neighbor – moved 2 months ago
+🔷 MODULE 7 — NEXT ACTION ENGINE
+
+This is HUGE.
+
+if (noLeads) → "Search online listings"
+if (hasEmployer) → "Prepare wage garnishment"
+if (newAddressFound) → "Proceed with service"
+🔷 FRONTEND COMPONENT (DROP-IN)
+/components/TenantLocator.tsx
+import { useState } from "react";
+
+export default function TenantLocator() {
+  const [leads, setLeads] = useState<any[]>([]);
+
+  const addLead = () => {
+    const value = prompt("Enter new lead:");
+    if (!value) return;
+
+    setLeads([...leads, { value, status: "unverified" }]);
+  };
+
+  return (
+    <div className="p-6 bg-white rounded-xl shadow">
+      <h2 className="text-xl font-bold mb-4">
+        Tenant Locator
+      </h2>
+
+      <button
+        onClick={addLead}
+        className="bg-blue-600 text-white px-4 py-2 rounded mb-4"
+      >
+        Add Lead
+      </button>
+
+      <ul>
+        {leads.map((lead, i) => (
+          <li key={i} className="border p-2 mb-2">
+            {lead.value} ({lead.status})
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+Give feedback
+⚠️ VERY IMPORTANT — LEGAL SAFETY
+
+Your app MUST NOT:
+
+❌ Access restricted databases
+❌ Sell personal data
+❌ Claim to “track” people
+❌ Act like a skip tracing service
+
+Add disclaimer:
+This tool provides organizational and research guidance only. Users are responsible for complying with all applicable laws when locating individuals.
+🔥 WHAT MAKES THIS POWERFUL
+
+Most landlords:
+
+❌ Give up when tenant disappears
+
+You give them:
+
+✅ A system
+✅ A process
+✅ Persistence
+
+🔥 HOW THIS CONNECTS
+
+This plugs into:
+
+→ Judgment Recovery
+→ Service of Process
+→ Payment Collection
+🔥 MONETIZATION
+Free:
+Basic tracking
+Paid:
+AI search suggestions
+Advanced playbooks
+Data organization tools
+🏁 FINAL POSITION
+
+You now have:
+
+✔ Court filing
+✔ Service guidance
+✔ Judgment recovery
+✔ Tenant locator
+
+This is no longer an app.
+
+This is:
+
+A landlord recovery operating system

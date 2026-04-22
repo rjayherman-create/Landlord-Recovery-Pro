@@ -9,12 +9,13 @@ import {
 } from "@workspace/api-client-react";
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
-  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin
+  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin, TrendingUp
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { DocumentLibrary } from "@/components/shared/DocumentLibrary";
 import { CaseAdvisorChat } from "@/components/shared/CaseAdvisorChat";
+import JudgmentRecovery from "@/pages/JudgmentRecovery";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -53,7 +54,7 @@ export default function CaseDetail() {
   const generateLetter = useGenerateDemandLetter();
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<"overview" | "documents" | "advisor">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "documents" | "advisor" | "recovery">("overview");
 
   // Edit case dialog state
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -579,6 +580,18 @@ export default function CaseDetail() {
           >
             <span className="text-base leading-none">✦</span> AI Advisor
           </button>
+          {["judgment", "collection", "closed"].includes(caseData.status) && (
+            <button
+              onClick={() => setActiveTab("recovery")}
+              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
+                activeTab === "recovery"
+                  ? "border-green-600 text-green-700"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <TrendingUp className="h-4 w-4" /> Recovery
+            </button>
+          )}
         </div>
       </div>
 
@@ -607,6 +620,26 @@ export default function CaseDetail() {
             moveOutDate: caseData.moveOutDate,
             leaseStartDate: caseData.leaseStartDate,
           }} />
+        </div>
+      )}
+
+      {/* Recovery Tab */}
+      {activeTab === "recovery" && (
+        <div className="flex-1 min-h-0 border-t border-border bg-background">
+          <div className="max-w-2xl mx-auto px-4 py-6">
+            <div className="mb-5">
+              <h2 className="text-xl font-bold tracking-tight">Judgment Recovery</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Track collection progress, choose a recovery strategy, and log every payment received.
+              </p>
+            </div>
+            <JudgmentRecovery
+              caseId={caseId}
+              tenantName={caseData.tenantName}
+              judgmentAmount={caseData.judgmentAmount ? Number(caseData.judgmentAmount) : Number(caseData.claimAmount)}
+              state={caseData.state}
+            />
+          </div>
         </div>
       )}
 

@@ -2,8 +2,8 @@ import { Router } from "express";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { db, landlordCases, landlordCaseAttachments } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { db, landlordCases, landlordCaseAttachments, landlordCasePayments } from "@workspace/db";
+import { eq, desc, sum } from "drizzle-orm";
 import {
   CreateLandlordCaseBody,
   UpdateLandlordCaseBody,
@@ -335,6 +335,83 @@ router.use("/landlord-attachments/file", (req: any, res: any) => {
   const filePath = path.join(UPLOADS_DIR, filename);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: "not_found" });
   res.sendFile(filePath);
+});
+
+// ── Judgment Payments ─────────────────────────────────────────────────────────
+
+router.get("/landlord-cases/:id/payments", async (req, res) => {
+  try {
+    const caseId = parseInt(req.params.id, 10);
+    if (!caseId) return res.status(400).json({ error: "invalid_id" });
+    const rows = await db
+      .select()
+      .from(landlordCasePayments)
+      .where(eq(landlordCasePayments.caseId, caseId))
+      .orderBy(desc(landlordCasePayments.paymentDate));
+    res.json(rows.map((r) => ({ ...r, amount: String(r.amount) })));
+  } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
+});
+
+router.post("/landlord-cases/:id/payments", async (req, res) => {
+  try {
+    const caseId = parseInt(req.params.id, 10);
+    if (!caseId) return res.status(400).json({ error: "invalid_id" });
+
+    const { amount, paymentDate, method, notes } = req.body as {
+      amount: string; paymentDate: string; method: string; notes?: string;
+    };
+    if (!amount || !paymentDate) return res.status(400).json({ error: "amount and paymentDate required" });
+
+    const [inserted] = await db
+      .insert(landlordCasePayments)
+      .values({ caseId, amount, paymentDate, method: method ?? "other", notes: notes ?? null })
+      .returning();
+
+    // Recalculate and update recoveredAmount on the case
+    const [agg] = await db
+      .select({ total: sum(landlordCasePayments.amount) })
+      .from(landlordCasePayments)
+      .where(eq(landlordCasePayments.caseId, caseId));
+    const newTotal = String(agg?.total ?? "0");
+
+    await db
+      .update(landlordCases)
+      .set({ recoveredAmount: newTotal, updatedAt: new Date() })
+      .where(eq(landlordCases.id, caseId));
+
+    res.status(201).json({ ...inserted, amount: String(inserted.amount) });
+  } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
+});
+
+router.delete("/landlord-cases/:id/payments/:paymentId", async (req, res) => {
+  try {
+    const caseId = parseInt(req.params.id, 10);
+    const paymentId = parseInt(req.params.paymentId, 10);
+
+    await db
+      .delete(landlordCasePayments)
+      .where(eq(landlordCasePayments.id, paymentId));
+
+    // Recalculate recovered amount
+    const [agg] = await db
+      .select({ total: sum(landlordCasePayments.amount) })
+      .from(landlordCasePayments)
+      .where(eq(landlordCasePayments.caseId, caseId));
+    const newTotal = String(agg?.total ?? "0");
+
+    await db
+      .update(landlordCases)
+      .set({ recoveredAmount: newTotal, updatedAt: new Date() })
+      .where(eq(landlordCases.id, caseId));
+
+    res.status(204).send();
+  } catch (err: any) {
+    res.status(500).json({ error: "server_error", message: err.message });
+  }
 });
 
 export default router;

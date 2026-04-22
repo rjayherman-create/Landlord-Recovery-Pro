@@ -1,0 +1,171 @@
+🔷 CORE FLOW
+
+After user wins case:
+
+✅ Judgment Entered: $3,250
+
+Next Step: Recover Your Money
+🔷 MODULE 1 — CASE STATUS TRACKER
+Database Table
+judgments = {
+  id,
+  userId,
+  caseId,
+  tenantName,
+  amount,
+  dateEntered,
+  status: "uncollected" | "in_progress" | "collected",
+  notes
+}
+UI
+Judgment Status: UNCOLLECTED
+Amount Owed: $3,250
+
+Actions:
+[ Start Collection ]
+🔷 MODULE 2 — COLLECTION OPTIONS ENGINE
+
+This is the core intelligence.
+
+🧾 Show User Their Options
+1. Wage Garnishment
+If tenant has a job
+Most reliable long-term
+2. Bank Levy
+If bank account known
+Fast but requires info
+3. Property Lien
+If tenant owns real estate
+Long-term play
+4. Payment Plan
+Direct agreement
+Very realistic for your market
+5. Skip / Locate Tenant
+If they disappeared
+🔷 MODULE 3 — SMART DECISION ENGINE
+
+This is where you dominate.
+
+Ask user:
+Does tenant have a job? (yes/no)
+Do you know employer? (yes/no)
+Do you know bank? (yes/no)
+Did tenant move? (yes/no)
+Logic:
+if (knowsEmployer) → recommend "Wage Garnishment"
+if (knowsBank) → recommend "Bank Levy"
+if (tenantMoved) → recommend "Locate Tenant"
+else → recommend "Payment Plan"
+🔷 MODULE 4 — STEP-BY-STEP PLAYBOOKS
+
+This is GOLD.
+
+Example: Wage Garnishment
+Step 1: Request income execution form
+Step 2: Submit to sheriff
+Step 3: Sheriff serves employer
+Step 4: Employer deducts wages
+Example: Payment Plan
+Step 1: Contact tenant
+Step 2: Offer structured plan
+Step 3: Get agreement in writing
+Step 4: Track payments
+🔷 MODULE 5 — PAYMENT TRACKER (VERY IMPORTANT)
+Table
+payments = {
+  id,
+  judgmentId,
+  amount,
+  date,
+  method,
+}
+UI
+Total Judgment: $3,250
+Collected: $800
+Remaining: $2,450
+
+[ Add Payment ]
+🔷 MODULE 6 — TENANT LOCATOR (HUGE FEATURE)
+
+You already mentioned this earlier — now it fits here.
+
+What you provide:
+Last known address tracking
+“Where might they be?” prompts
+Manual entry logs
+Later upgrade:
+Paid skip tracing API
+🔷 MODULE 7 — DOCUMENT GENERATOR
+
+Reuse your existing system:
+
+Generate:
+
+Demand Letter
+Payment Agreement
+Garnishment Forms (state-specific later)
+🔷 MODULE 8 — REMINDER SYSTEM
+Follow up with tenant in 7 days
+Check payment status
+Renew judgment (before expiration)
+🔷 MODULE 9 — STATE RULE ENGINE (LIGHT VERSION)
+
+Example:
+
+NY: judgment valid 20 years
+Some states: 5–10 years
+Table:
+stateRules = {
+  state,
+  judgmentDurationYears,
+}
+🔷 FRONTEND COMPONENT (DROP-IN)
+/components/JudgmentRecovery.tsx
+import { useState } from "react";
+
+export default function JudgmentRecovery() {
+  const [amount, setAmount] = useState(3250);
+  const [collected, setCollected] = useState(0);
+
+  const remaining = amount - collected;
+
+  return (
+    <div className="p-6 bg-white rounded-xl shadow">
+      <h2 className="text-xl font-bold mb-4">
+        Judgment Recovery
+      </h2>
+
+      <p>Total: ${amount}</p>
+      <p>Collected: ${collected}</p>
+      <p className="font-bold">Remaining: ${remaining}</p>
+
+      <div className="mt-4 space-y-2">
+        <button className="bg-green-600 text-white px-4 py-2 rounded">
+          Add Payment
+        </button>
+
+        <button className="bg-blue-600 text-white px-4 py-2 rounded">
+          Start Collection Plan
+        </button>
+      </div>
+    </div>
+  );
+}
+Give feedback
+🔥 WHAT MAKES THIS POWERFUL (YOUR EDGE)
+
+You said:
+
+tenants don’t have money → landlords give up
+
+So your system must:
+
+✔ Encourage persistence
+✔ Show realistic paths
+✔ Track progress over time
+🔥 REALITY YOU SHOULD BUILD INTO UX
+
+Add messaging like:
+
+Most judgments are not collected immediately.
+Persistence over months or years increases success.

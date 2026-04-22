@@ -10,3 +10,4 @@ export * from "./recovery-cases";
 export * from "./landlord-cases";
 export * from "./landlord-case-attachments";
 export * from "./courts";
+export * from "./landlord-case-payments";
