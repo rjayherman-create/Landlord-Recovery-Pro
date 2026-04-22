@@ -601,48 +601,6 @@ export default function CaseDetail() {
           </Dialog>
         </div>
 
-        {/* Pipeline Stepper */}
-        <div className="mt-6 mb-2">
-          <div className="relative flex items-center justify-between">
-            {/* Connector line */}
-            <div className="absolute top-4 left-0 right-0 h-0.5 bg-border z-0" />
-            <div
-              className="absolute top-4 left-0 h-0.5 bg-primary z-0 transition-all duration-500"
-              style={{ width: currentStatusIndex === 0 ? '0%' : `${(currentStatusIndex / (STATUS_PROGRESS.length - 1)) * 100}%` }}
-            />
-            {STATUS_PROGRESS.map((s, i) => {
-              const isCompleted = i < currentStatusIndex;
-              const isCurrent = i === currentStatusIndex;
-              return (
-                <div key={s.id} className="relative z-10 flex flex-col items-center gap-1.5 min-w-0">
-                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
-                    isCompleted
-                      ? 'bg-primary border-primary text-primary-foreground'
-                      : isCurrent
-                      ? 'bg-background border-primary text-primary ring-4 ring-primary/10'
-                      : 'bg-background border-border text-muted-foreground'
-                  }`}>
-                    {isCompleted
-                      ? <CheckCircle2 className="h-4 w-4" />
-                      : <span className="text-xs font-bold">{i + 1}</span>
-                    }
-                  </div>
-                  <div className="hidden sm:flex flex-col items-center leading-tight">
-                    <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                      Step {i + 1}
-                    </span>
-                    <span className={`text-[10px] font-medium text-center ${
-                      isCurrent ? 'text-primary' : isCompleted ? 'text-foreground' : 'text-muted-foreground'
-                    }`}>
-                      {s.label}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Tab Bar */}
         <div className="flex gap-1 mt-6 border-b border-border">
           <button
