@@ -53,6 +53,7 @@ export default function HowItWorks() {
               </div>
               
               <div className="bg-card border border-border p-6 rounded-xl shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-widest text-primary/50 mb-1">Step {index + 1}</p>
                 <h3 className="text-xl font-bold mb-3">{step.title}</h3>
                 <p className="text-muted-foreground leading-relaxed">
                   {step.description}
