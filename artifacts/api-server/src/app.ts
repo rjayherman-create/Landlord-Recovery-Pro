@@ -76,13 +76,18 @@ app.get("/api/health", (_req, res) => {
 });
 
 if (process.env.NODE_ENV === "production") {
-  const staticDir = path.join(
-    process.cwd(),
-    "artifacts/property-tax-grievance/dist/public"
-  );
-  app.use(express.static(staticDir));
-  app.get("*", (_req, res) => {
-    res.sendFile(path.join(staticDir, "index.html"));
+  // Landlord Recovery — served at /landlord-recovery/*
+  const landlordDir = path.join(process.cwd(), "artifacts/landlord-recovery/dist/public");
+  app.use("/landlord-recovery", express.static(landlordDir));
+  app.get("/landlord-recovery/*path", (_req, res) => {
+    res.sendFile(path.join(landlordDir, "index.html"));
+  });
+
+  // Property Tax Grievance — served as catch-all at /
+  const ptgDir = path.join(process.cwd(), "artifacts/property-tax-grievance/dist/public");
+  app.use(express.static(ptgDir));
+  app.get("*path", (_req, res) => {
+    res.sendFile(path.join(ptgDir, "index.html"));
   });
 }
 
