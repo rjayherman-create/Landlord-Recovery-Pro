@@ -21,15 +21,16 @@ RUN rm -rf artifacts/api-server/public && \
     mkdir -p artifacts/api-server/public && \
     cp -r artifacts/property-tax-grievance/dist/public/* artifacts/api-server/public/
 
-# Bundle production deps (pdfkit etc.) into a standalone folder — no devDeps, no symlinks
-RUN pnpm --filter @workspace/api-server deploy --prod /tmp/api-deploy
+# Remove dev-only packages to keep image lean before copying to runner
+RUN pnpm prune --prod
 
 FROM node:20-slim AS runner
 
 WORKDIR /app
 
-# Runtime node_modules: pdfkit and any other packages that cannot be bundled
-COPY --from=builder /tmp/api-deploy/node_modules ./node_modules
+# Copy the pruned node_modules — pdfkit and other runtime-external packages live here
+# pnpm uses relative symlinks inside node_modules so they survive the multi-stage copy
+COPY --from=builder /app/node_modules ./node_modules
 
 COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
 COPY --from=builder /app/artifacts/api-server/public ./artifacts/api-server/public
