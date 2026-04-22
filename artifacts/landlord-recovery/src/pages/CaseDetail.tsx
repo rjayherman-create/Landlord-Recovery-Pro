@@ -9,7 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
-  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2
+  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -736,6 +736,32 @@ export default function CaseDetail() {
               )}
             </CardContent>
           </Card>
+
+          {/* Court Locator */}
+          {["no_response", "filed", "hearing_scheduled", "judgment", "collection", "closed"].includes(caseData.status) && (
+            <Card className="border-border shadow-sm">
+              <CardHeader className="flex flex-row items-center justify-between pb-2 bg-muted/10 border-b">
+                <div>
+                  <CardTitle className="text-lg flex items-center">
+                    <MapPin className="h-5 w-5 mr-2 text-primary" />
+                    Find Your Court
+                  </CardTitle>
+                  <CardDescription>Locate the small claims court, filing fees, and exact instructions for your area.</CardDescription>
+                </div>
+                <Button size="sm" variant="outline" asChild>
+                  <Link to={`/court-locator?state=${encodeURIComponent(caseData.state)}&amount=${encodeURIComponent(caseData.claimAmount)}`}>
+                    Find My Court
+                  </Link>
+                </Button>
+              </CardHeader>
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                  <span className="bg-muted px-2 py-0.5 rounded text-xs font-medium">{caseData.state}</span>
+                  <span>Get exact court address, filing fee, hours, and step-by-step instructions for filing your small claims case.</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Serve Tenant */}
           {["filed", "hearing_scheduled", "judgment", "collection", "closed"].includes(caseData.status) && (

@@ -17,6 +17,7 @@ import Documents from "@/pages/Documents";
 import ServeTenant from "@/pages/ServeTenant";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import CheckoutCancel from "@/pages/CheckoutCancel";
+import CourtLocator from "@/pages/CourtLocator";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,6 +38,7 @@ function Router() {
         <Route path="/cases/new" component={NewCase} />
         <Route path="/cases/:id" component={CaseDetail} />
         <Route path="/cases/:id/serve-tenant" component={ServeTenant} />
+        <Route path="/court-locator" component={CourtLocator} />
         <Route path="/checkout/success" component={CheckoutSuccess} />
         <Route path="/checkout/cancel" component={CheckoutCancel} />
         <Route path="/how-it-works" component={HowItWorks} />

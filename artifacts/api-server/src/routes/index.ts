@@ -22,6 +22,7 @@ import evidenceRouter from "./evidence";
 import analyzeRouter from "./analyze";
 import parseRouter from "./parse";
 import courtRouter from "./court";
+import courtsRouter from "./courts";
 import landlordCasesRouter from "./landlord-cases";
 
 const router: IRouter = Router();
@@ -49,6 +50,7 @@ router.use(evidenceRouter);
 router.use(analyzeRouter);
 router.use(parseRouter);
 router.use(courtRouter);
+router.use(courtsRouter);
 router.use(landlordCasesRouter);
 
 export default router;

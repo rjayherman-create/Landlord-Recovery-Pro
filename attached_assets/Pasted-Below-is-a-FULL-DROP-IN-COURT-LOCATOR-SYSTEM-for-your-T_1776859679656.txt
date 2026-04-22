@@ -1,0 +1,270 @@
+Below is a FULL, DROP-IN COURT LOCATOR SYSTEM for your Tenant Recovery Pro app.
+
+This is designed to plug into your existing:
+
+Express backend
+Drizzle ORM
+React frontend
+🚀 PART 1 — DATABASE (DRIZZLE SCHEMA)
+/lib/db/src/schema/courts.ts
+import { pgTable, serial, text, integer, boolean } from "drizzle-orm/pg-core";
+
+export const courts = pgTable("courts", {
+  id: serial("id").primaryKey(),
+
+  state: text("state").notNull(),
+  county: text("county").notNull(),
+
+  courtName: text("court_name").notNull(),
+  courtType: text("court_type").notNull(),
+
+  maxClaim: integer("max_claim").notNull(),
+
+  address: text("address").notNull(),
+  filingRoom: text("filing_room"),
+  filingHours: text("filing_hours"),
+
+  filingFee: integer("filing_fee"),
+  serviceFee: integer("service_fee"),
+
+  onlineFiling: boolean("online_filing").default(false),
+  onlineUrl: text("online_url"),
+
+  paymentMethods: text("payment_methods"),
+
+  notes: text("notes"),
+});
+🚀 PART 2 — SEED DATA (START SMALL)
+/scripts/seedCourts.ts
+import { db } from "../lib/db";
+import { courts } from "../lib/db/src/schema/courts";
+
+await db.insert(courts).values([
+  {
+    state: "NY",
+    county: "Nassau",
+    courtName: "Nassau County District Court",
+    courtType: "Small Claims",
+    maxClaim: 5000,
+    address: "99 Main St, Hempstead, NY",
+    filingRoom: "Clerk’s Office – Room 102",
+    filingHours: "9am–5pm",
+    filingFee: 20,
+    serviceFee: 45,
+    onlineFiling: true,
+    onlineUrl: "https://nycourts.gov/",
+    paymentMethods: "Cash, Money Order, Credit Card",
+    notes: "Parking available behind building",
+  },
+  {
+    state: "NY",
+    county: "Suffolk",
+    courtName: "Suffolk County District Court",
+    courtType: "Small Claims",
+    maxClaim: 5000,
+    address: "310 Center Dr, Riverhead, NY",
+    filingRoom: "Clerk Window",
+    filingHours: "9am–4pm",
+    filingFee: 20,
+    serviceFee: 50,
+    onlineFiling: false,
+    paymentMethods: "Cash, Money Order",
+  },
+]);
+
+Run:
+
+pnpm tsx scripts/seedCourts.ts
+🚀 PART 3 — API ROUTES
+/artifacts/api-server/src/routes/courts.ts
+import { Router } from "express";
+import { db } from "@/lib/db";
+import { courts } from "@/lib/db/src/schema/courts";
+import { and, eq } from "drizzle-orm";
+
+const router = Router();
+
+/**
+ * GET COURT BY STATE + COUNTY
+ */
+router.get("/", async (req, res) => {
+  try {
+    const { state, county } = req.query;
+
+    if (!state || !county) {
+      return res.status(400).json({ error: "Missing state or county" });
+    }
+
+    const result = await db
+      .select()
+      .from(courts)
+      .where(
+        and(
+          eq(courts.state, String(state)),
+          eq(courts.county, String(county))
+        )
+      )
+      .limit(1);
+
+    if (!result.length) {
+      return res.status(404).json({ error: "Court not found" });
+    }
+
+    const court = result[0];
+
+    const totalCost =
+      (court.filingFee || 0) + (court.serviceFee || 0);
+
+    return res.json({
+      ...court,
+      totalCost,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+export default router;
+ADD TO MAIN APP
+
+In /artifacts/api-server/src/index.ts:
+
+import courtsRoute from "./routes/courts";
+
+app.use("/api/courts", courtsRoute);
+🚀 PART 4 — JURISDICTION HELPER
+/lib/utils/jurisdiction.ts
+export function determineJurisdiction({
+  propertyCounty,
+  tenantCounty,
+}: {
+  propertyCounty?: string;
+  tenantCounty?: string;
+}) {
+  if (propertyCounty) return propertyCounty;
+  if (tenantCounty) return tenantCounty;
+
+  throw new Error("No jurisdiction available");
+}
+🚀 PART 5 — FRONTEND (REACT COMPONENT)
+/artifacts/frontend/src/components/CourtResult.tsx
+import { useState } from "react";
+
+export default function CourtResult() {
+  const [state, setState] = useState("NY");
+  const [county, setCounty] = useState("Nassau");
+  const [court, setCourt] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+
+  const fetchCourt = async () => {
+    setLoading(true);
+    const res = await fetch(
+      `/api/courts?state=${state}&county=${county}`
+    );
+    const data = await res.json();
+    setCourt(data);
+    setLoading(false);
+  };
+
+  return (
+    <div className="p-6 border rounded-xl bg-white shadow-md">
+      <h2 className="text-xl font-bold mb-4">
+        Find Your Court
+      </h2>
+
+      <div className="flex gap-2 mb-4">
+        <input
+          value={state}
+          onChange={(e) => setState(e.target.value)}
+          placeholder="State"
+          className="border p-2"
+        />
+        <input
+          value={county}
+          onChange={(e) => setCounty(e.target.value)}
+          placeholder="County"
+          className="border p-2"
+        />
+        <button
+          onClick={fetchCourt}
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
+          Find Court
+        </button>
+      </div>
+
+      {loading && <p>Loading...</p>}
+
+      {court && (
+        <div className="mt-4 space-y-2">
+          <h3 className="text-lg font-bold">
+            {court.courtName}
+          </h3>
+
+          <p>📍 {court.address}</p>
+          <p>🏢 {court.filingRoom}</p>
+          <p>🕒 {court.filingHours}</p>
+
+          <p>💰 Filing Fee: ${court.filingFee}</p>
+          <p>🚚 Service Fee: ${court.serviceFee}</p>
+
+          <p className="font-bold">
+            Total: ${court.totalCost}
+          </p>
+
+          {court.onlineFiling ? (
+            <a
+              href={court.onlineUrl}
+              target="_blank"
+              className="text-blue-600 underline"
+            >
+              File Online
+            </a>
+          ) : (
+            <p className="text-gray-600">
+              File in person at clerk office
+            </p>
+          )}
+
+          <p>💳 {court.paymentMethods}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+Give feedback
+🚀 PART 6 — UX FLOW (WHERE TO PUT THIS)
+
+Add this after:
+
+👉 “Generate Claim”
+👉 “Download PDF”
+
+Then:
+
+BUTTON:
+Find My Court & File
+🚀 PART 7 — FUTURE UPGRADE (IMPORTANT)
+
+Add:
+
+Address → County Auto Detection
+
+Use:
+
+Google Maps API
+or free geocoding
+
+Then user NEVER types county.
+
+🔥 WHAT YOU JUST BUILT
+
+This is not just a feature.
+
+This is:
+
+✅ Decision engine
+✅ Cost calculator
+✅ Filing guide
+✅ Conversion driver

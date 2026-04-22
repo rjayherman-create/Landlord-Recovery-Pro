@@ -1,0 +1,218 @@
+1. USER INPUT (ENTRY POINT)
+
+You already collect most of this:
+
+Property address (VERY important)
+Tenant last known address (optional but useful)
+Amount owed
+Case type:
+unpaid rent
+damages
+lease break
+utilities
+🔷 2. JURISDICTION ENGINE (CORE LOGIC)
+Rules Engine (this is deterministic)
+IF property_address exists:
+    jurisdiction = property county
+
+ELSE IF tenant_address exists:
+    jurisdiction = tenant county
+
+ELSE:
+    prompt user for county manually
+Example (New York)
+Nassau County → District Court
+NYC → Civil Court (by borough)
+Suffolk → District Court
+Output:
+Court Name
+Court Type
+County
+Filing Limit (e.g. $5,000 / $10,000)
+🔷 3. COURT DATABASE (THIS IS YOUR GOLD)
+
+You need a structured table:
+
+TABLE: courts
+field	example
+state	NY
+county	Nassau
+court_name	Nassau County District Court
+court_type	Small Claims
+max_claim	5000
+address	99 Main St
+filing_room	Clerk Office – Room 102
+filing_hours	9am–5pm
+filing_fee	15–20
+online_filing	true/false
+online_url	link
+payment_methods	cash/card/money order
+notes	parking, instructions
+
+👉 You don’t need all 3,000 counties Day 1
+Start with:
+
+NY
+IL
+OH
+PA
+
+(Your real estate focus areas)
+
+🔷 4. COST CALCULATOR
+
+This should be automatic:
+
+Example logic:
+IF claim_amount <= 1000:
+    filing_fee = $15
+ELSE:
+    filing_fee = $20
+
+service_fee = $25–$75 (based on county)
+
+total_cost = filing_fee + service_fee
+Output UI:
+Estimated Costs:
+
+Court Filing Fee: $20
+Service of Process: $45
+Total: $65
+🔷 5. FILING METHOD DECISION ENGINE
+
+This is HUGE.
+
+IF online_filing == true:
+    show "File Online Now"
+
+ELSE:
+    show "Print & File In Person"
+If ONLINE:
+
+Show:
+
+direct link
+instructions
+required documents
+payment method
+If IN PERSON:
+
+Show:
+
+Where to go:
+Nassau County District Court
+📍 Address
+
+Go to:
+Clerk’s Office – Room 102
+
+Bring:
+✔ Printed claim form
+✔ ID
+✔ Filing fee ($20)
+
+Payment accepted:
+✔ Cash
+✔ Money Order
+🔷 6. UX FLOW (THIS IS CRITICAL)
+Step-by-step in your app:
+User finishes claim form
+Clicks: “Find My Court”
+App shows:
+SCREEN OUTPUT:
+
+Your Court
+
+Nassau County District Court
+Small Claims Division
+Max Claim: $5,000
+
+Where to File
+
+Clerk’s Office – Room 102
+99 Main St
+
+Cost
+
+Filing Fee: $20
+Service Fee: $45
+Total: $65
+
+How to File
+
+✅ File Online (button)
+OR
+🖨 Print & File In Person
+
+🔷 7. AI ENHANCEMENT (THIS IS YOUR EDGE)
+
+You can use AI to:
+
+1. Fill gaps in court data
+scrape court websites
+summarize instructions
+2. Generate “plain English instructions”
+
+Example:
+
+“Go to the courthouse between 9am–4pm. Tell the clerk you want to file a small claims case. Hand them your form and pay the filing fee.”
+
+3. Warn user:
+“Your claim exceeds court limit”
+“You may need to split your claim”
+“This court does not handle landlord cases”
+🔷 8. OPTIONAL: PROCESS SERVING ADD-ON (BIG MONEY FEATURE)
+
+After filing:
+
+Do you want help serving the tenant?
+
+Options:
+
+Sheriff
+Private process server
+Certified mail (if allowed)
+🔷 9. MVP BUILD PLAN (WHAT YOU SHOULD DO RIGHT NOW)
+Phase 1 (FAST – DO THIS FIRST)
+Hardcode 10–20 courts
+Build logic
+Show output
+Phase 2
+Move to database (Postgres / Drizzle)
+Add admin panel to add courts
+Phase 3
+Add online filing links
+Add AI instructions
+Phase 4
+Scale nationwide
+🔷 10. REPLIT BACKEND STRUCTURE
+Example API route:
+GET /api/courts?state=NY&county=Nassau
+Response:
+{
+  "court_name": "Nassau County District Court",
+  "address": "99 Main St",
+  "filing_room": "Room 102",
+  "filing_fee": 20,
+  "online_filing": true,
+  "online_url": "https://..."
+}
+🔥 WHY THIS FEATURE IS MASSIVE
+
+This removes the biggest friction:
+
+❌ “Where do I even go?”
+❌ “What do I do when I get there?”
+❌ “How much does it cost?”
+
+You turn that into:
+
+✅ “Follow these steps. Done.”
+
+🔥 POSITIONING (IMPORTANT)
+
+This feature alone lets you say:
+
+“We don’t just create your claim — we tell you exactly where to file it, what to bring, and how much it costs.”
+
+That’s a paid feature.
