@@ -1,8 +1,9 @@
 import fs from "fs";
-import { createRequire } from "module";
-// Import directly from the lib path to skip pdf-parse's own test-file side effect
-const _require = createRequire(import.meta.url);
-const pdfParse: (buf: Buffer) => Promise<{ text: string }> = _require("pdf-parse/lib/pdf-parse.js");
+// Static import from internal lib path — skips pdf-parse/index.js test side-effect
+// and lets esbuild bundle it at build time rather than resolve at runtime
+// @ts-ignore — no types for the internal subpath
+import pdfParseRaw from "pdf-parse/lib/pdf-parse.js";
+const pdfParse: (buf: Buffer) => Promise<{ text: string }> = pdfParseRaw;
 
 export async function extractTextFromPDF(filePath: string): Promise<string> {
   const buffer = fs.readFileSync(filePath);
