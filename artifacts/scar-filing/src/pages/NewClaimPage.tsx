@@ -67,6 +67,8 @@ export function NewClaimPage() {
     setResult(null);
     setForm(DEFAULT_FORM);
   }
+
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
