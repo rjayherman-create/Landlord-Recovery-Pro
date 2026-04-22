@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -92,7 +92,7 @@ export default function NewCase() {
     defaultValues: {
       claimType: undefined,
       state: "",
-      claimAmount: 0,
+      claimAmount: '' as any,
       monthlyRent: undefined,
       monthsOwed: 0,
       rentPeriod: "",
@@ -771,29 +771,35 @@ export default function NewCase() {
               )}
             </CardContent>
             
-            <CardFooter className="bg-muted/20 border-t border-border flex justify-between p-6">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={prevStep} 
-                disabled={step === 0 || createCase.isPending}
-              >
-                Back
-              </Button>
-              
-              {step < STEPS.length - 1 ? (
-                <Button type="button" onClick={nextStep} className="bg-primary text-primary-foreground">
-                  Next Step <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : (
+            <CardFooter className="bg-muted/20 border-t border-border flex flex-col gap-3 p-6">
+              <div className="flex justify-between w-full">
                 <Button 
-                  type="submit" 
-                  disabled={createCase.isPending}
-                  className="bg-accent text-accent-foreground hover:bg-accent/90"
+                  type="button" 
+                  variant="outline" 
+                  onClick={prevStep} 
+                  disabled={step === 0 || createCase.isPending}
                 >
-                  {createCase.isPending ? "Creating Case..." : "Save Case & Continue"}
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
-              )}
+                
+                {step < STEPS.length - 1 ? (
+                  <Button type="button" onClick={nextStep} className="bg-primary text-primary-foreground">
+                    Next Step <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                ) : (
+                  <Button 
+                    type="submit" 
+                    disabled={createCase.isPending}
+                    className="bg-accent text-accent-foreground hover:bg-accent/90"
+                  >
+                    {createCase.isPending ? "Creating Case..." : "Save Case & Continue"}
+                  </Button>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Info className="h-3.5 w-3.5 shrink-0" />
+                Your case will be saved as a draft. You can return and edit it at any time from My Cases.
+              </div>
             </CardFooter>
           </Card>
         </form>

@@ -42,7 +42,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             <div className="hidden md:flex items-center gap-4">
               <Link href="/dashboard" className="text-sm font-medium text-foreground/60 hover:text-foreground">Sign In</Link>
               <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-                <Link href="/dashboard">Get Started</Link>
+                <Link href="/cases/new">Get Started</Link>
               </Button>
             </div>
 
@@ -83,7 +83,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <Link href="/dashboard">Sign In</Link>
                   </Button>
                   <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" asChild>
-                    <Link href="/dashboard">Get Started</Link>
+                    <Link href="/cases/new">Get Started</Link>
                   </Button>
                 </div>
               </SheetContent>

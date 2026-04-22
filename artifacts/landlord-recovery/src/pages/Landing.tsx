@@ -30,7 +30,7 @@ export default function Landing() {
               </p>
               <div className="flex flex-wrap items-center gap-4">
                 <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90 h-14 px-8 text-lg font-semibold rounded-md" asChild>
-                  <Link href="/dashboard">
+                  <Link href="/cases/new">
                     Start Your Case
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
@@ -135,7 +135,7 @@ export default function Landing() {
             Stop writing off bad debts. Take control of your property management business with Landlord Recovery.
           </p>
           <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 h-14 px-10 text-lg rounded-md shadow-lg shadow-primary/20" asChild>
-            <Link href="/dashboard">Create Your Free Account</Link>
+            <Link href="/cases/new">Create Your First Case</Link>
           </Button>
         </div>
       </section>

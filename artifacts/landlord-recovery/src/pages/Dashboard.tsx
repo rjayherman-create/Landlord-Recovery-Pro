@@ -1,9 +1,9 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useGetLandlordStats, useListLandlordCases } from "@workspace/api-client-react";
 import { Link } from "wouter";
 import {
   PlusCircle, TrendingUp, AlertCircle, CheckCircle2, ArrowRight,
-  Briefcase, Trophy, DollarSign, Clock, ChevronRight,
+  Briefcase, Trophy, DollarSign, Clock, ChevronRight, X, FileText, Map, BookOpen, Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -63,10 +63,25 @@ function timeAgo(dateStr: string) {
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
 
+// ── Onboarding Checklist steps ────────────────────────────────────────────────
+const ONBOARDING_STEPS = [
+  { icon: <FileText className="h-4 w-4 text-accent" />, label: "Create your first case", href: "/cases/new", done: (cases: any[]) => cases.length > 0 },
+  { icon: <Scale className="h-4 w-4 text-accent" />, label: "Send a formal demand letter", href: null, done: (cases: any[]) => cases.some((c: any) => c.status !== "draft") },
+  { icon: <Map className="h-4 w-4 text-accent" />, label: "Locate your small claims court", href: "/how-it-works", done: (_: any[]) => false },
+  { icon: <BookOpen className="h-4 w-4 text-accent" />, label: "Review your state's filing limits", href: "/resources", done: (_: any[]) => false },
+];
+
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   const { data: stats, isLoading: statsLoading } = useGetLandlordStats();
   const { data: cases, isLoading: casesLoading } = useListLandlordCases();
+  const [onboardingDismissed, setOnboardingDismissed] = useState<boolean>(() => {
+    try { return localStorage.getItem("lr_onboarding_dismissed") === "true"; } catch { return false; }
+  });
+  const dismissOnboarding = () => {
+    try { localStorage.setItem("lr_onboarding_dismissed", "true"); } catch {}
+    setOnboardingDismissed(true);
+  };
 
   const totalClaimed   = stats?.totalClaimed   ?? 0;
   const totalRecovered = stats?.totalRecovered ?? 0;
@@ -138,6 +153,41 @@ export default function Dashboard() {
           isMoney={false}
         />
       </div>
+
+      {/* ── Onboarding Checklist ── */}
+      {!onboardingDismissed && !casesLoading && (
+        <Card className="border-accent/30 bg-accent/5 shadow-sm">
+          <CardContent className="pt-4 pb-4 px-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-foreground mb-3">Get started — your recovery roadmap</p>
+                <div className="grid sm:grid-cols-2 gap-2">
+                  {ONBOARDING_STEPS.map((step, i) => {
+                    const isDone = step.done(cases ?? []);
+                    return (
+                      <div key={i} className={`flex items-center gap-2.5 text-sm ${isDone ? "text-muted-foreground line-through" : "text-foreground"}`}>
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${isDone ? "bg-green-500 border-green-500" : "border-accent/50 bg-background"}`}>
+                          {isDone ? <CheckCircle2 className="h-3 w-3 text-white" /> : <span className="text-[9px] font-bold text-accent">{i + 1}</span>}
+                        </div>
+                        {step.href && !isDone ? (
+                          <Link href={step.href} className="hover:text-primary hover:underline transition-colors">
+                            {step.label}
+                          </Link>
+                        ) : (
+                          <span>{step.label}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground" onClick={dismissOnboarding}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Recovery Rate ── */}
       <Card className="border-border shadow-sm">

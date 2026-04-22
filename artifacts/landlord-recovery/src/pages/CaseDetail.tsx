@@ -9,7 +9,7 @@ import {
 } from "@workspace/api-client-react";
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
-  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin, TrendingUp, Search
+  FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin, TrendingUp, Search, ChevronRight
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -338,11 +338,14 @@ export default function CaseDetail() {
       <div className="px-6 md:px-8 pt-6 md:pt-8 pb-0 max-w-5xl mx-auto w-full">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <Button variant="ghost" size="sm" className="mb-2 -ml-3 text-muted-foreground hover:text-foreground" asChild>
-              <Link href="/cases">
-                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Cases
-              </Link>
-            </Button>
+            {/* Breadcrumb */}
+            <nav className="flex items-center gap-1.5 text-sm text-muted-foreground mb-3">
+              <Link href="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+              <Link href="/cases" className="hover:text-foreground transition-colors">My Cases</Link>
+              <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+              <span className="text-foreground font-medium truncate max-w-[200px]">{caseData.tenantName}</span>
+            </nav>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-3xl font-serif font-bold text-foreground">{caseData.tenantName}</h1>
               <CaseStatusBadge status={caseData.status} />
@@ -547,6 +550,43 @@ export default function CaseDetail() {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+        </div>
+
+        {/* Pipeline Stepper */}
+        <div className="mt-6 mb-2">
+          <div className="relative flex items-center justify-between">
+            {/* Connector line */}
+            <div className="absolute top-4 left-0 right-0 h-0.5 bg-border z-0" />
+            <div
+              className="absolute top-4 left-0 h-0.5 bg-primary z-0 transition-all duration-500"
+              style={{ width: currentStatusIndex === 0 ? '0%' : `${(currentStatusIndex / (STATUS_PROGRESS.length - 1)) * 100}%` }}
+            />
+            {STATUS_PROGRESS.map((s, i) => {
+              const isCompleted = i < currentStatusIndex;
+              const isCurrent = i === currentStatusIndex;
+              return (
+                <div key={s.id} className="relative z-10 flex flex-col items-center gap-1.5 min-w-0">
+                  <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${
+                    isCompleted
+                      ? 'bg-primary border-primary text-primary-foreground'
+                      : isCurrent
+                      ? 'bg-background border-primary text-primary ring-4 ring-primary/10'
+                      : 'bg-background border-border text-muted-foreground'
+                  }`}>
+                    {isCompleted
+                      ? <CheckCircle2 className="h-4 w-4" />
+                      : <span className="text-xs font-bold">{i + 1}</span>
+                    }
+                  </div>
+                  <span className={`text-[10px] font-medium text-center leading-tight hidden sm:block ${
+                    isCurrent ? 'text-primary' : isCompleted ? 'text-foreground' : 'text-muted-foreground'
+                  }`}>
+                    {s.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Tab Bar */}
