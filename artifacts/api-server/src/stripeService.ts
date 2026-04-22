@@ -34,6 +34,23 @@ export class StripeService {
       metadata: { userId: params.userId },
     });
   }
+
+  async createGuestCheckoutSession(params: {
+    priceId: string;
+    email?: string;
+    successUrl: string;
+    cancelUrl: string;
+  }) {
+    const stripe = await getUncachableStripeClient();
+    return stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      customer_email: params.email || undefined,
+      line_items: [{ price: params.priceId, quantity: 1 }],
+      success_url: params.successUrl,
+      cancel_url: params.cancelUrl,
+    });
+  }
 }
 
 export const stripeService = new StripeService();

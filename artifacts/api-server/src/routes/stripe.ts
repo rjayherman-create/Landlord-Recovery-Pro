@@ -34,23 +34,50 @@ router.get('/stripe/products', async (_req, res) => {
 
 router.post('/stripe/checkout', async (req: any, res) => {
   try {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-
-    const { priceId } = req.body as { priceId: string };
+    const { priceId, email, successPath, cancelPath } = req.body as {
+      priceId: string;
+      email?: string;
+      successPath?: string;
+      cancelPath?: string;
+    };
     if (!priceId) return res.status(400).json({ error: 'priceId is required' });
 
-    const customerId = await stripeService.createOrGetCustomer(req.user.id, req.user.email);
-
     const baseUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`;
-    const session = await stripeService.createCheckoutSession({
-      customerId,
+    const session = await stripeService.createGuestCheckoutSession({
       priceId,
-      userId: req.user.id,
-      successUrl: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancelUrl: `${baseUrl}/checkout/cancel`,
+      email,
+      successUrl: `${baseUrl}${successPath ?? '/landlord-recovery/checkout/success'}?session_id={CHECKOUT_SESSION_ID}`,
+      cancelUrl: `${baseUrl}${cancelPath ?? '/landlord-recovery/checkout/cancel'}`,
     });
 
     res.json({ url: session.url });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post('/stripe/seed-products', async (_req, res) => {
+  if (process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'Not available in production' });
+  }
+  try {
+    const stripe = await (await import('../stripeClient.js')).getUncachableStripeClient();
+    const existing = await stripe.products.search({ query: "name:'Recovery Pro' AND active:'true'" });
+    if (existing.data.length > 0) {
+      const prices = await stripe.prices.list({ product: existing.data[0].id, active: true });
+      return res.json({ status: 'already_exists', productId: existing.data[0].id, prices: prices.data.map(p => ({ id: p.id, amount: p.unit_amount })) });
+    }
+    const product = await stripe.products.create({
+      name: 'Recovery Pro',
+      description: 'Full-year access to AI demand letters, premium PDF exports, and court-specific filing instructions.',
+      metadata: { plan: 'pro' },
+    });
+    const price = await stripe.prices.create({
+      product: product.id,
+      unit_amount: 9900,
+      currency: 'usd',
+    });
+    res.json({ status: 'created', productId: product.id, priceId: price.id, amount: price.unit_amount });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
