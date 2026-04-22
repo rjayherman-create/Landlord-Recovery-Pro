@@ -627,11 +627,16 @@ export default function CaseDetail() {
                       : <span className="text-xs font-bold">{i + 1}</span>
                     }
                   </div>
-                  <span className={`text-[10px] font-medium text-center leading-tight hidden sm:block ${
-                    isCurrent ? 'text-primary' : isCompleted ? 'text-foreground' : 'text-muted-foreground'
-                  }`}>
-                    {s.label}
-                  </span>
+                  <div className="hidden sm:flex flex-col items-center leading-tight">
+                    <span className="text-[8px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                      Step {i + 1}
+                    </span>
+                    <span className={`text-[10px] font-medium text-center ${
+                      isCurrent ? 'text-primary' : isCompleted ? 'text-foreground' : 'text-muted-foreground'
+                    }`}>
+                      {s.label}
+                    </span>
+                  </div>
                 </div>
               );
             })}
@@ -875,9 +880,14 @@ export default function CaseDetail() {
                       'bg-background border-muted text-muted-foreground group-hover:border-primary/50'}`}>
                     {isPast ? <CheckCircle2 className="h-5 w-5" /> : idx + 1}
                   </div>
-                  <span className={`text-xs font-medium whitespace-nowrap ${isCurrent ? 'text-foreground' : 'text-muted-foreground'}`}>
-                    {step.label}
-                  </span>
+                  <div className="flex flex-col items-center leading-tight">
+                    <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/50">
+                      Step {idx + 1}
+                    </span>
+                    <span className={`text-xs font-medium whitespace-nowrap ${isCurrent ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      {step.label}
+                    </span>
+                  </div>
                 </button>
               );
             })}
