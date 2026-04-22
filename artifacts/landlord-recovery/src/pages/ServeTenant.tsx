@@ -1,6 +1,6 @@
 import { useState, useRef } from "react";
 import { useParams, Link, useLocation } from "wouter";
-import { ArrowLeft, Upload, CheckCircle2, X, FileText, AlertTriangle, Loader2, Info } from "lucide-react";
+import { ArrowLeft, Upload, CheckCircle2, X, FileText, AlertTriangle, Loader2, Info, ExternalLink } from "lucide-react";
 import { useGetLandlordCase } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,6 +154,40 @@ export default function ServeTenant() {
               </p>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border shadow-sm">
+        <CardHeader className="pb-3 border-b border-border bg-muted/10">
+          <CardTitle className="text-base">How to Serve a Tenant</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4 pb-5">
+          <ul className="space-y-2.5 text-sm text-muted-foreground mb-4">
+            <li className="flex gap-2">
+              <span className="text-primary font-bold shrink-0">•</span>
+              <span><strong className="text-foreground">Sheriff service is the safest option</strong> — accepted by all courts and difficult to contest.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary font-bold shrink-0">•</span>
+              <span><strong className="text-foreground">Process servers are faster but cost more</strong> — useful when the sheriff has a long queue before your hearing date.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary font-bold shrink-0">•</span>
+              <span><strong className="text-foreground">Certified mail only works in some states</strong> — always confirm your state's rules before relying on it.</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="text-primary font-bold shrink-0">•</span>
+              <span><strong className="text-foreground">Always keep proof of service</strong> — the court may require it at your hearing. Upload it below.</span>
+            </li>
+          </ul>
+          <a
+            href="https://www.servenow.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+          >
+            Find a Process Server <ExternalLink className="h-3.5 w-3.5" />
+          </a>
         </CardContent>
       </Card>
 
