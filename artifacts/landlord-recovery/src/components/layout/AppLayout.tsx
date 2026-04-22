@@ -1,9 +1,22 @@
 import { Link, useLocation } from "wouter";
-import { Scale, Home, FileText, Settings, Menu, PieChart, Info, BookOpen, CreditCard, Library, X, User } from "lucide-react";
+import { Home, FileText, Settings, Menu, PieChart, Info, BookOpen, CreditCard, Library, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { Show, UserButton, SignInButton } from "@clerk/react";
+
+const logoUrl = `${import.meta.env.BASE_URL}logo.svg`;
+
+function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
+  const imgClass = size === "sm" ? "h-6 w-6" : size === "lg" ? "h-9 w-9" : "h-7 w-7";
+  const textClass = size === "sm" ? "text-base" : size === "lg" ? "text-xl" : "text-lg";
+  return (
+    <span className="flex items-center gap-2">
+      <img src={logoUrl} alt="Landlord Recovery" className={imgClass} />
+      <span className={`font-serif font-semibold ${textClass} tracking-tight`}>Landlord Recovery</span>
+    </span>
+  );
+}
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
@@ -22,15 +35,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       <div className="min-h-screen flex flex-col bg-background">
         <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="bg-primary text-primary-foreground p-1.5 rounded">
-                <Scale className="h-5 w-5" />
-              </div>
-              <span className="font-serif font-semibold text-lg">Landlord Recovery</span>
+            <Link href="/">
+              <Logo />
             </Link>
 
-            {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
               {marketingLinks.map(({ href, label }) => (
                 <Link key={href} href={href} className={`transition-colors hover:text-foreground/80 ${location === href ? 'text-foreground' : 'text-foreground/60'}`}>
@@ -39,7 +47,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
 
-            {/* Desktop CTA */}
             <div className="hidden md:flex items-center gap-4">
               <Show when="signed-out">
                 <SignInButton mode="modal">
@@ -54,7 +61,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </div>
 
-            {/* Mobile hamburger */}
             <Sheet>
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="md:hidden">
@@ -62,41 +68,28 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-72 p-0 flex flex-col">
-                {/* Sheet header */}
                 <div className="h-16 flex items-center px-6 border-b">
-                  <div className="flex items-center space-x-2">
-                    <div className="bg-primary text-primary-foreground p-1.5 rounded">
-                      <Scale className="h-4 w-4" />
-                    </div>
-                    <span className="font-serif font-semibold">Landlord Recovery</span>
-                  </div>
+                  <Logo />
                 </div>
-
-                {/* Nav links */}
                 <nav className="flex-1 py-6 px-4 space-y-1">
                   {marketingLinks.map(({ href, label }) => (
                     <Link
                       key={href}
                       href={href}
-                      className={`flex items-center px-3 py-3 rounded-md text-sm font-medium transition-colors ${location === href ? 'bg-primary/10 text-primary font-semibold' : 'text-foreground/70 hover:bg-muted hover:text-foreground'}`}
+                      className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors ${location === href ? 'bg-muted text-foreground' : 'text-foreground/70 hover:bg-muted/50 hover:text-foreground'}`}
                     >
                       {label}
                     </Link>
                   ))}
                 </nav>
-
-                {/* Mobile CTA */}
-                <div className="p-4 border-t space-y-3">
+                <div className="p-4 border-t flex flex-col gap-2">
                   <Show when="signed-out">
                     <SignInButton mode="modal">
                       <Button variant="outline" className="w-full">Sign In</Button>
                     </SignInButton>
                   </Show>
                   <Show when="signed-in">
-                    <div className="flex items-center gap-3 px-1 py-1">
-                      <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
-                      <span className="text-sm text-foreground/70">Account</span>
-                    </div>
+                    <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
                   </Show>
                   <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" asChild>
                     <Link href="/cases/new">Get Started</Link>
@@ -106,14 +99,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Sheet>
           </div>
         </header>
+
         <main className="flex-1">
           {children}
         </main>
+
         <footer className="bg-primary text-primary-foreground py-12">
           <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <Scale className="h-5 w-5 text-accent" />
+              <div className="flex items-center gap-2 mb-4">
+                <img src={logoUrl} alt="Landlord Recovery" className="h-7 w-7" />
                 <span className="font-serif font-semibold text-lg">Landlord Recovery</span>
               </div>
               <p className="text-sm text-primary-foreground/70">
@@ -152,20 +147,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // App Layout
+  // ── App Layout (authenticated pages) ───────────────────────────────────────
   return (
     <div className="min-h-screen bg-muted/30 flex">
-      {/* Sidebar */}
+      {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-64 flex-col border-r bg-sidebar text-sidebar-foreground">
         <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-          <Link href="/dashboard" className="flex items-center space-x-2">
-            <div className="bg-sidebar-primary text-sidebar-primary-foreground p-1.5 rounded">
-              <Scale className="h-5 w-5" />
-            </div>
-            <span className="font-serif font-semibold text-lg tracking-tight">Landlord Recovery</span>
+          <Link href="/dashboard">
+            <Logo />
           </Link>
         </div>
-        
+
         <div className="flex-1 py-6 px-3">
           <nav className="space-y-1">
             <Link href="/dashboard" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${location === '/dashboard' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
@@ -181,7 +173,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               Documents
             </Link>
           </nav>
-          
+
           <div className="mt-8 mb-4 px-3">
             <h4 className="text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-wider">Resources</h4>
           </div>
@@ -196,7 +188,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           </nav>
         </div>
-        
+
         <div className="p-4 border-t border-sidebar-border">
           <Show when="signed-in">
             <div className="flex items-center gap-3 px-1">
@@ -224,10 +216,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
+        {/* Mobile header */}
         <header className="md:hidden h-16 border-b bg-background flex items-center px-4 justify-between">
-          <Link href="/dashboard" className="flex items-center space-x-2">
-            <Scale className="h-5 w-5 text-primary" />
-            <span className="font-serif font-semibold">Landlord Recovery</span>
+          <Link href="/dashboard">
+            <Logo size="sm" />
           </Link>
           <Sheet>
             <SheetTrigger asChild>
@@ -237,12 +229,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SheetTrigger>
             <SheetContent side="left" className="w-72 bg-sidebar text-sidebar-foreground border-sidebar-border p-0 flex flex-col">
               <div className="h-16 flex items-center px-6 border-b border-sidebar-border">
-                <div className="flex items-center space-x-2">
-                  <div className="bg-sidebar-primary text-sidebar-primary-foreground p-1.5 rounded">
-                    <Scale className="h-4 w-4" />
-                  </div>
-                  <span className="font-serif font-semibold text-lg tracking-tight">Landlord Recovery</span>
-                </div>
+                <Logo />
               </div>
               <div className="flex-1 py-6 px-3 space-y-1">
                 {[
@@ -285,7 +272,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SheetContent>
           </Sheet>
         </header>
-        
+
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>
