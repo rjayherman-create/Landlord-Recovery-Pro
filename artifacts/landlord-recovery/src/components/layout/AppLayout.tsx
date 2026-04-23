@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { Show, UserButton, SignInButton } from "@clerk/react";
+import { useClerkEnabled } from "@/context/ClerkEnabled";
 import { useSubscription, openBillingPortal } from "@/hooks/useSubscription";
 
 const logoUrl = `${import.meta.env.BASE_URL}logo.svg`;
@@ -21,6 +22,7 @@ function Logo({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
+  const clerkEnabled = useClerkEnabled();
   const { data: subscription } = useSubscription();
 
   const isMarketing = location === "/" || location === "/how-it-works" || location === "/resources" || location === "/pricing" || location === "/documents";
@@ -50,14 +52,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </nav>
 
             <div className="hidden md:flex items-center gap-4">
-              <Show when="signed-out">
-                <SignInButton mode="modal">
-                  <button className="text-sm font-medium text-foreground/60 hover:text-foreground">Sign In</button>
-                </SignInButton>
-              </Show>
-              <Show when="signed-in">
-                <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
-              </Show>
+              {clerkEnabled ? (
+                <>
+                  <Show when="signed-out">
+                    <SignInButton mode="modal">
+                      <button className="text-sm font-medium text-foreground/60 hover:text-foreground">Sign In</button>
+                    </SignInButton>
+                  </Show>
+                  <Show when="signed-in">
+                    <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
+                  </Show>
+                </>
+              ) : null}
               <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Link href="/cases/new">Get Started</Link>
               </Button>
@@ -85,14 +91,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   ))}
                 </nav>
                 <div className="p-4 border-t flex flex-col gap-2">
-                  <Show when="signed-out">
-                    <SignInButton mode="modal">
-                      <Button variant="outline" className="w-full">Sign In</Button>
-                    </SignInButton>
-                  </Show>
-                  <Show when="signed-in">
-                    <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
-                  </Show>
+                  {clerkEnabled ? (
+                    <>
+                      <Show when="signed-out">
+                        <SignInButton mode="modal">
+                          <Button variant="outline" className="w-full">Sign In</Button>
+                        </SignInButton>
+                      </Show>
+                      <Show when="signed-in">
+                        <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
+                      </Show>
+                    </>
+                  ) : null}
                   <Button className="w-full bg-primary text-primary-foreground hover:bg-primary/90" asChild>
                     <Link href="/cases/new">Get Started</Link>
                   </Button>
@@ -209,27 +219,31 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               Upgrade to Pro
             </Link>
           )}
-          <Show when="signed-in">
-            <div className="flex items-center gap-3 px-1">
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "w-8 h-8",
-                    userButtonTrigger: "focus:shadow-none",
-                  },
-                }}
-              />
-              <span className="text-sm text-sidebar-foreground/70">Account</span>
-            </div>
-          </Show>
-          <Show when="signed-out">
-            <SignInButton mode="modal">
-              <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
-                <User className="h-4 w-4 mr-2" />
-                Sign In
-              </Button>
-            </SignInButton>
-          </Show>
+          {clerkEnabled ? (
+            <>
+              <Show when="signed-in">
+                <div className="flex items-center gap-3 px-1">
+                  <UserButton
+                    appearance={{
+                      elements: {
+                        avatarBox: "w-8 h-8",
+                        userButtonTrigger: "focus:shadow-none",
+                      },
+                    }}
+                  />
+                  <span className="text-sm text-sidebar-foreground/70">Account</span>
+                </div>
+              </Show>
+              <Show when="signed-out">
+                <SignInButton mode="modal">
+                  <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
+                    <User className="h-4 w-4 mr-2" />
+                    Sign In
+                  </Button>
+                </SignInButton>
+              </Show>
+            </>
+          ) : null}
         </div>
       </aside>
 
@@ -290,20 +304,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     Upgrade to Pro
                   </Link>
                 )}
-                <Show when="signed-in">
-                  <div className="flex items-center gap-3 px-1">
-                    <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
-                    <span className="text-sm text-sidebar-foreground/70">Account</span>
-                  </div>
-                </Show>
-                <Show when="signed-out">
-                  <SignInButton mode="modal">
-                    <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
-                      <User className="h-4 w-4 mr-2" />
-                      Sign In
-                    </Button>
-                  </SignInButton>
-                </Show>
+                {clerkEnabled ? (
+                  <>
+                    <Show when="signed-in">
+                      <div className="flex items-center gap-3 px-1">
+                        <UserButton appearance={{ elements: { avatarBox: "w-8 h-8" } }} />
+                        <span className="text-sm text-sidebar-foreground/70">Account</span>
+                      </div>
+                    </Show>
+                    <Show when="signed-out">
+                      <SignInButton mode="modal">
+                        <Button variant="ghost" className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
+                          <User className="h-4 w-4 mr-2" />
+                          Sign In
+                        </Button>
+                      </SignInButton>
+                    </Show>
+                  </>
+                ) : null}
               </div>
             </SheetContent>
           </Sheet>
