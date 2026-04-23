@@ -174,7 +174,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <nav className="space-y-1">
             <Link href="/dashboard" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${location === '/dashboard' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
               <PieChart className="h-4 w-4" />
-              Overview
+              Dashboard
             </Link>
             <Link href="/cases" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${location.startsWith('/cases') ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
               <FileText className="h-4 w-4" />
@@ -258,7 +258,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </div>
               <div className="flex-1 py-6 px-3 space-y-1">
                 {[
-                  { href: "/dashboard", icon: <PieChart className="h-4 w-4" />, label: "Overview" },
+                  { href: "/dashboard", icon: <PieChart className="h-4 w-4" />, label: "Dashboard" },
                   { href: "/cases", icon: <FileText className="h-4 w-4" />, label: "My Cases" },
                   { href: "/documents", icon: <Library className="h-4 w-4" />, label: "Documents" },
                 ].map(({ href, icon, label }) => (
