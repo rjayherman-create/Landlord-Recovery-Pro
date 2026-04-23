@@ -18,8 +18,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { STATE_REQUIREMENTS } from "@/data/stateRequirements";
 
 const STEPS = [
-  { id: "type", title: "Claim Basics", icon: FileText },
   { id: "parties", title: "Parties Info", icon: User },
+  { id: "type", title: "Claim Basics", icon: FileText },
   { id: "property", title: "Property & Lease", icon: Building },
   { id: "review", title: "Review", icon: CheckCircle2 },
 ];
@@ -257,8 +257,8 @@ export default function NewCase() {
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
     
-    if (step === 0) fieldsToValidate = ['claimType', 'state', 'claimAmount', 'description'];
-    if (step === 1) fieldsToValidate = ['landlordName', 'tenantName', 'landlordEmail', 'tenantEmail', 'landlordPhone', 'tenantPhone', 'tenantAddress'];
+    if (step === 0) fieldsToValidate = ['landlordName', 'tenantName', 'landlordEmail', 'tenantEmail', 'landlordPhone', 'tenantPhone', 'tenantAddress'];
+    if (step === 1) fieldsToValidate = ['claimType', 'state', 'claimAmount', 'description'];
     if (step === 2) fieldsToValidate = ['propertyAddress', 'monthlyRent', 'leaseStartDate', 'leaseEndDate', 'moveOutDate'];
 
     const isValid = await form.trigger(fieldsToValidate as any);
@@ -476,8 +476,8 @@ export default function NewCase() {
                 <div>
                   <CardTitle className="text-xl">{STEPS[step].title}</CardTitle>
                   <CardDescription>
-                    {step === 0 && "Define what you are claiming and where."}
-                    {step === 1 && "Information about you and the tenant."}
+                    {step === 0 && "Information about you and the tenant."}
+                    {step === 1 && "Define what you are claiming and where."}
                     {step === 2 && "Details about the property and lease agreement."}
                     {step === 3 && "Review the details before saving the case."}
                   </CardDescription>
@@ -486,8 +486,8 @@ export default function NewCase() {
             </CardHeader>
             <CardContent className="pt-6">
               
-              {/* STEP 0: BASICS */}
-              {step === 0 && (
+              {/* STEP 1: BASICS */}
+              {step === 1 && (
                 <div className="grid gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
                   <div className="grid md:grid-cols-2 gap-6">
                     <FormField
@@ -848,8 +848,8 @@ export default function NewCase() {
                 </div>
               )}
 
-              {/* STEP 1: PARTIES */}
-              {step === 1 && (
+              {/* STEP 0: PARTIES */}
+              {step === 0 && (
                 <div className="grid gap-8 animate-in fade-in slide-in-from-right-4 duration-300">
                   {/* Landlord */}
                   <div>
