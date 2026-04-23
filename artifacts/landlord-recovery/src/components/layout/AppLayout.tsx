@@ -202,7 +202,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="p-4 border-t border-sidebar-border space-y-2">
-          {subscription?.isPro ? (
+          {subscription?.isPro && (
             <button
               onClick={() => openBillingPortal().catch(() => {})}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-accent bg-accent/10 hover:bg-accent/20 transition-colors"
@@ -210,14 +210,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <Zap className="h-3.5 w-3.5" />
               Pro Plan — Manage Billing
             </button>
-          ) : (
-            <Link
-              href="/pricing"
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
-            >
-              <Zap className="h-3.5 w-3.5" />
-              Upgrade to Pro
-            </Link>
           )}
           {clerkEnabled ? (
             <>
@@ -287,7 +279,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 ))}
               </div>
               <div className="p-4 border-t border-sidebar-border space-y-2">
-                {subscription?.isPro ? (
+                {subscription?.isPro && (
                   <button
                     onClick={() => openBillingPortal().catch(() => {})}
                     className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-accent bg-accent/10 hover:bg-accent/20 transition-colors"
@@ -295,14 +287,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     <Zap className="h-3.5 w-3.5" />
                     Pro Plan — Manage Billing
                   </button>
-                ) : (
-                  <Link
-                    href="/pricing"
-                    className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-xs font-medium text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground transition-colors"
-                  >
-                    <Zap className="h-3.5 w-3.5" />
-                    Upgrade to Pro
-                  </Link>
                 )}
                 {clerkEnabled ? (
                   <>
