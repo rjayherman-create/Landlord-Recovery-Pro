@@ -41,6 +41,16 @@ async function initStripe() {
     console.warn("DATABASE_URL not set — skipping Stripe init");
     return;
   }
+
+  // stripe-replit-sync only works inside Replit environments.
+  // On Railway (or any non-Replit host) we skip it and rely on
+  // the direct Stripe SDK for all subscription / payment operations.
+  const isReplit = !!(process.env.REPL_ID || process.env.REPLIT_CONNECTORS_HOSTNAME);
+  if (!isReplit) {
+    console.log("Non-Replit environment — skipping stripe-replit-sync, using Stripe SDK directly");
+    return;
+  }
+
   try {
     console.log("Initializing Stripe schema...");
     await runMigrations({ databaseUrl, schema: "stripe" });

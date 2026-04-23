@@ -1,0 +1,66 @@
+Starting Container
+[reminders] Starting reminder runner (60s interval)
+Running app migrations from: /app/lib/db/drizzle
+App migrations complete
+Initializing Stripe schema...
+Stripe schema ready
+{ autoExpandLists: undefined, stripeApiVersion: undefined } StripeSync initialized
+error: relation "stripe.accounts" does not exist
+    at file:///app/artifacts/api-server/dist/index.mjs:32765:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async PostgresClient.getAccountIdByApiKeyHash (file:///app/artifacts/api-server/dist/index.mjs:318256:24)
+    at async StripeSync.getAccountId (file:///app/artifacts/api-server/dist/index.mjs:318443:29)
+    at async StripeSync.findOrCreateManagedWebhook (file:///app/artifacts/api-server/dist/index.mjs:320005:27)
+    at async initStripe (file:///app/artifacts/api-server/dist/index.mjs:395110:7) {
+  length: 114,
+  severity: 'ERROR',
+  code: '42P01',
+  detail: undefined,
+  hint: undefined,
+  position: '16',
+  internalPosition: undefined,
+  internalQuery: undefined,
+📦 APP INITIALIZING...
+Server running on port 8080
+  code: '42P01',
+  where: undefined,
+  schema: undefined,
+  detail: undefined,
+  table: undefined,
+  hint: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1445',
+  routine: 'parserOpenTable'
+} Failed to lookup account by API key hash, falling back to API
+error: relation "stripe.accounts" does not exist
+    at file:///app/artifacts/api-server/dist/index.mjs:32765:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async PostgresClient.upsertAccount (file:///app/artifacts/api-server/dist/index.mjs:318223:9)
+    at async StripeSync.upsertAccount (file:///app/artifacts/api-server/dist/index.mjs:318472:11)
+    at async StripeSync.getAccountId (file:///app/artifacts/api-server/dist/index.mjs:318462:9)
+    at async StripeSync.findOrCreateManagedWebhook (file:///app/artifacts/api-server/dist/index.mjs:320005:27)
+    at async initStripe (file:///app/artifacts/api-server/dist/index.mjs:395110:7) {
+  length: 114,
+  severity: 'ERROR',
+  position: '13',
+  internalPosition: undefined,
+  internalQuery: undefined,
+  where: undefined,
+  schema: undefined,
+  table: undefined,
+  column: undefined,
+  dataType: undefined,
+  constraint: undefined,
+  file: 'parse_relation.c',
+  line: '1445',
+  routine: 'parserOpenTable'
+} Failed to upsert account to database
+Stripe init failed (non-fatal): Error: Failed to upsert account to database: relation "stripe.accounts" does not exist
+    at StripeSync.upsertAccount (file:///app/artifacts/api-server/dist/index.mjs:318482:17)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async StripeSync.getAccountId (file:///app/artifacts/api-server/dist/index.mjs:318462:9)
+    at async StripeSync.findOrCreateManagedWebhook (file:///app/artifacts/api-server/dist/index.mjs:320005:27)
+    at async initStripe (file:///app/artifacts/api-server/dist/index.mjs:395110:7)
