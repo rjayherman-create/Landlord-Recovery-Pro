@@ -4,7 +4,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle, ChevronsUpDown } from "lucide-react";
+import { useSubscription, startSubscriptionCheckout } from "@/hooks/useSubscription";
+import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle, ChevronsUpDown, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -154,6 +155,8 @@ export default function NewCase() {
   const stateLimit = stateInfo?.smallClaimsLimit ?? null;
   const [generatingDesc, setGeneratingDesc] = useState(false);
   const [stateOpen, setStateOpen] = useState(false);
+  const { data: subscription } = useSubscription();
+  const isPro = subscription?.isPro ?? false;
 
   // Currency display state for claim amount
   const [claimDisplay, setClaimDisplay] = useState("");
@@ -935,6 +938,8 @@ export default function NewCase() {
               {/* STEP 3: REVIEW */}
               {step === 3 && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
+
+                  {/* Case Summary — always visible but description blurred for free users */}
                   <div className="bg-muted/30 p-4 rounded-lg border border-border">
                     <h3 className="font-semibold text-lg mb-4 text-primary">Case Summary</h3>
                     <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
@@ -961,14 +966,56 @@ export default function NewCase() {
                           <dd className="font-medium mt-1">{form.getValues().rentPeriod}</dd>
                         </div>
                       )}
-                      <div className="md:col-span-2">
+                      <div className="md:col-span-2 relative">
                         <dt className="text-muted-foreground">Description</dt>
-                        <dd className="font-medium mt-1">{form.getValues().description}</dd>
+                        <dd
+                          className={`font-medium mt-1 transition-all ${!isPro ? "blur-sm select-none pointer-events-none" : ""}`}
+                          aria-hidden={!isPro}
+                        >
+                          {form.getValues().description}
+                        </dd>
+                        {!isPro && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-background/80 px-3 py-1.5 rounded-full border border-border shadow-sm">
+                              <Lock className="h-3 w-3" /> Subscribe to view
+                            </span>
+                          </div>
+                        )}
                       </div>
                     </dl>
                   </div>
 
-                  <div className="grid md:grid-cols-2 gap-6">
+                  {/* Paywall banner for non-subscribers */}
+                  {!isPro && (
+                    <div className="rounded-xl border-2 border-accent bg-accent/5 p-6 text-center space-y-3">
+                      <div className="flex justify-center">
+                        <div className="rounded-full bg-accent/15 p-3">
+                          <Lock className="h-6 w-6 text-accent" />
+                        </div>
+                      </div>
+                      <h3 className="font-semibold text-lg">Save This Case — Subscribe to Continue</h3>
+                      <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                        Your information is ready. Subscribe to save this case, generate your demand letter, and access all court documents.
+                      </p>
+                      <Button
+                        type="button"
+                        className="bg-accent text-accent-foreground hover:bg-accent/90 px-8"
+                        onClick={async () => {
+                          try {
+                            await startSubscriptionCheckout(form.getValues().landlordEmail || undefined);
+                          } catch {
+                            toast({ title: "Checkout unavailable", description: "Please try again or contact support.", variant: "destructive" });
+                          }
+                        }}
+                      >
+                        Subscribe & Save Case
+                      </Button>
+                      <p className="text-xs text-muted-foreground">Billed monthly · Cancel anytime</p>
+                    </div>
+                  )}
+
+                  {/* Parties & Property — blurred for free users */}
+                  <div className={`grid md:grid-cols-2 gap-6 transition-all ${!isPro ? "blur-sm select-none pointer-events-none" : ""}`} aria-hidden={!isPro}>
                     <div className="border border-border p-4 rounded-lg">
                       <h4 className="font-semibold mb-2">Parties</h4>
                       <dl className="space-y-2 text-sm">
@@ -1015,13 +1062,27 @@ export default function NewCase() {
                   <Button type="button" onClick={nextStep} className="bg-primary text-primary-foreground">
                     Next Step <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                ) : (
+                ) : isPro ? (
                   <Button 
                     type="submit" 
                     disabled={createCase.isPending}
                     className="bg-accent text-accent-foreground hover:bg-accent/90"
                   >
                     {createCase.isPending ? "Creating Case..." : "Save Case & Continue"}
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    className="bg-accent text-accent-foreground hover:bg-accent/90"
+                    onClick={async () => {
+                      try {
+                        await startSubscriptionCheckout(form.getValues().landlordEmail || undefined);
+                      } catch {
+                        toast({ title: "Checkout unavailable", description: "Please try again.", variant: "destructive" });
+                      }
+                    }}
+                  >
+                    <Lock className="mr-2 h-4 w-4" /> Subscribe to Save
                   </Button>
                 )}
               </div>
