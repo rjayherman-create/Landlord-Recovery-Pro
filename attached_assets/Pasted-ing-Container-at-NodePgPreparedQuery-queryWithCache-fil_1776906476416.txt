@@ -1,0 +1,103 @@
+ing Container
+    at NodePgPreparedQuery.queryWithCache (file:///app/artifacts/api-server/dist/index.mjs:41524:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///app/artifacts/api-server/dist/index.mjs:41811:26
+    at async runReminders (file:///app/artifacts/api-server/dist/index.mjs:334131:21) {
+  query: 'select "id", "case_id", "message", "send_at", "sent", "type" from "reminders" where ("reminders"."sent" = $1 and "reminders"."send_at" <= $2)',
+  params: [ 'false', '2026-04-23T01:03:41.952Z' ],
+📦 APP INITIALIZING...
+Server running on port 8080
+[reminders] Starting reminder runner (60s interval)
+Initializing Stripe schema...
+Stripe init failed (non-fatal): Error: getaddrinfo ENOTFOUND landlord-recovery-pro.railway.internal
+    at GetAddrInfoReqWrap.onlookupall [as oncomplete] (node:dns:122:26) {
+  errno: -3008,
+  code: 'ENOTFOUND',
+  syscall: 'getaddrinfo',
+  hostname: 'landlord-recovery-pro.railway.internal'
+}
+[reminders] Runner error: _DrizzleQueryError: Failed query: select "id", "case_id", "message", "send_at", "sent", "type" from "reminders" where ("reminders"."sent" = $1 and "reminders"."send_at" <= $2)
+params: false,2026-04-23T01:03:41.952Z
+  cause: Error: getaddrinfo ENOTFOUND landlord-recovery-pro.railway.internal
+      at file:///app/artifacts/api-server/dist/index.mjs:32765:15
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async file:///app/artifacts/api-server/dist/index.mjs:41818:22
+      at async NodePgPreparedQuery.queryWithCache (file:///app/artifacts/api-server/dist/index.mjs:41522:20)
+      at async file:///app/artifacts/api-server/dist/index.mjs:41811:26
+      at async runReminders (file:///app/artifacts/api-server/dist/index.mjs:334131:21) {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'landlord-recovery-pro.railway.internal'
+  }
+}
+params: false,2026-04-23T01:04:41.980Z
+    at NodePgPreparedQuery.queryWithCache (file:///app/artifacts/api-server/dist/index.mjs:41524:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+  query: 'select "id", "case_id", "message", "send_at", "sent", "type" from "reminders" where ("reminders"."sent" = $1 and "reminders"."send_at" <= $2)',
+[reminders] Runner error: _DrizzleQueryError: Failed query: select "id", "case_id", "message", "send_at", "sent", "type" from "reminders" where ("reminders"."sent" = $1 and "reminders"."send_at" <= $2)
+    at async file:///app/artifacts/api-server/dist/index.mjs:41811:26
+  params: [ 'false', '2026-04-23T01:04:41.980Z' ],
+  cause: AggregateError [ECONNREFUSED]: 
+    at async runReminders (file:///app/artifacts/api-server/dist/index.mjs:334131:21) {
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at file:///app/artifacts/api-server/dist/index.mjs:32765:15
+      at async file:///app/artifacts/api-server/dist/index.mjs:41818:22
+      at async NodePgPreparedQuery.queryWithCache (file:///app/artifacts/api-server/dist/index.mjs:41522:20)
+      at async file:///app/artifacts/api-server/dist/index.mjs:41811:26
+      at async runReminders (file:///app/artifacts/api-server/dist/index.mjs:334131:21) {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+[reminders] Runner error: _DrizzleQueryError: Failed query: select "id", "case_id", "message", "send_at", "sent", "type" from "reminders" where ("reminders"."sent" = $1 and "reminders"."send_at" <= $2)
+params: false,2026-04-23T01:05:42.008Z
+    at NodePgPreparedQuery.queryWithCache (file:///app/artifacts/api-server/dist/index.mjs:41524:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///app/artifacts/api-server/dist/index.mjs:41811:26
+    at async runReminders (file:///app/artifacts/api-server/dist/index.mjs:334131:21) {
+  query: 'select "id", "case_id", "message", "send_at", "sent", "type" from "reminders" where ("reminders"."sent" = $1 and "reminders"."send_at" <= $2)',
+  params: [ 'false', '2026-04-23T01:05:42.008Z' ],
+  cause: AggregateError [ECONNREFUSED]: 
+      at file:///app/artifacts/api-server/dist/index.mjs:32765:15
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async file:///app/artifacts/api-server/dist/index.mjs:41818:22
+      at async NodePgPreparedQuery.queryWithCache (file:///app/artifacts/api-server/dist/index.mjs:41522:20)
+      at async file:///app/artifacts/api-server/dist/index.mjs:41811:26
+      at async runReminders (file:///app/artifacts/api-server/dist/index.mjs:334131:21) {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+[reminders] Runner error: _DrizzleQueryError: Failed query: select "id", "case_id", "message", "send_at", "sent", "type" from "reminders" where ("reminders"."sent" = $1 and "reminders"."send_at" <= $2)
+params: false,2026-04-23T01:06:42.038Z
+    at NodePgPreparedQuery.queryWithCache (file:///app/artifacts/api-server/dist/index.mjs:41524:19)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///app/artifacts/api-server/dist/index.mjs:41811:26
+    at async runReminders (file:///app/artifacts/api-server/dist/index.mjs:334131:21) {
+  query: 'select "id", "case_id", "message", "send_at", "sent", "type" from "reminders" where ("reminders"."sent" = $1 and "reminders"."send_at" <= $2)',
+  params: [ 'false', '2026-04-23T01:06:42.038Z' ],
+  cause: AggregateError [ECONNREFUSED]: 
+      at file:///app/artifacts/api-server/dist/index.mjs:32765:15
+      at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+      at async file:///app/artifacts/api-server/dist/index.mjs:41818:22
+      at async NodePgPreparedQuery.queryWithCache (file:///app/artifacts/api-server/dist/index.mjs:41522:20)
+      at async file:///app/artifacts/api-server/dist/index.mjs:41811:26
+      at async runReminders (file:///app/artifacts/api-server/dist/index.mjs:334131:21) {
+    code: 'ECONNREFUSED',
+    [errors]: [ [Error], [Error] ]
+  }
+}
+params: false,2026-04-23T01:07:42.067Z
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async file:///app/artifacts/api-server/dist/index.mjs:41811:26
+    at async runReminders (file:///app/artifacts/api-server/dist/index.mjs:334131:21) {
+  params: [ 'false', '2026-04-23T01:07:42.067Z' ],
+  cause: AggregateError [ECONNREFUSED]: 
+      at file:///app/artifacts/api-server/dist/index.mjs:32765:15
+      at async file:///app/artifacts/api-server/dist/index.mjs:41818:22
+      at async file:///app/artifacts/api-server/dist/index.mjs:41811:26
+      at async runReminders (file:///app/artifacts/api-server/dist/index.mjs:334131:21) {
+    code: 'ECONNREFUSED',
+  }
+}
