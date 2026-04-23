@@ -1,0 +1,41 @@
+⚠️  DATABASE_URL is not set — database operations will fail until a database is provisioned.
+file:///app/artifacts/api-server/dist/index.mjs:380877
+  throw new Error(
+        ^
+Error: AI_INTEGRATIONS_OPENAI_BASE_URL must be set. Did you forget to provision the OpenAI AI integration?
+    at file:///app/artifacts/api-server/dist/index.mjs:380877:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v20.20.2
+⚠️  DATABASE_URL is not set — database operations will fail until a database is provisioned.
+Error: AI_INTEGRATIONS_OPENAI_BASE_URL must be set. Did you forget to provision the OpenAI AI integration?
+    at file:///app/artifacts/api-server/dist/index.mjs:380877:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+file:///app/artifacts/api-server/dist/index.mjs:380877
+  throw new Error(
+Node.js v20.20.2
+        ^
+Starting Container
+⚠️  DATABASE_URL is not set — database operations will fail until a database is provisioned.
+file:///app/artifacts/api-server/dist/index.mjs:380877
+  throw new Error(
+        ^
+Error: AI_INTEGRATIONS_OPENAI_BASE_URL must be set. Did you forget to provision the OpenAI AI integration?
+    at file:///app/artifacts/api-server/dist/index.mjs:380877:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v20.20.2
+⚠️  DATABASE_URL is not set — database operations will fail until a database is provisioned.
+file:///app/artifacts/api-server/dist/index.mjs:380877
+  throw new Error(
+        ^
+Error: AI_INTEGRATIONS_OPENAI_BASE_URL must be set. Did you forget to provision the OpenAI AI integration?
+    at file:///app/artifacts/api-server/dist/index.mjs:380877:9
+    at ModuleJob.run (node:internal/modules/esm/module_job:325:25)
+    at async ModuleLoader.import (node:internal/modules/esm/loader:606:24)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)
+Node.js v20.20.2
