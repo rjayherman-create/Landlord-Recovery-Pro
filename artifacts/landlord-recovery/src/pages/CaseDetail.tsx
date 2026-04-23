@@ -1614,21 +1614,78 @@ export default function CaseDetail() {
               </h3>
               
               {caseData.status === 'draft' && (
-                <p className="text-sm text-primary-foreground/80 mb-4">Generate your demand letter and send it to the tenant via certified mail.</p>
+                <>
+                  <p className="text-sm text-primary-foreground/80 mb-4">Generate your demand letter and send it to the tenant via certified mail. Once sent, mark it below.</p>
+                  <Button variant="secondary" size="sm" className="w-full" onClick={() => handleStatusChange('demand_sent')} disabled={updateStatus.isPending}>
+                    Mark Demand as Sent
+                  </Button>
+                </>
               )}
               {caseData.status === 'demand_sent' && (
-                <p className="text-sm text-primary-foreground/80 mb-4">Wait for the deadline specified in your letter. If they pay, mark closed. If not, mark 'No Response'.</p>
+                <>
+                  <p className="text-sm text-primary-foreground/80 mb-4">Wait for the deadline in your letter. If the tenant pays, mark closed. If they ignore it, mark no response.</p>
+                  <div className="flex flex-col gap-2">
+                    <Button variant="secondary" size="sm" className="w-full" onClick={() => handleStatusChange('no_response')} disabled={updateStatus.isPending}>
+                      No Response — Proceed to Filing
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10" onClick={() => handleStatusChange('closed')} disabled={updateStatus.isPending}>
+                      Tenant Paid — Mark Closed
+                    </Button>
+                  </div>
+                </>
               )}
               {caseData.status === 'no_response' && (
                 <>
                   <p className="text-sm text-primary-foreground/80 mb-4">Time to file. Check the <Link href="/resources" className="text-accent underline hover:text-white">resources page</Link> for your local court link.</p>
-                  <Button variant="secondary" size="sm" className="w-full" onClick={() => handleStatusChange('filed')}>
+                  <Button variant="secondary" size="sm" className="w-full" onClick={() => handleStatusChange('filed')} disabled={updateStatus.isPending}>
                     Mark as Filed
                   </Button>
                 </>
               )}
               {caseData.status === 'filed' && (
-                <p className="text-sm text-primary-foreground/80 mb-4">You must legally 'serve' the tenant with the lawsuit papers according to local rules.</p>
+                <>
+                  <p className="text-sm text-primary-foreground/80 mb-4">Serve the tenant with the lawsuit papers according to your state's rules. Once served, record your hearing date.</p>
+                  <Button variant="secondary" size="sm" className="w-full" onClick={() => handleStatusChange('hearing_scheduled')} disabled={updateStatus.isPending}>
+                    Hearing Scheduled
+                  </Button>
+                </>
+              )}
+              {caseData.status === 'hearing_scheduled' && (
+                <>
+                  <p className="text-sm text-primary-foreground/80 mb-4">Attend your court hearing with all evidence. The judge will issue a judgment — record the outcome below.</p>
+                  <div className="flex flex-col gap-2">
+                    <Button variant="secondary" size="sm" className="w-full" onClick={() => handleStatusChange('judgment')} disabled={updateStatus.isPending}>
+                      Judgment Received
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10" onClick={() => handleStatusChange('closed')} disabled={updateStatus.isPending}>
+                      Case Dismissed — Mark Closed
+                    </Button>
+                  </div>
+                </>
+              )}
+              {caseData.status === 'judgment' && (
+                <>
+                  <p className="text-sm text-primary-foreground/80 mb-4">Use the Recovery tab to pursue wage garnishment, bank levies, or liens. Mark when you begin active collection.</p>
+                  <div className="flex flex-col gap-2">
+                    <Button variant="secondary" size="sm" className="w-full" onClick={() => handleStatusChange('collection')} disabled={updateStatus.isPending}>
+                      Begin Collection
+                    </Button>
+                    <Button variant="outline" size="sm" className="w-full bg-transparent text-primary-foreground border-primary-foreground/30 hover:bg-primary-foreground/10" onClick={() => handleStatusChange('closed')} disabled={updateStatus.isPending}>
+                      Tenant Paid — Mark Closed
+                    </Button>
+                  </div>
+                </>
+              )}
+              {caseData.status === 'collection' && (
+                <>
+                  <p className="text-sm text-primary-foreground/80 mb-4">Continue collection efforts. Mark closed once the debt is recovered or you decide to stop pursuing it.</p>
+                  <Button variant="secondary" size="sm" className="w-full" onClick={() => handleStatusChange('closed')} disabled={updateStatus.isPending}>
+                    Mark Closed
+                  </Button>
+                </>
+              )}
+              {caseData.status === 'closed' && (
+                <p className="text-sm text-primary-foreground/80">This case is closed. You can reopen it by changing the status using the Edit Case button above.</p>
               )}
             </CardContent>
           </Card>
