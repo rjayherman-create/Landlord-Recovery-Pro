@@ -1,0 +1,1 @@
+ALTER TABLE "landlord_cases" ALTER COLUMN "claim_type" SET DATA TYPE text;

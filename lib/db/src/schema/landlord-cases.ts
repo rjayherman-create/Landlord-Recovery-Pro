@@ -14,7 +14,7 @@ import { z } from "zod/v4";
 
 export const landlordCases = pgTable("landlord_cases", {
   id: serial("id").primaryKey(),
-  claimType: varchar("claim_type", { length: 60 }).notNull(),
+  claimType: text("claim_type").notNull(),
   state: varchar("state", { length: 10 }).notNull().default("NY"),
   landlordName: varchar("landlord_name", { length: 255 }).notNull(),
   landlordCompany: varchar("landlord_company", { length: 255 }),

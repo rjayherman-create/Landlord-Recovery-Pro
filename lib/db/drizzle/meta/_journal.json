@@ -8,6 +8,13 @@
       "when": 1776907153954,
       "tag": "0000_magenta_phantom_reporter",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1776949481672,
+      "tag": "0001_tranquil_maggott",
+      "breakpoints": true
     }
   ]
 }

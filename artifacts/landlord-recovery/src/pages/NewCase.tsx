@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +30,17 @@ const STATES = [
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+const CLAIM_TYPE_VALUES = ["unpaid_rent", "property_damage", "security_deposit", "lease_break", "other"] as const;
+type ClaimTypeValue = typeof CLAIM_TYPE_VALUES[number];
+
+const CLAIM_TYPES: { value: ClaimTypeValue; label: string }[] = [
+  { value: "unpaid_rent",       label: "Unpaid Rent" },
+  { value: "property_damage",   label: "Property Damage" },
+  { value: "security_deposit",  label: "Security Deposit Dispute" },
+  { value: "lease_break",       label: "Lease Break Fees" },
+  { value: "other",             label: "Other" },
+];
 
 const DESCRIPTION_TEMPLATES: Record<string, string> = {
   unpaid_rent:
@@ -65,7 +76,7 @@ function formatRentPeriod(months: string[]): string {
 }
 
 const newCaseSchema = z.object({
-  claimType: z.enum(["unpaid_rent", "property_damage", "security_deposit", "lease_break", "other"] as const, { error: "Please select a claim type" }),
+  claimType: z.array(z.enum(CLAIM_TYPE_VALUES)).min(1, "Select at least one claim type"),
   state: z.string().min(2, "State is required"),
   claimAmount: z.coerce.number().min(1, "Claim amount must be greater than 0"),
   monthlyRent: z.coerce.number().optional(),
@@ -103,7 +114,7 @@ export default function NewCase() {
   const form = useForm<FormValues>({
     resolver: zodResolver(newCaseSchema),
     defaultValues: {
-      claimType: undefined,
+      claimType: [],
       state: "",
       claimAmount: '' as any,
       monthlyRent: undefined,
@@ -132,24 +143,28 @@ export default function NewCase() {
   const watchedMonthlyRent = useWatch({ control: form.control, name: "monthlyRent" });
   const [generatingDesc, setGeneratingDesc] = useState(false);
 
-  // Auto-fill description with a template when claim type is selected and field is empty
+  // Auto-fill description with combined template(s) when claim types change and field is empty
   useEffect(() => {
-    if (watchedClaimType && !form.getValues("description")) {
-      const template = DESCRIPTION_TEMPLATES[watchedClaimType];
-      if (template) form.setValue("description", template, { shouldValidate: true });
+    const types = watchedClaimType;
+    if (types?.length && !form.getValues("description")) {
+      const combined = types
+        .map(t => DESCRIPTION_TEMPLATES[t])
+        .filter(Boolean)
+        .join(" ");
+      if (combined) form.setValue("description", combined, { shouldValidate: true });
     }
-  }, [watchedClaimType]);
+  }, [JSON.stringify(watchedClaimType)]);
 
   const handleGenerateDesc = async () => {
     const vals = form.getValues();
-    if (!vals.claimType || !vals.state || !vals.claimAmount) return;
+    if (!vals.claimType?.length || !vals.state || !vals.claimAmount) return;
     setGeneratingDesc(true);
     try {
       const resp = await fetch("/api/landlord-cases/generate-description", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          claimType: vals.claimType,
+          claimType: Array.isArray(vals.claimType) ? vals.claimType.join(",") : vals.claimType,
           state: vals.state,
           claimAmount: vals.claimAmount,
           monthlyRent: vals.monthlyRent || null,
@@ -189,7 +204,7 @@ export default function NewCase() {
     const count = selectedMonths.size;
     form.setValue("monthsOwed", count, { shouldValidate: false });
     form.setValue("rentPeriod", formatRentPeriod([...selectedMonths]), { shouldValidate: false });
-    if (watchedClaimType === "unpaid_rent" && watchedMonthlyRent && count > 0) {
+    if (watchedClaimType?.includes("unpaid_rent") && watchedMonthlyRent && count > 0) {
       const total = Number(watchedMonthlyRent) * count;
       if (total > 0) form.setValue("claimAmount", total, { shouldValidate: true });
     }
@@ -215,7 +230,11 @@ export default function NewCase() {
   };
 
   const onSubmit = (data: FormValues) => {
-    createCase.mutate({ data: data as any }, {
+    const submitData = {
+      ...data,
+      claimType: Array.isArray(data.claimType) ? data.claimType.join(",") : data.claimType,
+    };
+    createCase.mutate({ data: submitData as any }, {
       onSuccess: (newCase) => {
         toast({
           title: "Case Created",
@@ -301,22 +320,40 @@ export default function NewCase() {
                       control={form.control}
                       name="claimType"
                       render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Claim Type</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select type" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="unpaid_rent">Unpaid Rent</SelectItem>
-                              <SelectItem value="property_damage">Property Damage</SelectItem>
-                              <SelectItem value="security_deposit">Security Deposit Dispute</SelectItem>
-                              <SelectItem value="lease_break">Lease Break Fees</SelectItem>
-                              <SelectItem value="other">Other</SelectItem>
-                            </SelectContent>
-                          </Select>
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>
+                            Claim Type{" "}
+                            <span className="text-xs font-normal text-muted-foreground">(select all that apply)</span>
+                          </FormLabel>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-1">
+                            {CLAIM_TYPES.map(({ value, label }) => {
+                              const isChecked = (field.value as string[])?.includes(value);
+                              return (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => {
+                                    const current = (field.value as string[]) || [];
+                                    field.onChange(
+                                      isChecked
+                                        ? current.filter(v => v !== value)
+                                        : [...current, value]
+                                    );
+                                  }}
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-md border text-sm text-left transition-all ${
+                                    isChecked
+                                      ? "border-accent bg-accent/10 text-accent-foreground font-medium"
+                                      : "border-border hover:border-primary/40 hover:bg-muted text-foreground"
+                                  }`}
+                                >
+                                  <div className={`h-4 w-4 shrink-0 rounded border flex items-center justify-center ${isChecked ? "bg-accent border-accent" : "border-muted-foreground/40"}`}>
+                                    {isChecked && <Check className="h-3 w-3 text-accent-foreground" />}
+                                  </div>
+                                  {label}
+                                </button>
+                              );
+                            })}
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -346,7 +383,7 @@ export default function NewCase() {
                     />
                   </div>
 
-                  {watchedClaimType === "unpaid_rent" ? (
+                  {watchedClaimType?.includes("unpaid_rent") ? (
                     <div className="space-y-4">
                       <FormField
                         control={form.control}
@@ -478,14 +515,18 @@ export default function NewCase() {
                         <div className="flex items-center justify-between">
                           <FormLabel>Brief Description</FormLabel>
                           <div className="flex items-center gap-1">
-                            {watchedClaimType && DESCRIPTION_TEMPLATES[watchedClaimType] && (
+                            {watchedClaimType?.length > 0 && (
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
                                 onClick={() => {
-                                  form.setValue("description", DESCRIPTION_TEMPLATES[watchedClaimType], { shouldValidate: true });
+                                  const combined = (watchedClaimType as string[])
+                                    .map(t => DESCRIPTION_TEMPLATES[t])
+                                    .filter(Boolean)
+                                    .join(" ");
+                                  if (combined) form.setValue("description", combined, { shouldValidate: true });
                                 }}
                               >
                                 Use template
@@ -496,7 +537,7 @@ export default function NewCase() {
                               variant="ghost"
                               size="sm"
                               className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                              disabled={generatingDesc || !form.getValues("claimType") || !form.getValues("state") || !form.getValues("claimAmount")}
+                              disabled={generatingDesc || !form.getValues("claimType")?.length || !form.getValues("state") || !form.getValues("claimAmount")}
                               onClick={handleGenerateDesc}
                             >
                               {generatingDesc
