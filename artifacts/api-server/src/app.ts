@@ -66,8 +66,27 @@ app.use(cors({ credentials: true, origin: true }));
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve static frontend files BEFORE Clerk middleware — no auth needed for assets
+if (process.env.NODE_ENV === "production") {
+  const landlordDir = path.join(process.cwd(), "artifacts/landlord-recovery/dist/public");
+  app.use(express.static(landlordDir));
+}
+
 // Clerk middleware — attaches auth state to req; does NOT block unauthenticated requests
-app.use(clerkMiddleware());
+// Wrapped so a bad/missing key logs a warning instead of crashing every request
+app.use((req, res, next) => {
+  if (!process.env.CLERK_PUBLISHABLE_KEY && !process.env.CLERK_SECRET_KEY) {
+    return next();
+  }
+  clerkMiddleware()(req, res, (err) => {
+    if (err) {
+      logger.warn({ err }, "Clerk middleware error — continuing without auth");
+      return next();
+    }
+    next();
+  });
+});
 
 app.use("/api", router);
 
@@ -75,12 +94,13 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// SPA fallback — after static assets and API routes
 if (process.env.NODE_ENV === "production") {
-  // Landlord Recovery — served at root /
   const landlordDir = path.join(process.cwd(), "artifacts/landlord-recovery/dist/public");
-  app.use(express.static(landlordDir));
   app.get("*path", (_req, res) => {
-    res.sendFile(path.join(landlordDir, "index.html"));
+    res.sendFile(path.join(landlordDir, "index.html"), (err) => {
+      if (err) res.status(200).sendFile(path.join(landlordDir, "index.html"));
+    });
   });
 }
 
