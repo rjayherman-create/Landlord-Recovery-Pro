@@ -36,13 +36,18 @@ export function CaseStatusBadge({ status, className = "" }: { status: StatusType
 }
 
 export function ClaimTypeBadge({ type }: { type: string }) {
-  const formatType = (t: string) => {
-    return t.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-  };
+  const formatType = (t: string) =>
+    t.trim().split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+  const types = (type ?? "").split(',').map(t => t.trim()).filter(Boolean);
 
   return (
-    <Badge variant="outline" className="bg-accent/10 text-accent-foreground border-accent/20">
-      {formatType(type)}
-    </Badge>
+    <div className="flex flex-wrap gap-1">
+      {types.map(t => (
+        <Badge key={t} variant="outline" className="bg-accent/10 text-accent-foreground border-accent/20">
+          {formatType(t)}
+        </Badge>
+      ))}
+    </div>
   );
 }

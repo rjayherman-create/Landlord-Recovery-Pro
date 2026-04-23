@@ -521,7 +521,7 @@ export default function CaseDetail() {
                       <Label className="text-sm mb-1 block">Claim Amount ($)</Label>
                       <Input type="number" value={editForm.claimAmount || ""} onChange={e => setEditForm(f => ({ ...f, claimAmount: e.target.value }))} />
                     </div>
-                    {editForm.claimType === "unpaid_rent" && (
+                    {editForm.claimType?.includes("unpaid_rent") && (
                       <>
                         <div>
                           <Label className="text-sm mb-1 block">Monthly Rent ($)</Label>
@@ -1216,7 +1216,11 @@ export default function CaseDetail() {
                       </div>
                       <div className="flex justify-between border-b pb-1 border-border">
                         <dt className="text-muted-foreground">Type</dt>
-                        <dd className="font-medium">{caseData.claimType.replace('_', ' ').toUpperCase()}</dd>
+                        <dd className="font-medium">
+                          {(caseData.claimType ?? "").split(',').filter(Boolean)
+                            .map(t => t.trim().split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
+                            .join(', ')}
+                        </dd>
                       </div>
                       <div className="flex justify-between border-b pb-1 border-border">
                         <dt className="text-muted-foreground">State</dt>
@@ -1228,14 +1232,14 @@ export default function CaseDetail() {
                           <dd className="font-medium">{formatCurrency(caseData.monthlyRent)}</dd>
                         </div>
                       )}
-                      {caseData.claimType === "unpaid_rent" && caseData.monthsOwed && Number(caseData.monthsOwed) > 0 && (
+                      {caseData.claimType?.includes("unpaid_rent") && caseData.monthsOwed && Number(caseData.monthsOwed) > 0 && (
                         <div className="flex justify-between border-b pb-1 border-border">
                           <dt className="text-muted-foreground">Months Unpaid</dt>
                           <dd className="font-medium">{caseData.monthsOwed}</dd>
                         </div>
                       )}
                     </dl>
-                    {caseData.claimType === "unpaid_rent" && caseData.monthlyRent && caseData.monthsOwed && Number(caseData.monthsOwed) > 0 && (
+                    {caseData.claimType?.includes("unpaid_rent") && caseData.monthlyRent && caseData.monthsOwed && Number(caseData.monthsOwed) > 0 && (
                       <div className="mt-3 rounded-md border border-accent/30 bg-accent/5 px-4 py-3 text-sm">
                         <div className="flex items-center justify-between">
                           <span className="text-muted-foreground">

@@ -940,7 +940,12 @@ export default function NewCase() {
                     <dl className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 text-sm">
                       <div>
                         <dt className="text-muted-foreground">Claim Type</dt>
-                        <dd className="font-medium">{form.getValues().claimType?.replace('_', ' ').toUpperCase()}</dd>
+                        <dd className="font-medium">
+                          {(Array.isArray(form.getValues().claimType) ? form.getValues().claimType : [form.getValues().claimType])
+                            .filter(Boolean)
+                            .map(t => t.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
+                            .join(', ')}
+                        </dd>
                       </div>
                       <div>
                         <dt className="text-muted-foreground">Claim Amount</dt>
