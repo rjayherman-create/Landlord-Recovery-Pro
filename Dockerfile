@@ -20,7 +20,7 @@ RUN BASE_PATH=/ NODE_ENV=production pnpm --filter @workspace/landlord-recovery r
 RUN pnpm --filter @workspace/api-server run build
 
 # Remove devDependencies before copying node_modules to runner
-RUN pnpm prune --prod
+RUN CI=true pnpm prune --prod
 
 FROM node:20-slim AS runner
 
