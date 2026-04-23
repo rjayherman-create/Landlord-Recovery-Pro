@@ -332,11 +332,29 @@ export default function CaseDetail() {
 
   // Attachments state
   const [attachments, setAttachments] = useState<any[]>([]);
-  const [uploadCategory, setUploadCategory] = useState("lease");
-  const [uploadNotes, setUploadNotes] = useState("");
+  const [uploadCategory, setUploadCategory] = useState("other");
+  const [uploadLabel, setUploadLabel] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [isDeletingAttachment, setIsDeletingAttachment] = useState<number | null>(null);
+  const [editingAttachmentId, setEditingAttachmentId] = useState<number | null>(null);
+  const [editLabel, setEditLabel] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [isSavingAttachment, setIsSavingAttachment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const ATTACHMENT_CATEGORIES = [
+    { value: "lease", label: "Lease Agreement" },
+    { value: "ledger", label: "Rent Ledger / Payment Records" },
+    { value: "photo", label: "Photographs" },
+    { value: "notice", label: "Notice to Quit / Vacate" },
+    { value: "5_day_notice", label: "5-Day Notice to Pay" },
+    { value: "10_day_notice", label: "10-Day Notice" },
+    { value: "14_day_notice", label: "14-Day Notice" },
+    { value: "30_day_notice", label: "30-Day Notice to Vacate" },
+    { value: "correspondence", label: "Correspondence" },
+    { value: "court", label: "Court Filing" },
+    { value: "other", label: "Other" },
+  ];
 
   const fetchAttachments = useCallback(async () => {
     if (!caseId) return;
@@ -347,28 +365,60 @@ export default function CaseDetail() {
   }, [caseId]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
     setIsUploading(true);
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("category", uploadCategory);
-      if (uploadNotes) fd.append("notes", uploadNotes);
-      const res = await fetch(`/api/landlord-cases/${caseId}/attachments`, { method: "POST", body: fd });
-      if (res.ok) {
-        toast({ title: "File Uploaded", description: file.name });
-        setUploadNotes("");
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        fetchAttachments();
-      } else {
-        const err = await res.json();
-        toast({ title: "Upload Failed", description: err.message || "Unknown error", variant: "destructive" });
-      }
+      await Promise.allSettled(files.map(async (file) => {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("category", uploadCategory);
+        if (uploadLabel) fd.append("notes", uploadLabel);
+        await fetch(`/api/landlord-cases/${caseId}/attachments`, { method: "POST", body: fd });
+      }));
+      toast({ title: files.length === 1 ? "File Uploaded" : `${files.length} Files Uploaded` });
+      setUploadLabel("");
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      fetchAttachments();
     } catch {
       toast({ title: "Upload Failed", variant: "destructive" });
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const startEditAttachment = (att: any) => {
+    setEditingAttachmentId(att.id);
+    setEditLabel(att.notes || "");
+    setEditCategory(att.category || "other");
+  };
+
+  const cancelEditAttachment = () => {
+    setEditingAttachmentId(null);
+    setEditLabel("");
+    setEditCategory("");
+  };
+
+  const handleSaveAttachment = async (id: number) => {
+    setIsSavingAttachment(true);
+    try {
+      const res = await fetch(`/api/landlord-cases/${caseId}/attachments/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category: editCategory, notes: editLabel }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setAttachments(prev => prev.map(a => a.id === id ? updated : a));
+        toast({ title: "Evidence Updated" });
+        cancelEditAttachment();
+      } else {
+        toast({ title: "Update Failed", variant: "destructive" });
+      }
+    } catch {
+      toast({ title: "Update Failed", variant: "destructive" });
+    } finally {
+      setIsSavingAttachment(false);
     }
   };
 
@@ -1412,51 +1462,47 @@ export default function CaseDetail() {
               </div>
             </CardContent>
           </Card>
-          {/* Attachments Section */}
+          {/* Evidence / Attachments Section */}
           <Card className="border-border shadow-sm">
             <CardHeader className="pb-2 bg-muted/10 border-b">
               <CardTitle className="text-lg flex items-center">
                 <Paperclip className="h-5 w-5 mr-2 text-primary" />
-                Attachments
+                Evidence &amp; Attachments
               </CardTitle>
-              <CardDescription>Lease, notices, photos, and supporting documents.</CardDescription>
+              <CardDescription>Attach and label documents, photos, and notices for court presentation.</CardDescription>
             </CardHeader>
             <CardContent className="pt-6 space-y-5">
-              {/* Upload Row */}
+              {/* Upload area */}
               <div className="rounded-lg border border-dashed p-4 space-y-3">
                 <div className="flex flex-wrap gap-3 items-end">
-                  <div className="flex-1 min-w-[140px]">
+                  <div className="flex-1 min-w-[160px]">
+                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">Evidence Label</label>
+                    <Input
+                      placeholder="e.g. Signed lease — May 2022"
+                      value={uploadLabel}
+                      onChange={e => setUploadLabel(e.target.value)}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-[160px]">
                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">Category</label>
                     <select
                       value={uploadCategory}
                       onChange={e => setUploadCategory(e.target.value)}
                       className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                     >
-                      <option value="lease">Lease Agreement</option>
-                      <option value="5_day_notice">5-Day Notice to Pay</option>
-                      <option value="10_day_notice">10-Day Notice</option>
-                      <option value="14_day_notice">14-Day Notice</option>
-                      <option value="30_day_notice">30-Day Notice to Vacate</option>
-                      <option value="photos">Photos / Evidence</option>
-                      <option value="correspondence">Correspondence</option>
-                      <option value="other">Other</option>
+                      {ATTACHMENT_CATEGORIES.map(c => (
+                        <option key={c.value} value={c.value}>{c.label}</option>
+                      ))}
                     </select>
-                  </div>
-                  <div className="flex-1 min-w-[160px]">
-                    <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">Notes (optional)</label>
-                    <Input
-                      placeholder="e.g. Signed lease from 2023"
-                      value={uploadNotes}
-                      onChange={e => setUploadNotes(e.target.value)}
-                      className="h-9"
-                    />
                   </div>
                   <div>
                     <input
                       ref={fileInputRef}
                       type="file"
+                      multiple
                       className="hidden"
-                      accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.txt,.doc,.docx"
+                      accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.txt,.doc,.docx"
                       onChange={handleUpload}
                     />
                     <Button
@@ -1467,74 +1513,124 @@ export default function CaseDetail() {
                       onClick={() => fileInputRef.current?.click()}
                       className="h-9"
                     >
-                      {isUploading ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4 mr-2" />
-                      )}
-                      {isUploading ? "Uploading..." : "Choose File"}
+                      {isUploading ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+                      {isUploading ? "Uploading..." : "Add Files"}
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">Supports PDF, Word, images (JPG, PNG, WEBP). Max 25 MB.</p>
+                <p className="text-xs text-muted-foreground">PDF, Word, images (JPG, PNG, WEBP, HEIC). Up to 25 MB each. Multiple files at once supported.</p>
               </div>
 
               {/* File List */}
               {attachments.length === 0 ? (
                 <div className="text-center py-6 text-sm text-muted-foreground">
-                  No files attached yet. Upload your lease, notices, and supporting documents above.
+                  No evidence attached yet. Add your lease, notices, photos, and supporting documents above.
                 </div>
               ) : (
                 <ul className="divide-y divide-border">
                   {attachments.map((att: any) => {
                     const isImage = att.mimeType?.startsWith("image/");
-                    const categoryLabel: Record<string, string> = {
-                      lease: "Lease", "5_day_notice": "5-Day Notice", "10_day_notice": "10-Day Notice",
-                      "14_day_notice": "14-Day Notice", "30_day_notice": "30-Day Notice",
-                      photos: "Photos", correspondence: "Correspondence", other: "Other"
-                    };
+                    const catLabel = ATTACHMENT_CATEGORIES.find(c => c.value === att.category)?.label ?? att.category;
+                    const isEditing = editingAttachmentId === att.id;
+
                     return (
-                      <li key={att.id} className="flex items-start gap-3 py-3">
-                        <div className="mt-0.5 text-muted-foreground">
-                          {isImage ? <FileImage className="h-5 w-5" /> : <File className="h-5 w-5" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <a
-                            href={att.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium text-primary hover:underline truncate block"
-                          >
-                            {att.fileName}
-                          </a>
-                          <div className="flex flex-wrap gap-2 mt-0.5">
-                            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
-                              {categoryLabel[att.category] || att.category}
-                            </span>
-                            {att.fileSize && (
-                              <span className="text-xs text-muted-foreground">
-                                {(att.fileSize / 1024).toFixed(0)} KB
-                              </span>
+                      <li key={att.id} className="py-3 space-y-2">
+                        <div className="flex items-start gap-3">
+                          {/* Icon */}
+                          <div className="mt-0.5 text-muted-foreground shrink-0">
+                            {isImage ? <FileImage className="h-5 w-5" /> : <File className="h-5 w-5" />}
+                          </div>
+
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            {/* Label as primary title */}
+                            {att.notes ? (
+                              <p className="text-sm font-semibold text-foreground truncate">{att.notes}</p>
+                            ) : null}
+                            {/* Filename as secondary link */}
+                            <a
+                              href={att.fileUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`hover:underline truncate block ${att.notes ? "text-xs text-primary mt-0.5" : "text-sm font-semibold text-primary"}`}
+                            >
+                              {att.fileName}
+                            </a>
+                            <div className="flex flex-wrap gap-2 mt-1">
+                              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{catLabel}</span>
+                              {att.fileSize && (
+                                <span className="text-xs text-muted-foreground">{(att.fileSize / 1024).toFixed(0)} KB</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="flex gap-1 shrink-0">
+                            {!isEditing && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                onClick={() => startEditAttachment(att)}
+                                title="Edit label and category"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
                             )}
-                            {att.notes && (
-                              <span className="text-xs text-muted-foreground italic">{att.notes}</span>
-                            )}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                              disabled={isDeletingAttachment === att.id}
+                              onClick={() => handleDeleteAttachment(att.id)}
+                            >
+                              {isDeletingAttachment === att.id ? (
+                                <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <X className="h-3.5 w-3.5" />
+                              )}
+                            </Button>
                           </div>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
-                          disabled={isDeletingAttachment === att.id}
-                          onClick={() => handleDeleteAttachment(att.id)}
-                        >
-                          {isDeletingAttachment === att.id ? (
-                            <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <X className="h-3.5 w-3.5" />
-                          )}
-                        </Button>
+
+                        {/* Inline edit form */}
+                        {isEditing && (
+                          <div className="ml-8 p-3 rounded-lg border border-border bg-muted/20 space-y-3">
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div>
+                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">Evidence Label</label>
+                                <Input
+                                  value={editLabel}
+                                  onChange={e => setEditLabel(e.target.value)}
+                                  placeholder="e.g. Front door damage — July 2023"
+                                  className="h-8 text-sm"
+                                  autoFocus
+                                />
+                              </div>
+                              <div>
+                                <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1">Category</label>
+                                <select
+                                  value={editCategory}
+                                  onChange={e => setEditCategory(e.target.value)}
+                                  className="w-full h-8 text-sm rounded-md border border-input bg-background px-2 focus:outline-none focus:ring-1 focus:ring-ring"
+                                >
+                                  {ATTACHMENT_CATEGORIES.map(c => (
+                                    <option key={c.value} value={c.value}>{c.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <Button type="button" variant="outline" size="sm" className="h-7 text-xs" onClick={cancelEditAttachment}>Cancel</Button>
+                              <Button type="button" size="sm" className="h-7 text-xs" disabled={isSavingAttachment} onClick={() => handleSaveAttachment(att.id)}>
+                                {isSavingAttachment ? <RefreshCw className="h-3 w-3 animate-spin mr-1" /> : <Save className="h-3 w-3 mr-1" />}
+                                Save
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       </li>
                     );
                   })}

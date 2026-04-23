@@ -314,6 +314,22 @@ router.get("/landlord-cases/:id/attachments", async (req: any, res: any) => {
   }
 });
 
+router.patch("/landlord-cases/:caseId/attachments/:attachmentId", async (req: any, res: any) => {
+  try {
+    const attachmentId = Number(req.params.attachmentId);
+    if (isNaN(attachmentId)) return res.status(400).json({ error: "bad_request", message: "Invalid attachment ID" });
+    const { category, notes } = req.body as { category?: string; notes?: string };
+    const updates: Partial<typeof landlordCaseAttachments.$inferInsert> = {};
+    if (category !== undefined) updates.category = category;
+    if (notes !== undefined) updates.notes = notes ?? null;
+    const [updated] = await db.update(landlordCaseAttachments).set(updates).where(eq(landlordCaseAttachments.id, attachmentId)).returning();
+    if (!updated) return res.status(404).json({ error: "not_found" });
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: "update_error", message: err.message });
+  }
+});
+
 router.delete("/landlord-cases/:caseId/attachments/:attachmentId", async (req: any, res: any) => {
   try {
     const attachmentId = Number(req.params.attachmentId);
