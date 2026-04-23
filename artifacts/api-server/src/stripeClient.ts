@@ -1,11 +1,20 @@
 import Stripe from 'stripe';
 
 async function getCredentials(): Promise<{ secretKey: string; publishableKey: string }> {
-  if (process.env.STRIPE_API_KEY) {
-    return {
-      secretKey: process.env.STRIPE_API_KEY,
-      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY ?? '',
-    };
+  const secretKey =
+    process.env.STRIPE_API_KEY ||
+    process.env.STRIPE_SECRET_KEY ||
+    process.env.STRIPE_SECRET ||
+    '';
+
+  const publishableKey =
+    process.env.STRIPE_PUBLISHABLE_KEY ||
+    process.env.VITE_STRIPE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+    '';
+
+  if (secretKey) {
+    return { secretKey, publishableKey };
   }
 
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
