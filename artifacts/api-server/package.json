@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "export NODE_ENV=development && node ./build.mjs && node --enable-source-maps ./dist/index.mjs",
     "build": "node ./build.mjs",
-    "start": "node --enable-source-maps ./dist/index.mjs"
+    "start": "node --enable-source-maps ./dist/index.mjs",
+    "seed": "tsx src/seed-landlord-cases.ts"
   },
   "dependencies": {
     "@clerk/express": "^2.1.5",
