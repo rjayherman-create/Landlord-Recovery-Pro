@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
-import { useSubscription, startSubscriptionCheckout } from "@/hooks/useSubscription";
+import { useSubscription } from "@/hooks/useSubscription";
 import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle, ChevronsUpDown, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1050,24 +1050,18 @@ export default function NewCase() {
                           <Lock className="h-6 w-6 text-accent" />
                         </div>
                       </div>
-                      <h3 className="font-semibold text-lg">Save This Case — Subscribe to Continue</h3>
+                      <h3 className="font-semibold text-lg">Save This Case — Unlock Pro to Continue</h3>
                       <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                        Your information is ready. Subscribe to save this case, generate your demand letter, and access all court documents.
+                        Your information is ready. Choose a plan to save this case, generate your demand letter, and access all court documents.
                       </p>
                       <Button
                         type="button"
                         className="bg-accent text-accent-foreground hover:bg-accent/90 px-8"
-                        onClick={async () => {
-                          try {
-                            await startSubscriptionCheckout(form.getValues().landlordEmail || undefined);
-                          } catch {
-                            toast({ title: "Checkout unavailable", description: "Please try again or contact support.", variant: "destructive" });
-                          }
-                        }}
+                        onClick={() => setLocation("/pricing")}
                       >
-                        Subscribe & Save Case
+                        View Plans & Pricing
                       </Button>
-                      <p className="text-xs text-muted-foreground">Billed monthly · Cancel anytime</p>
+                      <p className="text-xs text-muted-foreground">Monthly subscription or one-time annual payment</p>
                     </div>
                   )}
 
@@ -1131,15 +1125,9 @@ export default function NewCase() {
                   <Button
                     type="button"
                     className="bg-accent text-accent-foreground hover:bg-accent/90"
-                    onClick={async () => {
-                      try {
-                        await startSubscriptionCheckout(form.getValues().landlordEmail || undefined);
-                      } catch {
-                        toast({ title: "Checkout unavailable", description: "Please try again.", variant: "destructive" });
-                      }
-                    }}
+                    onClick={() => setLocation("/pricing")}
                   >
-                    <Lock className="mr-2 h-4 w-4" /> Subscribe to Save
+                    <Lock className="mr-2 h-4 w-4" /> View Plans to Save
                   </Button>
                 )}
               </div>
