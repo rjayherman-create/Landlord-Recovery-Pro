@@ -73,6 +73,67 @@ router.post("/landlord/subscription/create", async (req: any, res) => {
   }
 });
 
+async function findOrCreateProPrice(stripe: Stripe): Promise<string> {
+  const envPriceId = process.env.STRIPE_PRO_PRICE_ID;
+  if (envPriceId) return envPriceId;
+
+  const products = await stripe.products.search({
+    query: "name:'Recovery Pro Unlimited' AND active:'true'",
+  });
+
+  let productId: string;
+  if (products.data.length > 0) {
+    productId = products.data[0].id;
+  } else {
+    const product = await stripe.products.create({
+      name: "Recovery Pro Unlimited",
+      description: "Unlimited cases per month — best for active landlords.",
+      metadata: { plan: "pro_unlimited" },
+    });
+    productId = product.id;
+  }
+
+  const prices = await stripe.prices.list({ product: productId, active: true, type: "recurring" });
+  if (prices.data.length > 0) return prices.data[0].id;
+
+  const price = await stripe.prices.create({
+    product: productId,
+    unit_amount: 7900,
+    currency: "usd",
+    recurring: { interval: "month" },
+  });
+  return price.id;
+}
+
+router.post("/landlord/subscription/create-pro", async (req: any, res) => {
+  try {
+    const stripe = await getStripe();
+    const priceId = await findOrCreateProPrice(stripe);
+    const userId = req.auth?.userId as string | undefined;
+
+    const baseUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: "subscription",
+      payment_method_types: ["card"],
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${baseUrl}/landlord-recovery/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/landlord-recovery/pricing`,
+      metadata: { type: "landlord-subscription", ...(userId ? { userId } : {}) },
+    };
+
+    if (req.body?.email) {
+      sessionParams.customer_email = req.body.email;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    res.json({ url: session.url });
+  } catch (err: any) {
+    logger.error({ err }, "Failed to create pro subscription checkout");
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.post("/landlord/subscription/portal", async (req: any, res) => {
   try {
     const userId = req.auth?.userId as string | undefined;
