@@ -640,7 +640,7 @@ export default function NewCase() {
                         </div>
                         <FormControl>
                           <Textarea
-                            placeholder="Select claim types above to auto-load a template, or type your own description here."
+                            placeholder="Select claim types above to auto-load a starter template — then edit freely, paste from a document, or write your own description from scratch."
                             className="min-h-[120px]"
                             {...field}
                             onChange={(e) => {
@@ -650,6 +650,9 @@ export default function NewCase() {
                             }}
                           />
                         </FormControl>
+                        <p className="text-xs text-muted-foreground">
+                          You can type directly, paste copied text, or copy and paste the contents of a Word or text document into this box.
+                        </p>
                         <FormMessage />
                       </FormItem>
                     )}
