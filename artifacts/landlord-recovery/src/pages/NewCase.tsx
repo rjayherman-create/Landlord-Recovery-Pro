@@ -4,12 +4,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -28,6 +29,11 @@ const STATES = [
   "NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT",
   "VA","WA","WV","WI","WY","DC","Other"
 ];
+
+const STATE_EXTRA_NAMES: Record<string, string> = {
+  DC: "District of Columbia",
+  Other: "Other / Out of State",
+};
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -147,6 +153,7 @@ export default function NewCase() {
   const stateInfo = watchedState ? STATE_REQUIREMENTS[watchedState] : null;
   const stateLimit = stateInfo?.smallClaimsLimit ?? null;
   const [generatingDesc, setGeneratingDesc] = useState(false);
+  const [stateOpen, setStateOpen] = useState(false);
 
   // Currency display state for claim amount
   const [claimDisplay, setClaimDisplay] = useState("");
@@ -385,20 +392,56 @@ export default function NewCase() {
                       control={form.control}
                       name="state"
                       render={({ field }) => (
-                        <FormItem>
+                        <FormItem className="flex flex-col">
                           <FormLabel>State</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select state" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {STATES.map(s => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Popover open={stateOpen} onOpenChange={setStateOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  role="combobox"
+                                  aria-expanded={stateOpen}
+                                  className="justify-between font-normal text-left"
+                                >
+                                  {field.value
+                                    ? (() => {
+                                        const name = STATE_REQUIREMENTS[field.value]?.name ?? STATE_EXTRA_NAMES[field.value] ?? field.value;
+                                        return `${field.value}${name !== field.value ? ` — ${name}` : ""}`;
+                                      })()
+                                    : <span className="text-muted-foreground">Type a state code or name…</span>
+                                  }
+                                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[280px] p-0" align="start">
+                              <Command>
+                                <CommandInput placeholder="Type state code or name (e.g. NY)" />
+                                <CommandList className="max-h-60 overflow-y-auto">
+                                  <CommandEmpty>No state found.</CommandEmpty>
+                                  <CommandGroup>
+                                    {STATES.map(code => {
+                                      const fullName = STATE_REQUIREMENTS[code]?.name ?? STATE_EXTRA_NAMES[code] ?? code;
+                                      return (
+                                        <CommandItem
+                                          key={code}
+                                          value={`${code} ${fullName}`}
+                                          onSelect={() => {
+                                            field.onChange(code);
+                                            setStateOpen(false);
+                                          }}
+                                        >
+                                          <Check className={`mr-2 h-4 w-4 ${field.value === code ? "opacity-100" : "opacity-0"}`} />
+                                          <span className="font-mono font-medium w-8 shrink-0">{code}</span>
+                                          <span className="text-muted-foreground">{fullName}</span>
+                                        </CommandItem>
+                                      );
+                                    })}
+                                  </CommandGroup>
+                                </CommandList>
+                              </Command>
+                            </PopoverContent>
+                          </Popover>
                           <FormMessage />
                         </FormItem>
                       )}
