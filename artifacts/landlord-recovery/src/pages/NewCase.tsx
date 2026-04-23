@@ -31,6 +31,19 @@ const STATES = [
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const MONTH_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+const DESCRIPTION_TEMPLATES: Record<string, string> = {
+  unpaid_rent:
+    "Tenant has failed to pay rent as required under the lease agreement. Despite multiple requests for payment, the outstanding balance remains unpaid. Plaintiff seeks recovery of all unpaid rent, plus any applicable late fees, filing fees, and court costs.",
+  property_damage:
+    "Tenant caused damage to the rental property beyond normal wear and tear during their tenancy. The cost to repair the damage exceeds the security deposit held. Plaintiff seeks recovery of all repair costs and any additional losses resulting from the tenant's negligence or misconduct.",
+  security_deposit:
+    "Landlord has failed to return the security deposit as required by state law following the end of the tenancy. Despite written demand, the deposit has not been returned or properly itemized. Plaintiff seeks return of the full deposit plus any applicable statutory damages and interest.",
+  lease_break:
+    "Tenant vacated the rental property before the end of the lease term without proper notice, in breach of the lease agreement. Plaintiff seeks recovery of unpaid rent for the remaining lease term, re-letting costs, and any other losses resulting from the early termination.",
+  other:
+    "Describe what happened, when it occurred, and what you are seeking to recover. Include any relevant dates, amounts, and steps you have already taken to resolve the matter.",
+};
+
 function formatRentPeriod(months: string[]): string {
   if (months.length === 0) return "";
   const sorted = [...months].sort();
@@ -118,6 +131,14 @@ export default function NewCase() {
   const watchedClaimType = useWatch({ control: form.control, name: "claimType" });
   const watchedMonthlyRent = useWatch({ control: form.control, name: "monthlyRent" });
   const [generatingDesc, setGeneratingDesc] = useState(false);
+
+  // Auto-fill description with a template when claim type is selected and field is empty
+  useEffect(() => {
+    if (watchedClaimType && !form.getValues("description")) {
+      const template = DESCRIPTION_TEMPLATES[watchedClaimType];
+      if (template) form.setValue("description", template, { shouldValidate: true });
+    }
+  }, [watchedClaimType]);
 
   const handleGenerateDesc = async () => {
     const vals = form.getValues();
@@ -456,24 +477,39 @@ export default function NewCase() {
                       <FormItem>
                         <div className="flex items-center justify-between">
                           <FormLabel>Brief Description</FormLabel>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                            disabled={generatingDesc || !form.getValues("claimType") || !form.getValues("state") || !form.getValues("claimAmount")}
-                            onClick={handleGenerateDesc}
-                          >
-                            {generatingDesc
-                              ? <><Loader2 className="h-3 w-3 animate-spin" /> Generating…</>
-                              : <><Sparkles className="h-3 w-3" /> Generate with AI</>
-                            }
-                          </Button>
+                          <div className="flex items-center gap-1">
+                            {watchedClaimType && DESCRIPTION_TEMPLATES[watchedClaimType] && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                                onClick={() => {
+                                  form.setValue("description", DESCRIPTION_TEMPLATES[watchedClaimType], { shouldValidate: true });
+                                }}
+                              >
+                                Use template
+                              </Button>
+                            )}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                              disabled={generatingDesc || !form.getValues("claimType") || !form.getValues("state") || !form.getValues("claimAmount")}
+                              onClick={handleGenerateDesc}
+                            >
+                              {generatingDesc
+                                ? <><Loader2 className="h-3 w-3 animate-spin" /> Generating…</>
+                                : <><Sparkles className="h-3 w-3" /> Generate with AI</>
+                              }
+                            </Button>
+                          </div>
                         </div>
                         <FormControl>
                           <Textarea 
-                            placeholder="Briefly describe what happened, or click Generate with AI above to draft one from your case details." 
-                            className="min-h-[100px]"
+                            placeholder="Select a claim type above to load a starter template, or describe what happened in your own words."
+                            className="min-h-[120px]"
                             {...field} 
                           />
                         </FormControl>
