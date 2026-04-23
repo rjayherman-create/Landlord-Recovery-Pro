@@ -92,13 +92,21 @@ const newCaseSchema = z.object({
   rentPeriod: z.string().optional(),
   description: z.string().min(10, "Please provide a brief description"),
   
-  landlordName: z.string().min(2, "Your name is required"),
+  landlordName: z.string()
+    .min(2, "Your name is required")
+    .refine(v => v.trim().split(/\s+/).filter(Boolean).length >= 2, "Please enter your full legal name (first and last)"),
   landlordCompany: z.string().optional(),
+  filingAsLLC: z.boolean().optional(),
   landlordAddress: z.string().optional(),
   landlordEmail: z.string().email("Invalid email").optional().or(z.literal("")),
   landlordPhone: z.string().optional(),
   
-  tenantName: z.string().min(2, "Tenant name is required"),
+  tenantName: z.string()
+    .min(2, "Tenant name is required")
+    .refine(v => {
+      const parts = v.split(',').map(s => s.trim()).filter(Boolean);
+      return parts.every(p => p.split(/\s+/).filter(Boolean).length >= 2);
+    }, "Each tenant must have a first and last name (e.g. Jane Smith, or Jane Smith, Robert Smith)"),
   tenantEmail: z.string().email("Invalid email").optional().or(z.literal("")),
   tenantPhone: z.string().optional(),
   tenantAddress: z.string().optional(),
@@ -131,6 +139,7 @@ export default function NewCase() {
       description: "",
       landlordName: "",
       landlordCompany: "",
+      filingAsLLC: false,
       landlordAddress: "",
       landlordEmail: "",
       landlordPhone: "",
@@ -157,6 +166,7 @@ export default function NewCase() {
   const [stateOpen, setStateOpen] = useState(false);
   const { data: subscription } = useSubscription();
   const isPro = subscription?.isPro ?? false;
+  const filingAsLLC = useWatch({ control: form.control, name: "filingAsLLC" });
 
   // Currency display state for claim amount
   const [claimDisplay, setClaimDisplay] = useState("");
@@ -262,8 +272,9 @@ export default function NewCase() {
   };
 
   const onSubmit = (data: FormValues) => {
+    const { filingAsLLC: _filingAsLLC, ...rest } = data;
     const submitData = {
-      ...data,
+      ...rest,
       claimType: Array.isArray(data.claimType) ? data.claimType.join(",") : data.claimType,
     };
     createCase.mutate({ data: submitData as any }, {
@@ -711,14 +722,57 @@ export default function NewCase() {
                 <div className="grid gap-8 animate-in fade-in slide-in-from-right-4 duration-300">
                   {/* Landlord */}
                   <div>
-                    <h3 className="text-lg font-semibold border-b pb-2 mb-4">Your Information (Landlord / Plaintiff)</h3>
+                    <h3 className="text-lg font-semibold border-b pb-2 mb-4">Your Information (Plaintiff)</h3>
+
+                    {/* Filing capacity toggle */}
+                    <div className="mb-5">
+                      <Label className="text-sm font-medium mb-2 block">How are you filing this case?</Label>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => form.setValue("filingAsLLC", false, { shouldValidate: false })}
+                          className={`flex items-center gap-2 border rounded-lg px-4 py-3 text-sm font-medium transition-all text-left ${!filingAsLLC ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground"}`}
+                        >
+                          <User className="h-4 w-4 shrink-0" />
+                          <span>As an Individual</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => form.setValue("filingAsLLC", true, { shouldValidate: false })}
+                          className={`flex items-center gap-2 border rounded-lg px-4 py-3 text-sm font-medium transition-all text-left ${filingAsLLC ? "border-primary bg-primary/5 text-primary" : "border-border text-muted-foreground hover:border-muted-foreground"}`}
+                        >
+                          <Building className="h-4 w-4 shrink-0" />
+                          <span>As an LLC / Company</span>
+                        </button>
+                      </div>
+                    </div>
+
                     <div className="grid md:grid-cols-2 gap-4">
+                      {/* LLC Name field — shown prominently when filing as LLC */}
+                      {filingAsLLC && (
+                        <div className="md:col-span-2">
+                          <FormField
+                            control={form.control}
+                            name="landlordCompany"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>LLC / Company Name * <span className="text-muted-foreground font-normal text-xs">(appears as plaintiff on all documents)</span></FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Doe Properties LLC" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+
                       <FormField
                         control={form.control}
                         name="landlordName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Full Legal Name *</FormLabel>
+                            <FormLabel>{filingAsLLC ? "Authorized Representative (First & Last Name) *" : "Your Full Legal Name *"}</FormLabel>
                             <FormControl>
                               <Input placeholder="John Doe" {...field} />
                             </FormControl>
@@ -726,19 +780,21 @@ export default function NewCase() {
                           </FormItem>
                         )}
                       />
-                      <FormField
-                        control={form.control}
-                        name="landlordCompany"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Company / LLC Name <span className="text-muted-foreground font-normal">(if applicable)</span></FormLabel>
-                            <FormControl>
-                              <Input placeholder="Doe Properties LLC" {...field} />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {!filingAsLLC && (
+                        <FormField
+                          control={form.control}
+                          name="landlordCompany"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Company Name <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
+                              <FormControl>
+                                <Input placeholder="Doe Properties LLC" {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      )}
                       <div className="md:col-span-2">
                         <FormField
                           control={form.control}
@@ -792,10 +848,11 @@ export default function NewCase() {
                         name="tenantName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Tenant Name(s)</FormLabel>
+                            <FormLabel>Tenant Full Legal Name(s) * <span className="text-muted-foreground font-normal text-xs">(appears on all documents)</span></FormLabel>
                             <FormControl>
                               <Input placeholder="Jane Smith" {...field} />
                             </FormControl>
+                            <p className="text-xs text-muted-foreground mt-1">For multiple tenants: Jane Smith, Robert Smith</p>
                             <FormMessage />
                           </FormItem>
                         )}

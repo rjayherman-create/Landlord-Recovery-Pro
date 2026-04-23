@@ -68,9 +68,10 @@ function generatePresetLetter(c: {
   const claimDesc = types.map(t => claimLabels[t] || t).join(" and ");
   const amount = `$${Number(c.claimAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+  const plaintiff = c.landlordCompany || c.landlordName;
   const fromBlock = [
-    c.landlordName,
-    c.landlordCompany || null,
+    c.landlordCompany ? c.landlordCompany : c.landlordName,
+    c.landlordCompany ? `c/o ${c.landlordName}` : null,
     c.landlordAddress || null,
     c.landlordPhone || null,
   ].filter(Boolean).join("\n");
@@ -102,17 +103,17 @@ Property Address: ${c.propertyAddress}${rentInfo}${periodInfo}${moveInfo}
 
 Dear ${c.tenantName},
 
-This letter serves as formal notice that you owe the total amount of ${amount} in connection with the above-referenced property located at ${c.propertyAddress}, ${c.state}.
+This letter serves as formal notice that you owe the total amount of ${amount} to ${plaintiff} in connection with the above-referenced property located at ${c.propertyAddress}, ${c.state}.
 
-${descPara}You are hereby demanded to pay the full outstanding balance of ${amount} within ten (10) days of receipt of this letter. Payment should be made in full directly to the landlord at the address listed above.
+${descPara}You are hereby demanded to pay the full outstanding balance of ${amount} within ten (10) days of receipt of this letter. Payment should be made in full directly to the address listed above.
 
-If payment is not received within ten (10) days, I will have no choice but to pursue all available legal remedies, including filing a claim in ${c.state} Small Claims Court to recover the full amount owed, plus any applicable court costs and filing fees.
+If payment is not received within ten (10) days, ${plaintiff} will have no choice but to pursue all available legal remedies, including filing a claim in ${c.state} Small Claims Court to recover the full amount owed, plus any applicable court costs and filing fees.
 
 This letter may be used as evidence of your failure to respond to a lawful demand for payment.
 
 Sincerely,
 
-${c.landlordName}${c.landlordCompany ? "\n" + c.landlordCompany : ""}
+${plaintiff}${c.landlordCompany ? `\nBy: ${c.landlordName}, Authorized Representative` : ""}
 ${c.landlordAddress || ""}
 ${c.landlordPhone || ""}`.trim();
 }
@@ -666,8 +667,9 @@ export default function CaseDetail() {
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Tenant (Defendant)</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-sm mb-1 block">Full Name *</Label>
-                      <Input value={editForm.tenantName || ""} onChange={e => setEditForm(f => ({ ...f, tenantName: e.target.value }))} />
+                      <Label className="text-sm mb-1 block">Full Legal Name(s) * <span className="text-muted-foreground font-normal text-xs">(first and last)</span></Label>
+                      <Input placeholder="Jane Smith" value={editForm.tenantName || ""} onChange={e => setEditForm(f => ({ ...f, tenantName: e.target.value }))} />
+                      <p className="text-xs text-muted-foreground mt-1">Multiple tenants: Jane Smith, Robert Smith</p>
                     </div>
                     <div>
                       <Label className="text-sm mb-1 block">Email</Label>
@@ -689,11 +691,11 @@ export default function CaseDetail() {
                   <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">Landlord (Plaintiff)</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <Label className="text-sm mb-1 block">Full Legal Name *</Label>
-                      <Input value={editForm.landlordName || ""} onChange={e => setEditForm(f => ({ ...f, landlordName: e.target.value }))} />
+                      <Label className="text-sm mb-1 block">Full Legal Name * <span className="text-muted-foreground font-normal text-xs">(first and last)</span></Label>
+                      <Input placeholder="John Doe" value={editForm.landlordName || ""} onChange={e => setEditForm(f => ({ ...f, landlordName: e.target.value }))} />
                     </div>
                     <div>
-                      <Label className="text-sm mb-1 block">Company / LLC Name</Label>
+                      <Label className="text-sm mb-1 block">LLC / Company Name <span className="text-muted-foreground font-normal text-xs">(plaintiff on docs if set)</span></Label>
                       <Input placeholder="Doe Properties LLC" value={editForm.landlordCompany || ""} onChange={e => setEditForm(f => ({ ...f, landlordCompany: e.target.value }))} />
                     </div>
                     <div className="col-span-2">
