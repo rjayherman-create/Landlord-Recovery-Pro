@@ -19,16 +19,22 @@ RUN BASE_PATH=/ NODE_ENV=production pnpm --filter @workspace/landlord-recovery r
 # Build the API server
 RUN pnpm --filter @workspace/api-server run build
 
-# Remove devDependencies before copying node_modules to runner
-RUN CI=true pnpm prune --prod
-
+# ── Runner ────────────────────────────────────────────────────────────────────
 FROM node:20-slim AS runner
+
+RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 
 WORKDIR /app
 
-# pnpm uses relative symlinks inside node_modules — they survive multi-stage copy
-COPY --from=builder /app/node_modules ./node_modules
+# Copy workspace manifests so pnpm can resolve the workspace graph
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY lib/package.json lib/package.json
+COPY artifacts/api-server/package.json artifacts/api-server/package.json
 
+# Install only production deps — fresh store in runner, no broken symlinks
+RUN pnpm install --prod --no-frozen-lockfile
+
+# Copy built output from builder
 COPY --from=builder /app/artifacts/api-server/dist ./artifacts/api-server/dist
 COPY --from=builder /app/artifacts/landlord-recovery/dist/public ./artifacts/landlord-recovery/dist/public
 
