@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -143,19 +143,36 @@ export default function NewCase() {
   const watchedClaimType = useWatch({ control: form.control, name: "claimType" });
   const watchedMonthlyRent = useWatch({ control: form.control, name: "monthlyRent" });
   const watchedState = useWatch({ control: form.control, name: "state" });
+  const watchedClaimAmount = useWatch({ control: form.control, name: "claimAmount" });
   const stateInfo = watchedState ? STATE_REQUIREMENTS[watchedState] : null;
   const stateLimit = stateInfo?.smallClaimsLimit ?? null;
   const [generatingDesc, setGeneratingDesc] = useState(false);
 
-  // Auto-fill description with combined template(s) when claim types change and field is empty
+  // Currency display state for claim amount
+  const [claimDisplay, setClaimDisplay] = useState("");
+
+  // Sync claimDisplay when the underlying form value changes externally (e.g. auto-calc from rent)
+  useEffect(() => {
+    const val = watchedClaimAmount;
+    if (val !== undefined && val !== null && val !== "" && !isNaN(Number(val))) {
+      setClaimDisplay(Number(val).toFixed(2));
+    }
+  }, [watchedClaimAmount]);
+
+  // Track the last auto-generated description so manual edits are not overwritten
+  const lastAutoGenDesc = useRef<string>("");
+
+  // Auto-update description whenever claim types change, but only if it hasn't been manually edited
   useEffect(() => {
     const types = watchedClaimType;
-    if (types?.length && !form.getValues("description")) {
-      const combined = types
-        .map(t => DESCRIPTION_TEMPLATES[t])
-        .filter(Boolean)
-        .join(" ");
-      if (combined) form.setValue("description", combined, { shouldValidate: true });
+    const combined = types?.length
+      ? types.map(t => DESCRIPTION_TEMPLATES[t as string]).filter(Boolean).join(" ")
+      : "";
+    const current = form.getValues("description");
+    // Update if: description is empty, or it still matches the previous auto-generated value
+    if (!current || current === lastAutoGenDesc.current) {
+      form.setValue("description", combined, { shouldValidate: false });
+      lastAutoGenDesc.current = combined;
     }
   }, [JSON.stringify(watchedClaimType)]);
 
@@ -520,23 +537,41 @@ export default function NewCase() {
                       name="claimAmount"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Total Claim Amount ($)</FormLabel>
+                          <FormLabel>Total Claim Amount</FormLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              placeholder={stateLimit ? `Max $${stateLimit.toLocaleString()}` : "e.g. 2500"}
-                              min={1}
-                              max={stateLimit ?? undefined}
-                              {...field}
-                              onChange={(e) => {
-                                const val = Number(e.target.value);
-                                if (stateLimit && val > stateLimit) {
-                                  field.onChange(stateLimit);
-                                } else {
-                                  field.onChange(e);
-                                }
-                              }}
-                            />
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground select-none">$</span>
+                              <Input
+                                type="text"
+                                inputMode="decimal"
+                                className="pl-7"
+                                placeholder={stateLimit ? `0.00  (max ${stateLimit.toLocaleString()})` : "0.00"}
+                                value={claimDisplay}
+                                onChange={(e) => {
+                                  // Allow digits and at most one decimal point
+                                  const raw = e.target.value.replace(/[^0-9.]/g, "").replace(/^(\d*\.?\d*).*$/, "$1");
+                                  setClaimDisplay(raw);
+                                  const num = parseFloat(raw);
+                                  if (!isNaN(num)) {
+                                    const capped = stateLimit ? Math.min(num, stateLimit) : num;
+                                    field.onChange(capped);
+                                  } else {
+                                    field.onChange(undefined);
+                                  }
+                                }}
+                                onBlur={() => {
+                                  const num = parseFloat(claimDisplay);
+                                  if (!isNaN(num) && num > 0) {
+                                    const capped = stateLimit ? Math.min(num, stateLimit) : num;
+                                    setClaimDisplay(capped.toFixed(2));
+                                    field.onChange(capped);
+                                  } else {
+                                    setClaimDisplay("");
+                                    field.onChange(undefined);
+                                  }
+                                }}
+                              />
+                            </div>
                           </FormControl>
                           {stateLimit && (
                             <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -569,12 +604,25 @@ export default function NewCase() {
                                     .map(t => DESCRIPTION_TEMPLATES[t])
                                     .filter(Boolean)
                                     .join(" ");
-                                  if (combined) form.setValue("description", combined, { shouldValidate: true });
+                                  form.setValue("description", combined, { shouldValidate: true });
+                                  lastAutoGenDesc.current = combined;
                                 }}
                               >
                                 Use template
                               </Button>
                             )}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+                              onClick={() => {
+                                form.setValue("description", "", { shouldValidate: false });
+                                lastAutoGenDesc.current = "";
+                              }}
+                            >
+                              Clear
+                            </Button>
                             <Button
                               type="button"
                               variant="ghost"
@@ -591,10 +639,15 @@ export default function NewCase() {
                           </div>
                         </div>
                         <FormControl>
-                          <Textarea 
-                            placeholder="Select a claim type above to load a starter template, or describe what happened in your own words."
+                          <Textarea
+                            placeholder="Select claim types above to auto-load a template, or type your own description here."
                             className="min-h-[120px]"
-                            {...field} 
+                            {...field}
+                            onChange={(e) => {
+                              field.onChange(e);
+                              // Mark as manually edited so auto-update stops overwriting
+                              lastAutoGenDesc.current = "__manual__";
+                            }}
                           />
                         </FormControl>
                         <FormMessage />
