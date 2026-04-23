@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
 import { useSubscription, startUnlockCheckout, startSubscriptionCheckout } from "@/hooks/useSubscription";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle, ChevronsUpDown, Lock } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle, ChevronsUpDown, Lock, Paperclip, X, ImageIcon, FileIcon, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,9 +20,28 @@ import { STATE_REQUIREMENTS } from "@/data/stateRequirements";
 const STEPS = [
   { id: "parties", title: "Parties Info", icon: User },
   { id: "type", title: "Claim Basics", icon: FileText },
+  { id: "evidence", title: "Evidence", icon: Paperclip },
   { id: "property", title: "Property & Lease", icon: Building },
   { id: "review", title: "Review", icon: CheckCircle2 },
 ];
+
+const EVIDENCE_CATEGORIES = [
+  { value: "lease", label: "Lease Agreement" },
+  { value: "ledger", label: "Rent Ledger / Payment Records" },
+  { value: "photo", label: "Photographs" },
+  { value: "notice", label: "Notice to Quit / Vacate" },
+  { value: "correspondence", label: "Correspondence" },
+  { value: "court", label: "Court Filing" },
+  { value: "other", label: "Other" },
+];
+
+interface EvidenceItem {
+  id: string;
+  file: File;
+  label: string;
+  category: string;
+  previewUrl: string | null;
+}
 
 const STATES = [
   "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA",
@@ -124,6 +143,9 @@ export default function NewCase() {
   const [step, setStep] = useState(0);
   const [showPaywall, setShowPaywall] = useState(false);
   const [paywallLoading, setPaywallLoading] = useState<"unlock" | "subscribe" | null>(null);
+  const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const evidenceFileInputRef = useRef<HTMLInputElement>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
@@ -259,11 +281,12 @@ export default function NewCase() {
     
     if (step === 0) fieldsToValidate = ['landlordName', 'tenantName', 'landlordEmail', 'tenantEmail', 'landlordPhone', 'tenantPhone', 'tenantAddress'];
     if (step === 1) fieldsToValidate = ['claimType', 'state', 'claimAmount', 'description'];
-    if (step === 2) fieldsToValidate = ['propertyAddress', 'monthlyRent', 'leaseStartDate', 'leaseEndDate', 'moveOutDate'];
+    if (step === 2) fieldsToValidate = []; // Evidence step — no required fields
+    if (step === 3) fieldsToValidate = ['propertyAddress', 'monthlyRent', 'leaseStartDate', 'leaseEndDate', 'moveOutDate'];
 
     const isValid = await form.trigger(fieldsToValidate as any);
     if (isValid) {
-      if (step === 2 && !isPro) {
+      if (step === 3 && !isPro) {
         setShowPaywall(true);
         window.scrollTo(0, 0);
         return;
@@ -278,21 +301,55 @@ export default function NewCase() {
     window.scrollTo(0, 0);
   };
 
-  const onSubmit = (data: FormValues) => {
+  const addEvidenceFiles = (files: FileList | File[]) => {
+    const fileArray = Array.from(files);
+    const allowed = ["image/jpeg","image/png","image/gif","image/webp","image/heic","application/pdf","text/plain","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+    const newItems: EvidenceItem[] = fileArray
+      .filter(f => allowed.includes(f.type))
+      .map(f => ({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file: f,
+        label: f.name.replace(/\.[^/.]+$/, ""),
+        category: f.type.startsWith("image/") ? "photo" : "other",
+        previewUrl: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
+      }));
+    setEvidenceItems(prev => [...prev, ...newItems]);
+  };
+
+  const removeEvidenceItem = (id: string) => {
+    setEvidenceItems(prev => {
+      const item = prev.find(i => i.id === id);
+      if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter(i => i.id !== id);
+    });
+  };
+
+  const onSubmit = async (data: FormValues) => {
     const { filingAsLLC: _filingAsLLC, ...rest } = data;
     const submitData = {
       ...rest,
       claimType: Array.isArray(data.claimType) ? data.claimType.join(",") : data.claimType,
     };
     createCase.mutate({ data: submitData as any }, {
-      onSuccess: (newCase) => {
+      onSuccess: async (newCase) => {
+        if (evidenceItems.length > 0) {
+          await Promise.allSettled(
+            evidenceItems.map(async (item) => {
+              const fd = new FormData();
+              fd.append("file", item.file);
+              fd.append("category", item.category);
+              fd.append("notes", item.label);
+              await fetch(`/api/landlord-cases/${newCase.id}/attachments`, { method: "POST", body: fd });
+            })
+          );
+        }
         toast({
           title: "Case Created",
           description: "Your case has been saved successfully.",
         });
         setLocation(`/cases/${newCase.id}`);
       },
-      onError: (error) => {
+      onError: () => {
         toast({
           title: "Error",
           description: "Failed to create case. Please try again.",
@@ -478,8 +535,9 @@ export default function NewCase() {
                   <CardDescription>
                     {step === 0 && "Information about you and the tenant."}
                     {step === 1 && "Define what you are claiming and where."}
-                    {step === 2 && "Details about the property and lease agreement."}
-                    {step === 3 && "Review the details before saving the case."}
+                    {step === 2 && "Attach photos and documents to support your case."}
+                    {step === 3 && "Details about the property and lease agreement."}
+                    {step === 4 && "Review the details before saving the case."}
                   </CardDescription>
                 </div>
               </div>
@@ -1034,8 +1092,106 @@ export default function NewCase() {
                 </div>
               )}
 
-              {/* STEP 2: PROPERTY & LEASE */}
+              {/* STEP 2: EVIDENCE */}
               {step === 2 && (
+                <div className="grid gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
+                  
+                  {/* Drop zone */}
+                  <div
+                    className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${isDragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"}`}
+                    onClick={() => evidenceFileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                    onDragLeave={() => setIsDragOver(false)}
+                    onDrop={(e) => { e.preventDefault(); setIsDragOver(false); if (e.dataTransfer.files) addEvidenceFiles(e.dataTransfer.files); }}
+                  >
+                    <input
+                      ref={evidenceFileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx,.txt"
+                      className="hidden"
+                      onChange={(e) => { if (e.target.files) { addEvidenceFiles(e.target.files); e.target.value = ""; } }}
+                    />
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="rounded-full bg-muted p-4">
+                        <Upload className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-medium text-sm">Drag and drop files here, or click to browse</p>
+                        <p className="text-xs text-muted-foreground mt-1">Images, PDFs, and documents up to 25 MB each</p>
+                      </div>
+                      <Button type="button" variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); evidenceFileInputRef.current?.click(); }}>
+                        <Paperclip className="mr-2 h-4 w-4" /> Add Files
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Evidence items list */}
+                  {evidenceItems.length > 0 && (
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium text-muted-foreground">{evidenceItems.length} file{evidenceItems.length !== 1 ? "s" : ""} attached</p>
+                      {evidenceItems.map((item) => (
+                        <div key={item.id} className="flex items-start gap-3 border border-border rounded-lg p-3 bg-muted/20">
+                          {/* Thumbnail or icon */}
+                          <div className="shrink-0 w-12 h-12 rounded-md overflow-hidden border border-border bg-muted flex items-center justify-center">
+                            {item.previewUrl ? (
+                              <img src={item.previewUrl} alt={item.label} className="w-full h-full object-cover" />
+                            ) : item.file.type === "application/pdf" ? (
+                              <FileIcon className="h-6 w-6 text-red-500" />
+                            ) : (
+                              <FileIcon className="h-6 w-6 text-muted-foreground" />
+                            )}
+                          </div>
+
+                          {/* Fields */}
+                          <div className="flex-1 grid gap-2">
+                            <div>
+                              <Label className="text-xs text-muted-foreground mb-1 block">Evidence Label</Label>
+                              <Input
+                                value={item.label}
+                                onChange={(e) => setEvidenceItems(prev => prev.map(i => i.id === item.id ? { ...i, label: e.target.value } : i))}
+                                placeholder="e.g. Front door damage — July 2023"
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground mb-1 block">Category</Label>
+                              <select
+                                value={item.category}
+                                onChange={(e) => setEvidenceItems(prev => prev.map(i => i.id === item.id ? { ...i, category: e.target.value } : i))}
+                                className="w-full h-8 text-sm border border-input rounded-md bg-background px-2 focus:outline-none focus:ring-2 focus:ring-ring"
+                              >
+                                {EVIDENCE_CATEGORIES.map(cat => (
+                                  <option key={cat.value} value={cat.value}>{cat.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate">{item.file.name} · {(item.file.size / 1024).toFixed(0)} KB</p>
+                          </div>
+
+                          {/* Remove */}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="shrink-0 h-7 w-7 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeEvidenceItem(item.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {evidenceItems.length === 0 && (
+                    <p className="text-xs text-center text-muted-foreground">Evidence is optional. You can also add documents later from the case detail page.</p>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 3: PROPERTY & LEASE */}
+              {step === 3 && (
                 <div className="grid gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
                   <FormField
                     control={form.control}
@@ -1123,8 +1279,8 @@ export default function NewCase() {
                 </div>
               )}
 
-              {/* STEP 3: REVIEW */}
-              {step === 3 && (
+              {/* STEP 4: REVIEW */}
+              {step === 4 && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-300">
 
                   {/* Case Summary — always visible but description blurred for free users */}
@@ -1224,6 +1380,35 @@ export default function NewCase() {
                         </div>
                       </dl>
                     </div>
+                  </div>
+
+                  {/* Evidence summary */}
+                  <div className="border border-border p-4 rounded-lg">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <Paperclip className="h-4 w-4" /> Evidence Attached
+                      <span className="ml-auto text-sm font-normal text-muted-foreground">{evidenceItems.length} file{evidenceItems.length !== 1 ? "s" : ""}</span>
+                    </h4>
+                    {evidenceItems.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No files attached. You can add evidence from the case detail page after saving.</p>
+                    ) : (
+                      <ul className="space-y-2">
+                        {evidenceItems.map((item) => (
+                          <li key={item.id} className="flex items-center gap-3 text-sm">
+                            <div className="shrink-0 w-8 h-8 rounded overflow-hidden border border-border bg-muted flex items-center justify-center">
+                              {item.previewUrl ? (
+                                <img src={item.previewUrl} alt={item.label} className="w-full h-full object-cover" />
+                              ) : (
+                                <FileIcon className="h-4 w-4 text-muted-foreground" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium truncate">{item.label || item.file.name}</p>
+                              <p className="text-xs text-muted-foreground">{EVIDENCE_CATEGORIES.find(c => c.value === item.category)?.label ?? item.category}</p>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                 </div>
               )}
