@@ -73,20 +73,35 @@ if (process.env.NODE_ENV === "production") {
   app.use(express.static(landlordDir));
 }
 
-// Clerk middleware — attaches auth state to req; does NOT block unauthenticated requests
-// Wrapped so a bad/missing key logs a warning instead of crashing every request
-app.use((req, res, next) => {
-  if (!process.env.CLERK_PUBLISHABLE_KEY && !process.env.CLERK_SECRET_KEY) {
-    return next();
+// Clerk middleware — initialized once at startup so invalid keys fail fast and gracefully
+const _clerkHandler = (() => {
+  if (!process.env.CLERK_SECRET_KEY) {
+    logger.warn("CLERK_SECRET_KEY not set — auth middleware disabled");
+    return null;
   }
-  clerkMiddleware()(req, res, (err) => {
-    if (err) {
-      logger.warn({ err }, "Clerk middleware error — continuing without auth");
-      return next();
+  try {
+    return clerkMiddleware();
+  } catch (err) {
+    logger.warn({ err }, "Clerk middleware failed to initialize — auth disabled");
+    return null;
+  }
+})();
+
+if (_clerkHandler) {
+  app.use((req, res, next) => {
+    try {
+      _clerkHandler(req, res, (err) => {
+        if (err) {
+          logger.warn({ err }, "Clerk request error — continuing without auth");
+        }
+        next();
+      });
+    } catch (err) {
+      logger.warn({ err }, "Clerk middleware threw — continuing without auth");
+      next();
     }
-    next();
   });
-});
+}
 
 app.use("/api", router);
 
@@ -99,7 +114,10 @@ if (process.env.NODE_ENV === "production") {
   const landlordDir = path.join(process.cwd(), "artifacts/landlord-recovery/dist/public");
   app.get("*path", (_req, res) => {
     res.sendFile(path.join(landlordDir, "index.html"), (err) => {
-      if (err) res.status(200).sendFile(path.join(landlordDir, "index.html"));
+      if (err) {
+        logger.error({ err, landlordDir }, "Failed to serve index.html");
+        res.status(500).json({ error: "Frontend not found", path: landlordDir });
+      }
     });
   });
 }
