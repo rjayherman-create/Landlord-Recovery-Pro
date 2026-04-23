@@ -185,7 +185,7 @@ function ClerkProviderWithRoutes() {
 
 function App() {
   return (
-    <WouterRouter base="/landlord-recovery">
+    <WouterRouter base={basePath || "/"}>
       <ClerkProviderWithRoutes />
     </WouterRouter>
   );
