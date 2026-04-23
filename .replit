@@ -71,3 +71,6 @@ packages = ["connect"]
 
 [userenv.development]
 BYPASS_AUTH = "true"
+
+[userenv.shared]
+ADMIN_SECRET = "81628dda96df9d0b705aa8b9b26fbdcfc69876b13a0d8b87"
