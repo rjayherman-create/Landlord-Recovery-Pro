@@ -10,7 +10,7 @@ import {
 import { 
   ArrowLeft, FileText, Send, AlertTriangle, Scale, CheckCircle2, 
   FileOutput, RefreshCw, Save, Trash2, Paperclip, Upload, X, FileImage, File, Library, Pencil, Archive, ArchiveRestore, Sparkles, Loader2, MapPin, TrendingUp, Search, ChevronRight,
-  Eye, Download, Lock, BookmarkPlus, FolderOpen, PenLine, ChevronDown
+  Eye, Download, Lock, BookmarkPlus, FolderOpen, PenLine, ChevronDown, Copy, ClipboardPaste
 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
@@ -38,6 +38,84 @@ const STATUS_PROGRESS = [
   { id: "collection", label: "Collection" },
   { id: "closed", label: "Closed" }
 ];
+
+function generatePresetLetter(c: {
+  landlordName: string;
+  landlordCompany?: string | null;
+  landlordAddress?: string | null;
+  landlordPhone?: string | null;
+  tenantName: string;
+  tenantAddress?: string | null;
+  propertyAddress: string;
+  claimType: string;
+  claimAmount: number;
+  state: string;
+  rentPeriod?: string | null;
+  monthlyRent?: number | null;
+  moveOutDate?: string | null;
+  description?: string | null;
+}): string {
+  const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  const claimLabels: Record<string, string> = {
+    unpaid_rent: "unpaid rent",
+    property_damage: "property damage",
+    security_deposit: "security deposit withholding",
+    lease_break: "early lease termination",
+    other: "breach of lease agreement",
+  };
+  const types = (c.claimType || "").split(",").map(t => t.trim()).filter(Boolean);
+  const claimDesc = types.map(t => claimLabels[t] || t).join(" and ");
+  const amount = `$${Number(c.claimAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  const fromBlock = [
+    c.landlordName,
+    c.landlordCompany || null,
+    c.landlordAddress || null,
+    c.landlordPhone || null,
+  ].filter(Boolean).join("\n");
+
+  const toBlock = [
+    c.tenantName,
+    c.tenantAddress || c.propertyAddress,
+  ].filter(Boolean).join("\n");
+
+  const rentInfo = c.monthlyRent
+    ? `\nMonthly Rent: $${Number(c.monthlyRent).toLocaleString()}`
+    : "";
+  const periodInfo = c.rentPeriod ? `\nPeriod: ${c.rentPeriod}` : "";
+  const moveInfo = c.moveOutDate ? `\nMove-Out Date: ${c.moveOutDate}` : "";
+
+  const descPara = c.description
+    ? `${c.description.trim()}\n\n`
+    : "";
+
+  return `${fromBlock}
+
+${today}
+
+RE: FORMAL DEMAND FOR PAYMENT — ${claimDesc.toUpperCase()}
+
+To: ${toBlock}
+
+Property Address: ${c.propertyAddress}${rentInfo}${periodInfo}${moveInfo}
+
+Dear ${c.tenantName},
+
+This letter serves as formal notice that you owe the total amount of ${amount} in connection with the above-referenced property located at ${c.propertyAddress}, ${c.state}.
+
+${descPara}You are hereby demanded to pay the full outstanding balance of ${amount} within ten (10) days of receipt of this letter. Payment should be made in full directly to the landlord at the address listed above.
+
+If payment is not received within ten (10) days, I will have no choice but to pursue all available legal remedies, including filing a claim in ${c.state} Small Claims Court to recover the full amount owed, plus any applicable court costs and filing fees.
+
+This letter may be used as evidence of your failure to respond to a lawful demand for payment.
+
+Sincerely,
+
+${c.landlordName}${c.landlordCompany ? "\n" + c.landlordCompany : ""}
+${c.landlordAddress || ""}
+${c.landlordPhone || ""}`.trim();
+}
 
 export default function CaseDetail() {
   const { id } = useParams();
@@ -933,6 +1011,31 @@ export default function CaseDetail() {
                     <Button
                       size="sm"
                       variant="outline"
+                      onClick={() => {
+                        setLetterText(generatePresetLetter({
+                          landlordName: caseData.landlordName,
+                          landlordCompany: (caseData as any).landlordCompany ?? null,
+                          landlordAddress: (caseData as any).landlordAddress ?? null,
+                          landlordPhone: caseData.landlordPhone ?? null,
+                          tenantName: caseData.tenantName,
+                          tenantAddress: caseData.tenantAddress ?? null,
+                          propertyAddress: caseData.propertyAddress,
+                          claimType: caseData.claimType,
+                          claimAmount: caseData.claimAmount,
+                          state: caseData.state,
+                          rentPeriod: (caseData as any).rentPeriod ?? null,
+                          monthlyRent: caseData.monthlyRent ?? null,
+                          moveOutDate: caseData.moveOutDate ?? null,
+                          description: caseData.description ?? null,
+                        }));
+                        toast({ title: "Template loaded", description: "Edit the letter below, then save." });
+                      }}
+                    >
+                      <ClipboardPaste className="h-3.5 w-3.5 mr-1.5" /> Load Template
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
                       onClick={handleGenerateLetter}
                       disabled={generateLetter.isPending}
                     >
@@ -940,7 +1043,18 @@ export default function CaseDetail() {
                         ? <RefreshCw className="h-3.5 w-3.5 mr-1.5 animate-spin" />
                         : <Sparkles className="h-3.5 w-3.5 mr-1.5 text-amber-500" />
                       }
-                      {letterText.trim() ? "Regenerate with AI" : "Generate with AI"}
+                      {generateLetter.isPending ? "Generating..." : "AI Draft"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        navigator.clipboard.writeText(letterText);
+                        toast({ title: "Copied to clipboard" });
+                      }}
+                      disabled={!letterText.trim()}
+                    >
+                      <Copy className="h-3.5 w-3.5 mr-1.5" /> Copy
                     </Button>
                     <span className="ml-auto text-xs text-muted-foreground self-center">
                       {letterText.length} characters
@@ -1006,8 +1120,33 @@ export default function CaseDetail() {
               ) : (
                 <div className="text-center py-12 border-2 border-dashed rounded-md bg-muted/10">
                   <FileOutput className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-20" />
-                  <p className="text-sm text-muted-foreground mb-6">No demand letter yet. Write one yourself or let AI draft it.</p>
+                  <p className="text-sm text-muted-foreground mb-2">No demand letter yet.</p>
+                  <p className="text-xs text-muted-foreground mb-6 max-w-xs mx-auto">Start with a pre-filled template based on your case details, or write from scratch.</p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <Button
+                      className="bg-accent text-accent-foreground hover:bg-accent/90"
+                      onClick={() => {
+                        setLetterText(generatePresetLetter({
+                          landlordName: caseData.landlordName,
+                          landlordCompany: (caseData as any).landlordCompany ?? null,
+                          landlordAddress: (caseData as any).landlordAddress ?? null,
+                          landlordPhone: caseData.landlordPhone ?? null,
+                          tenantName: caseData.tenantName,
+                          tenantAddress: caseData.tenantAddress ?? null,
+                          propertyAddress: caseData.propertyAddress,
+                          claimType: caseData.claimType,
+                          claimAmount: caseData.claimAmount,
+                          state: caseData.state,
+                          rentPeriod: (caseData as any).rentPeriod ?? null,
+                          monthlyRent: caseData.monthlyRent ?? null,
+                          moveOutDate: caseData.moveOutDate ?? null,
+                          description: caseData.description ?? null,
+                        }));
+                        setIsScratchMode(true);
+                      }}
+                    >
+                      <ClipboardPaste className="h-4 w-4 mr-2" /> Use Letter Template
+                    </Button>
                     <Button
                       variant="outline"
                       onClick={() => { setLetterText(""); setIsScratchMode(true); }}
@@ -1019,20 +1158,9 @@ export default function CaseDetail() {
                         variant="outline"
                         onClick={() => setShowLoadTemplateDialog(true)}
                       >
-                        <FolderOpen className="h-4 w-4 mr-2" /> Use a Template
+                        <FolderOpen className="h-4 w-4 mr-2" /> Saved Templates
                       </Button>
                     )}
-                    <Button
-                      onClick={handleGenerateLetter}
-                      disabled={generateLetter.isPending}
-                      className="bg-accent text-accent-foreground hover:bg-accent/90"
-                    >
-                      {generateLetter.isPending
-                        ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        : <Sparkles className="h-4 w-4 mr-2" />
-                      }
-                      {generateLetter.isPending ? "Generating..." : "Generate with AI"}
-                    </Button>
                   </div>
                 </div>
               )}
