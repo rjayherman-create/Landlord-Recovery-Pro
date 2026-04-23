@@ -343,7 +343,12 @@ export default function NewCase() {
 
                       {/* Month / Year Picker */}
                       <div className="rounded-lg border border-border bg-muted/10 p-4 space-y-3">
-                        <Label className="text-sm font-medium">Months Owed — check each month rent was not paid</Label>
+                        <div>
+                          <Label className="text-sm font-medium">Months Owed</Label>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Click each month rent was <span className="font-medium text-foreground">not paid</span>. Selected months turn gold. Click again to deselect. Use the arrows to switch years if rent was owed across multiple years.
+                          </p>
+                        </div>
 
                         {/* Year Navigation */}
                         <div className="flex items-center justify-between max-w-xs">
