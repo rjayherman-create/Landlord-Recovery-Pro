@@ -31,7 +31,9 @@ const queryClient = new QueryClient({
 });
 
 const clerkPubKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+// Only use proxy URL if it's a real domain (not the placeholder)
+const _rawProxy = import.meta.env.VITE_CLERK_PROXY_URL;
+const clerkProxyUrl = _rawProxy && !_rawProxy.includes("your-domain") ? _rawProxy : undefined;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function stripBase(path: string): string {
