@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { STATE_REQUIREMENTS } from "@/data/stateRequirements";
 
 const STEPS = [
   { id: "type", title: "Claim Basics", icon: FileText },
@@ -141,6 +142,9 @@ export default function NewCase() {
 
   const watchedClaimType = useWatch({ control: form.control, name: "claimType" });
   const watchedMonthlyRent = useWatch({ control: form.control, name: "monthlyRent" });
+  const watchedState = useWatch({ control: form.control, name: "state" });
+  const stateInfo = watchedState ? STATE_REQUIREMENTS[watchedState] : null;
+  const stateLimit = stateInfo?.smallClaimsLimit ?? null;
   const [generatingDesc, setGeneratingDesc] = useState(false);
 
   // Auto-fill description with combined template(s) when claim types change and field is empty
@@ -206,9 +210,10 @@ export default function NewCase() {
     form.setValue("rentPeriod", formatRentPeriod([...selectedMonths]), { shouldValidate: false });
     if (watchedClaimType?.includes("unpaid_rent") && watchedMonthlyRent && count > 0) {
       const total = Number(watchedMonthlyRent) * count;
-      if (total > 0) form.setValue("claimAmount", total, { shouldValidate: true });
+      const capped = stateLimit ? Math.min(total, stateLimit) : total;
+      if (capped > 0) form.setValue("claimAmount", capped, { shouldValidate: true });
     }
-  }, [selectedMonths, watchedMonthlyRent, watchedClaimType]);
+  }, [selectedMonths, watchedMonthlyRent, watchedClaimType, stateLimit]);
 
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
@@ -383,6 +388,17 @@ export default function NewCase() {
                     />
                   </div>
 
+                  {/* State small claims limit callout */}
+                  {stateLimit && (
+                    <div className="flex items-start gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm">
+                      <Info className="h-4 w-4 mt-0.5 text-blue-500 shrink-0" />
+                      <div>
+                        <span className="font-semibold text-blue-900">{stateInfo?.name} small claims limit: ${stateLimit.toLocaleString()}</span>
+                        <span className="text-blue-700"> — your total claim cannot exceed this amount in small claims court.</span>
+                      </div>
+                    </div>
+                  )}
+
                   {watchedClaimType?.includes("unpaid_rent") ? (
                     <div className="space-y-4">
                       <FormField
@@ -475,11 +491,18 @@ export default function NewCase() {
                             <div className="text-sm text-muted-foreground">
                               ${Number(watchedMonthlyRent).toLocaleString()} &times; {selectedMonths.size} month{selectedMonths.size !== 1 ? "s" : ""}
                             </div>
-                            <div className="text-xl font-bold text-foreground">
+                            <div className={`text-xl font-bold ${stateLimit && Number(watchedMonthlyRent) * selectedMonths.size > stateLimit ? "text-amber-600" : "text-foreground"}`}>
                               ${(Number(watchedMonthlyRent) * selectedMonths.size).toLocaleString()}
                             </div>
                           </div>
-                          <div className="text-xs text-muted-foreground mt-1">This becomes your total claim amount</div>
+                          {stateLimit && Number(watchedMonthlyRent) * selectedMonths.size > stateLimit ? (
+                            <div className="mt-2 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800">
+                              <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
+                              <span>This exceeds the {stateInfo?.name} small claims limit of ${stateLimit.toLocaleString()}. Your claim will be capped at that amount.</span>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-muted-foreground mt-1">This becomes your total claim amount</div>
+                          )}
                         </div>
                       ) : selectedMonths.size > 0 ? (
                         <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
@@ -499,8 +522,28 @@ export default function NewCase() {
                         <FormItem>
                           <FormLabel>Total Claim Amount ($)</FormLabel>
                           <FormControl>
-                            <Input type="number" placeholder="e.g. 2500" {...field} />
+                            <Input
+                              type="number"
+                              placeholder={stateLimit ? `Max $${stateLimit.toLocaleString()}` : "e.g. 2500"}
+                              min={1}
+                              max={stateLimit ?? undefined}
+                              {...field}
+                              onChange={(e) => {
+                                const val = Number(e.target.value);
+                                if (stateLimit && val > stateLimit) {
+                                  field.onChange(stateLimit);
+                                } else {
+                                  field.onChange(e);
+                                }
+                              }}
+                            />
                           </FormControl>
+                          {stateLimit && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <AlertCircle className="h-3 w-3" />
+                              Capped at ${stateLimit.toLocaleString()} — the {stateInfo?.name} small claims court limit
+                            </p>
+                          )}
                           <FormMessage />
                         </FormItem>
                       )}
