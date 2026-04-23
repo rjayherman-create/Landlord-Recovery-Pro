@@ -120,4 +120,89 @@ router.get("/landlord/subscription/status", async (req: any, res) => {
   }
 });
 
+async function findOrCreateOneTimePrice(stripe: Stripe): Promise<string> {
+  const envPriceId = process.env.STRIPE_UNLOCK_PRICE_ID;
+  if (envPriceId) return envPriceId;
+
+  const products = await stripe.products.search({
+    query: "name:'Recovery Pro Unlock' AND active:'true'",
+  });
+
+  let productId: string;
+  if (products.data.length > 0) {
+    productId = products.data[0].id;
+  } else {
+    const product = await stripe.products.create({
+      name: "Recovery Pro Unlock",
+      description: "One-time unlock — full case access, court-ready documents, and filing instructions.",
+      metadata: { plan: "pro_unlock" },
+    });
+    productId = product.id;
+  }
+
+  const prices = await stripe.prices.list({ product: productId, active: true, type: "one_time" });
+  if (prices.data.length > 0) return prices.data[0].id;
+
+  const price = await stripe.prices.create({
+    product: productId,
+    unit_amount: 2900,
+    currency: "usd",
+  });
+  return price.id;
+}
+
+router.post("/landlord/payment/unlock", async (req: any, res) => {
+  try {
+    const stripe = await getStripe();
+    const priceId = await findOrCreateOneTimePrice(stripe);
+    const userId = req.auth?.userId as string | undefined;
+    const baseUrl = process.env.FRONTEND_URL || `${req.protocol}://${req.get("host")}`;
+
+    const sessionParams: Stripe.Checkout.SessionCreateParams = {
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [{ price: priceId, quantity: 1 }],
+      success_url: `${baseUrl}/landlord-recovery/checkout/success?type=unlock&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/landlord-recovery/pricing`,
+      metadata: { type: "landlord-unlock", ...(userId ? { userId } : {}) },
+    };
+
+    if (req.body?.email) {
+      sessionParams.customer_email = req.body.email;
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
+    res.json({ url: session.url });
+  } catch (err: any) {
+    logger.error({ err }, "Failed to create unlock checkout");
+    res.status(500).json({ error: err.message });
+  }
+});
+
+router.post("/landlord/payment/confirm-unlock", async (req: any, res) => {
+  try {
+    const { sessionId } = req.body as { sessionId: string };
+    if (!sessionId) return res.status(400).json({ error: "sessionId required" });
+
+    const stripe = await getStripe();
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+
+    if (session.payment_status !== "paid") {
+      return res.status(402).json({ error: "Payment not completed" });
+    }
+
+    const userId = session.metadata?.userId || (req.auth?.userId as string | undefined);
+    if (!userId) return res.status(401).json({ error: "User not identified" });
+
+    await db.update(usersTable)
+      .set({ plan: "pro" })
+      .where(eq(usersTable.id, userId));
+
+    res.json({ success: true });
+  } catch (err: any) {
+    logger.error({ err }, "Failed to confirm unlock payment");
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

@@ -36,6 +36,20 @@ export async function startSubscriptionCheckout(email?: string): Promise<void> {
   }
 }
 
+export async function startUnlockCheckout(email?: string): Promise<void> {
+  const res = await fetch("/api/landlord/payment/unlock", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const json = await res.json();
+  if (json.url) {
+    window.location.href = json.url;
+  } else {
+    throw new Error(json.error || "Checkout unavailable");
+  }
+}
+
 export async function openBillingPortal(): Promise<void> {
   const res = await fetch("/api/landlord/subscription/portal", { method: "POST" });
   const json = await res.json();

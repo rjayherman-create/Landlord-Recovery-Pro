@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
-import { useSubscription } from "@/hooks/useSubscription";
+import { useSubscription, startUnlockCheckout, startSubscriptionCheckout } from "@/hooks/useSubscription";
 import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle, ChevronsUpDown, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,6 +122,8 @@ type FormValues = z.infer<typeof newCaseSchema>;
 
 export default function NewCase() {
   const [step, setStep] = useState(0);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const [paywallLoading, setPaywallLoading] = useState<"unlock" | "subscribe" | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
@@ -261,6 +263,11 @@ export default function NewCase() {
 
     const isValid = await form.trigger(fieldsToValidate as any);
     if (isValid) {
+      if (step === 2 && !isPro) {
+        setShowPaywall(true);
+        window.scrollTo(0, 0);
+        return;
+      }
       setStep(s => Math.min(STEPS.length - 1, s + 1));
       window.scrollTo(0, 0);
     }
@@ -296,6 +303,130 @@ export default function NewCase() {
   };
 
   const CurrentStepIcon = STEPS[step].icon;
+
+  if (showPaywall) {
+    const vals = form.getValues();
+    const claimTypes = (Array.isArray(vals.claimType) ? vals.claimType : [vals.claimType])
+      .filter(Boolean)
+      .map((t: string) => t.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
+      .join(', ');
+    return (
+      <div className="p-6 md:p-8 max-w-2xl mx-auto animate-in fade-in duration-500">
+        <Button variant="ghost" size="sm" className="mb-6 text-muted-foreground hover:text-foreground" onClick={() => { setShowPaywall(false); window.scrollTo(0, 0); }}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Form
+        </Button>
+
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
+            <CheckCircle2 className="h-9 w-9 text-green-600" />
+          </div>
+          <h1 className="text-3xl font-serif font-bold text-foreground mb-2">Your Case Is Ready to File</h1>
+          <p className="text-muted-foreground">Unlock your full case to generate documents and take legal action.</p>
+        </div>
+
+        {/* Case preview */}
+        <div className="rounded-xl border border-border bg-muted/30 p-5 mb-6 space-y-3">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Case Summary</h2>
+          <div className="flex justify-between items-center py-2 border-b border-border/50">
+            <span className="text-sm text-muted-foreground">Defendant</span>
+            <span className="text-sm font-semibold">{vals.tenantName || "—"}</span>
+          </div>
+          <div className="flex justify-between items-center py-2 border-b border-border/50">
+            <span className="text-sm text-muted-foreground">Property</span>
+            <span className="text-sm font-semibold text-right max-w-[55%]">{vals.propertyAddress || "—"}</span>
+          </div>
+          <div className="flex justify-between items-center py-2 border-b border-border/50">
+            <span className="text-sm text-muted-foreground">Claim Type</span>
+            <span className="text-sm font-semibold">{claimTypes || "—"}</span>
+          </div>
+          <div className="flex justify-between items-center py-2">
+            <span className="text-sm text-muted-foreground">Claim Amount</span>
+            <span className="text-lg font-bold text-primary">${Number(vals.claimAmount || 0).toLocaleString()}</span>
+          </div>
+        </div>
+
+        {/* Teased locked features */}
+        <div className="rounded-xl border border-border bg-card p-5 mb-6">
+          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Included with Unlock</h2>
+          <ul className="space-y-3">
+            {[
+              "Court-ready demand letter (print & send)",
+              "Step-by-step small claims filing guide",
+              "Evidence checklist for your state",
+              "Downloadable case documents",
+            ].map((feature) => (
+              <li key={feature} className="flex items-center gap-3 text-sm">
+                <div className="w-5 h-5 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                  <Lock className="h-2.5 w-2.5 text-accent" />
+                </div>
+                <span className="text-foreground/70">{feature}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Primary CTA — $29 one-time */}
+        <div className="rounded-xl border-2 border-accent bg-accent/5 p-6 mb-4">
+          <div className="text-center mb-4">
+            <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-1">Best Option</p>
+            <p className="text-3xl font-bold text-foreground">$29 <span className="text-base font-normal text-muted-foreground">one-time</span></p>
+            <p className="text-sm text-muted-foreground mt-1">Full access to this case, forever</p>
+          </div>
+          <Button
+            className="w-full h-12 text-base bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
+            disabled={!!paywallLoading}
+            onClick={async () => {
+              setPaywallLoading("unlock");
+              try {
+                await startUnlockCheckout(vals.landlordEmail || undefined);
+              } catch {
+                toast({ title: "Checkout unavailable", description: "Please try again.", variant: "destructive" });
+                setPaywallLoading(null);
+              }
+            }}
+          >
+            {paywallLoading === "unlock"
+              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirecting to checkout…</>
+              : "Unlock Full Case — $29"}
+          </Button>
+          <div className="flex justify-center gap-6 mt-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-1"><Check className="h-3 w-3 text-green-500" /> One-time payment</span>
+            <span className="flex items-center gap-1"><Check className="h-3 w-3 text-green-500" /> No subscription</span>
+            <span className="flex items-center gap-1"><Check className="h-3 w-3 text-green-500" /> Use immediately</span>
+          </div>
+        </div>
+
+        {/* Secondary — monthly sub */}
+        <div className="rounded-xl border border-border bg-card p-5 text-center">
+          <p className="text-sm font-medium text-foreground mb-1">Need access to multiple cases?</p>
+          <p className="text-xs text-muted-foreground mb-3">Get unlimited cases, documents, and AI letters for one flat rate.</p>
+          <Button
+            variant="outline"
+            className="w-full border-primary text-primary hover:bg-primary/5"
+            disabled={!!paywallLoading}
+            onClick={async () => {
+              setPaywallLoading("subscribe");
+              try {
+                await startSubscriptionCheckout(vals.landlordEmail || undefined);
+              } catch {
+                toast({ title: "Checkout unavailable", description: "Please try again.", variant: "destructive" });
+                setPaywallLoading(null);
+              }
+            }}
+          >
+            {paywallLoading === "subscribe"
+              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirecting…</>
+              : "Subscribe — $49/month · Cancel anytime"}
+          </Button>
+        </div>
+
+        <p className="text-center text-xs text-muted-foreground mt-4">
+          Secured by Stripe. Your payment info is never stored on our servers.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto animate-in fade-in duration-500">
