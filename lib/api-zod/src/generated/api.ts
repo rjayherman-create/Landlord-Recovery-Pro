@@ -683,13 +683,7 @@ export const ListLandlordCasesResponse = zod.array(
  * @summary Create a new landlord recovery case
  */
 export const CreateLandlordCaseBody = zod.object({
-  claimType: zod.enum([
-    "unpaid_rent",
-    "property_damage",
-    "security_deposit",
-    "lease_break",
-    "other",
-  ]),
+  claimType: zod.string(),
   state: zod.string(),
   landlordName: zod.string(),
   landlordEmail: zod.string().nullish(),
@@ -778,15 +772,7 @@ export const UpdateLandlordCaseParams = zod.object({
 });
 
 export const UpdateLandlordCaseBody = zod.object({
-  claimType: zod
-    .enum([
-      "unpaid_rent",
-      "property_damage",
-      "security_deposit",
-      "lease_break",
-      "other",
-    ])
-    .optional(),
+  claimType: zod.string().optional(),
   state: zod.string().optional(),
   landlordName: zod.string().optional(),
   landlordEmail: zod.string().nullish(),
