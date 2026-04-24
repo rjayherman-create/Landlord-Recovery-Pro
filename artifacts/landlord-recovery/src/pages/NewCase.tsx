@@ -17,6 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { STATE_REQUIREMENTS } from "@/data/stateRequirements";
 
+const DRAFT_KEY = "landlord_recovery_case_draft";
+
 const STEPS = [
   { id: "parties", title: "Parties Info", icon: User },
   { id: "type", title: "Claim Basics", icon: FileText },
@@ -145,6 +147,9 @@ export default function NewCase() {
   const [paywallLoading, setPaywallLoading] = useState<"unlock" | "subscribe" | null>(null);
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const evidenceFileInputRef = useRef<HTMLInputElement>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -252,6 +257,101 @@ export default function NewCase() {
     }
   };
 
+  // ─── Draft autosave ──────────────────────────────────────────────────────────
+
+  // On mount: detect saved draft
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed?.savedAt && parsed?.values) {
+          setHasDraft(true);
+          setDraftSavedAt(parsed.savedAt);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Debounced autosave whenever form values or step change
+  useEffect(() => {
+    const subscription = form.watch(() => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      saveTimerRef.current = setTimeout(() => {
+        try {
+          const values = form.getValues();
+          // Only save if at least one meaningful field has been filled
+          const hasContent = values.landlordName || values.tenantName || values.claimAmount || values.description;
+          if (!hasContent) return;
+          const draft = {
+            step,
+            values,
+            evidenceMetadata: evidenceItems.map(i => ({ id: i.id, label: i.label, category: i.category, fileName: i.file.name, fileSize: i.file.size })),
+            savedAt: new Date().toISOString(),
+          };
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        } catch {}
+      }, 700);
+    });
+    return () => {
+      subscription.unsubscribe();
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [form, step, evidenceItems]);
+
+  // Also save when step changes even if no form field changed
+  useEffect(() => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      try {
+        const values = form.getValues();
+        const hasContent = values.landlordName || values.tenantName || values.claimAmount || values.description;
+        if (!hasContent) return;
+        const draft = {
+          step,
+          values,
+          evidenceMetadata: evidenceItems.map(i => ({ id: i.id, label: i.label, category: i.category, fileName: i.file.name, fileSize: i.file.size })),
+          savedAt: new Date().toISOString(),
+        };
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      } catch {}
+    }, 300);
+    return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
+  }, [step]);
+
+  const resumeDraft = () => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      form.reset(draft.values);
+      if (typeof draft.step === "number") setStep(draft.step);
+      setHasDraft(false);
+      toast({ title: "Draft Restored", description: "Pick up right where you left off." });
+    } catch {
+      toast({ title: "Could not restore draft", variant: "destructive" });
+    }
+  };
+
+  const discardDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setHasDraft(false);
+    setDraftSavedAt(null);
+  };
+
+  const clearDraftOnSuccess = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setHasDraft(false);
+  };
+
+  const formatDraftDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    } catch { return "recently"; }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────────
+
   const today = new Date();
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
   const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set());
@@ -343,6 +443,7 @@ export default function NewCase() {
             })
           );
         }
+        clearDraftOnSuccess();
         toast({
           title: "Case Created",
           description: "Your case has been saved successfully.",
@@ -494,6 +595,27 @@ export default function NewCase() {
         <h1 className="text-3xl font-serif font-bold text-foreground">Create New Case</h1>
         <p className="text-muted-foreground mt-1">Start recovering your losses by documenting the facts.</p>
       </div>
+
+      {/* Draft resume banner */}
+      {hasDraft && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-4 animate-in fade-in slide-in-from-top-2 duration-300">
+          <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">You have an unfinished case</p>
+            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+              Last saved {draftSavedAt ? formatDraftDate(draftSavedAt) : "recently"}. Resume to pick up where you left off, or discard to start fresh.
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <Button size="sm" className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white" onClick={resumeDraft}>
+              Resume Draft
+            </Button>
+            <Button size="sm" variant="ghost" className="h-8 text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100 dark:text-amber-400" onClick={discardDraft}>
+              Discard
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Progress Tracker */}
       <div className="mb-8 relative">
@@ -1447,9 +1569,24 @@ export default function NewCase() {
                   </Button>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Info className="h-3.5 w-3.5 shrink-0" />
-                Your case will be saved as a draft. You can return and edit it at any time from My Cases.
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Info className="h-3.5 w-3.5 shrink-0" />
+                  Progress is saved automatically — you can log out and resume later.
+                </div>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-destructive underline underline-offset-2 transition-colors"
+                  onClick={() => {
+                    discardDraft();
+                    form.reset();
+                    setStep(0);
+                    setEvidenceItems([]);
+                    toast({ title: "Draft discarded", description: "The form has been cleared." });
+                  }}
+                >
+                  Discard draft
+                </button>
               </div>
             </CardFooter>
           </Card>
