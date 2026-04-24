@@ -71,6 +71,69 @@ const CLAIM_TYPES: { value: ClaimTypeValue; label: string }[] = [
   { value: "other",             label: "Other" },
 ];
 
+interface EvidenceSuggestion {
+  name: string;
+  why: string;
+  category: string;
+}
+
+const EVIDENCE_SUGGESTIONS: Record<string, EvidenceSuggestion[]> = {
+  unpaid_rent: [
+    { name: "Signed lease or rental agreement", why: "Proves the agreed rent amount and due dates", category: "lease" },
+    { name: "Rent payment ledger or history", why: "Shows exactly what was paid and what balance remains", category: "financial" },
+    { name: "Bank statements", why: "Confirms payments received — or confirms they never came", category: "financial" },
+    { name: "Written demand letters", why: "Demonstrates you formally notified the tenant of the debt", category: "correspondence" },
+    { name: "Texts or emails about unpaid rent", why: "Contemporaneous proof the issue was raised in real time", category: "correspondence" },
+    { name: "Late fee notices", why: "Documents the escalation timeline", category: "correspondence" },
+  ],
+  property_damage: [
+    { name: "Move-in inspection report", why: "Establishes the baseline condition before tenant moved in", category: "inspection" },
+    { name: "Move-in photos or video", why: "Visual proof of original condition", category: "photo" },
+    { name: "Move-out photos or video", why: "Documents the damage left behind", category: "photo" },
+    { name: "Repair estimates", why: "Shows the projected cost of the damage", category: "financial" },
+    { name: "Paid contractor invoices", why: "Proves the money you actually spent repairing the unit", category: "financial" },
+    { name: "Texts or emails about the damage", why: "Shows the tenant was aware of the damage claims", category: "correspondence" },
+  ],
+  security_deposit: [
+    { name: "Signed lease with deposit clause", why: "Confirms the deposit terms and amount required", category: "lease" },
+    { name: "Proof of deposit payment", why: "Shows the tenant paid and how much is held", category: "financial" },
+    { name: "Move-out inspection report", why: "Documents the condition the unit was returned in", category: "inspection" },
+    { name: "Written demand for deposit return", why: "Proves you followed up and received no response", category: "correspondence" },
+    { name: "Move-in photos", why: "Establishes original condition to compare against move-out", category: "photo" },
+    { name: "Itemized deduction statement (if any)", why: "Shows how the landlord applied the deposit — or failed to", category: "financial" },
+  ],
+  lease_break: [
+    { name: "Signed lease with term dates", why: "Establishes the binding commitment that was broken", category: "lease" },
+    { name: "Tenant's vacate notice (if given)", why: "Documents when they notified you — or confirms they didn't", category: "correspondence" },
+    { name: "Proof of vacant unit", why: "Shows they actually left before the term ended", category: "photo" },
+    { name: "Re-listing or advertising receipts", why: "Shows your reasonable efforts to mitigate the loss", category: "financial" },
+    { name: "New tenant's move-in date", why: "Determines the exact period of unpaid rent you can claim", category: "lease" },
+    { name: "Texts or emails about early departure", why: "Contemporaneous proof of the breach", category: "correspondence" },
+  ],
+  other: [
+    { name: "Written lease or agreement", why: "Any written agreement is the foundation of your claim", category: "lease" },
+    { name: "Relevant correspondence", why: "Emails, texts, and letters establish the timeline", category: "correspondence" },
+    { name: "Receipts and invoices", why: "Quantify your financial loss with documentary proof", category: "financial" },
+    { name: "Photos or video", why: "Visual evidence is compelling and hard to dispute", category: "photo" },
+  ],
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  lease: "Lease",
+  financial: "Financial",
+  photo: "Photo / Video",
+  inspection: "Inspection",
+  correspondence: "Correspondence",
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  lease: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+  financial: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
+  photo: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+  inspection: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+  correspondence: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+};
+
 const DESCRIPTION_TEMPLATES: Record<string, string> = {
   unpaid_rent:
     "Tenant has failed to pay rent as required under the lease agreement. Despite multiple requests for payment, the outstanding balance remains unpaid. Plaintiff seeks recovery of all unpaid rent, plus any applicable late fees, filing fees, and court costs.",
@@ -1217,7 +1280,50 @@ export default function NewCase() {
               {/* STEP 2: EVIDENCE */}
               {step === 2 && (
                 <div className="grid gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
-                  
+
+                  {/* Suggested evidence checklist */}
+                  {(() => {
+                    const claimTypes = Array.isArray(watchedClaimType) ? watchedClaimType : [];
+                    const seen = new Set<string>();
+                    const suggestions: (EvidenceSuggestion & { claimLabel: string })[] = [];
+                    for (const ct of claimTypes) {
+                      const items = EVIDENCE_SUGGESTIONS[ct] ?? [];
+                      for (const item of items) {
+                        if (!seen.has(item.name)) {
+                          seen.add(item.name);
+                          suggestions.push({ ...item, claimLabel: CLAIM_TYPES.find(c => c.value === ct)?.label ?? ct });
+                        }
+                      }
+                    }
+                    if (suggestions.length === 0) return null;
+                    return (
+                      <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
+                        <div className="px-4 py-3 border-b border-border bg-muted/40 flex items-center gap-2">
+                          <CheckCircle2 className="h-4 w-4 text-primary" />
+                          <p className="text-sm font-semibold text-foreground">Suggested Evidence for Your Claim</p>
+                          <span className="ml-auto text-xs text-muted-foreground">{suggestions.length} item{suggestions.length !== 1 ? "s" : ""}</span>
+                        </div>
+                        <ul className="divide-y divide-border">
+                          {suggestions.map((s, i) => (
+                            <li key={i} className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                              <div className="mt-0.5 h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-foreground leading-snug">{s.name}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{s.why}</p>
+                              </div>
+                              <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full mt-0.5 ${CATEGORY_COLORS[s.category] ?? "bg-muted text-muted-foreground"}`}>
+                                {CATEGORY_LABELS[s.category] ?? s.category}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                        <div className="px-4 py-2.5 border-t border-border bg-muted/20">
+                          <p className="text-xs text-muted-foreground">Upload what you have — you can always add more from the case detail page later.</p>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Drop zone */}
                   <div
                     className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${isDragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"}`}
