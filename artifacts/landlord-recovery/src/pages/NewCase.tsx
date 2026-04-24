@@ -322,18 +322,20 @@ export default function NewCase() {
 
   // ─── Draft autosave ──────────────────────────────────────────────────────────
 
-  // On mount: detect saved draft
+  // On mount: auto-restore any saved draft immediately
   useEffect(() => {
     try {
       const raw = localStorage.getItem(DRAFT_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed?.savedAt && parsed?.values) {
-          setHasDraft(true);
-          setDraftSavedAt(parsed.savedAt);
-        }
-      }
+      if (!raw) return;
+      const draft = JSON.parse(raw);
+      if (!draft?.savedAt || !draft?.values) return;
+      // Restore form values and step
+      form.reset(draft.values);
+      if (typeof draft.step === "number") setStep(draft.step);
+      setHasDraft(true);
+      setDraftSavedAt(draft.savedAt);
     } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Debounced autosave whenever form values or step change
@@ -396,10 +398,15 @@ export default function NewCase() {
     }
   };
 
-  const discardDraft = () => {
+  const discardDraft = (resetForm = true) => {
     localStorage.removeItem(DRAFT_KEY);
     setHasDraft(false);
     setDraftSavedAt(null);
+    if (resetForm) {
+      form.reset();
+      setStep(0);
+      setEvidenceItems([]);
+    }
   };
 
   const clearDraftOnSuccess = () => {
@@ -659,24 +666,22 @@ export default function NewCase() {
         <p className="text-muted-foreground mt-1">Start recovering your losses by documenting the facts.</p>
       </div>
 
-      {/* Draft resume banner */}
+      {/* Draft restored notification */}
       {hasDraft && (
-        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30 p-4 animate-in fade-in slide-in-from-top-2 duration-300">
-          <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30 px-4 py-3 animate-in fade-in slide-in-from-top-2 duration-300">
+          <Check className="h-4 w-4 text-green-600 dark:text-green-400 shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">You have an unfinished case</p>
-            <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
-              Last saved {draftSavedAt ? formatDraftDate(draftSavedAt) : "recently"}. Resume to pick up where you left off, or discard to start fresh.
+            <p className="text-sm text-green-800 dark:text-green-200">
+              <span className="font-semibold">Draft restored</span> — last saved {draftSavedAt ? formatDraftDate(draftSavedAt) : "recently"}.
             </p>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <Button size="sm" className="h-8 text-xs bg-amber-600 hover:bg-amber-700 text-white" onClick={resumeDraft}>
-              Resume Draft
-            </Button>
-            <Button size="sm" variant="ghost" className="h-8 text-xs text-amber-700 hover:text-amber-900 hover:bg-amber-100 dark:text-amber-400" onClick={discardDraft}>
-              Discard
-            </Button>
-          </div>
+          <button
+            type="button"
+            className="shrink-0 text-xs text-green-700 dark:text-green-400 hover:text-red-600 dark:hover:text-red-400 underline underline-offset-2 transition-colors"
+            onClick={discardDraft}
+          >
+            Discard
+          </button>
         </div>
       )}
 
@@ -1684,10 +1689,7 @@ export default function NewCase() {
                   type="button"
                   className="text-xs text-muted-foreground hover:text-destructive underline underline-offset-2 transition-colors"
                   onClick={() => {
-                    discardDraft();
-                    form.reset();
-                    setStep(0);
-                    setEvidenceItems([]);
+                    discardDraft(true);
                     toast({ title: "Draft discarded", description: "The form has been cleared." });
                   }}
                 >
