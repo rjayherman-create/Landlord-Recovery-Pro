@@ -1647,7 +1647,7 @@ export default function NewCase() {
               )}
             </CardContent>
             
-            <CardFooter className="bg-muted/20 border-t border-border flex flex-col gap-3 p-6">
+            <CardFooter className="sticky bottom-0 z-20 bg-background border-t border-border flex flex-col gap-3 p-6 shadow-[0_-2px_12px_rgba(0,0,0,0.06)]">
               <div className="flex justify-between w-full">
                 <Button 
                   type="button" 
