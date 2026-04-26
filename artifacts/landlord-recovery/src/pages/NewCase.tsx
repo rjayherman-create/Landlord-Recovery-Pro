@@ -206,7 +206,6 @@ type FormValues = z.infer<typeof newCaseSchema>;
 
 export default function NewCase() {
   const [step, setStep] = useState(0);
-  const [showPaywall, setShowPaywall] = useState(false);
   const [paywallLoading, setPaywallLoading] = useState<"unlock" | "subscribe" | null>(null);
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
   const [isDragOver, setIsDragOver] = useState(false);
@@ -446,29 +445,28 @@ export default function NewCase() {
     }
   }, [selectedMonths, watchedMonthlyRent, watchedClaimType, stateLimit]);
 
+  const scrollTop = () => {
+    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const nextStep = async () => {
     let fieldsToValidate: any[] = [];
     
     if (step === 0) fieldsToValidate = ['landlordName', 'tenantName', 'landlordEmail', 'tenantEmail', 'landlordPhone', 'tenantPhone', 'tenantAddress'];
     if (step === 1) fieldsToValidate = ['claimType', 'state', 'claimAmount', 'description'];
-    if (step === 2) fieldsToValidate = []; // Evidence step — no required fields
-    if (step === 3) fieldsToValidate = ['propertyAddress', 'monthlyRent', 'leaseStartDate', 'leaseEndDate', 'moveOutDate'];
+    if (step === 2) fieldsToValidate = [];
+    if (step === 3) fieldsToValidate = isPro ? ['propertyAddress', 'monthlyRent', 'leaseStartDate', 'leaseEndDate', 'moveOutDate'] : [];
 
     const isValid = await form.trigger(fieldsToValidate as any);
     if (isValid) {
-      if (step === 3 && !isPro) {
-        setShowPaywall(true);
-        window.scrollTo(0, 0);
-        return;
-      }
       setStep(s => Math.min(STEPS.length - 1, s + 1));
-      window.scrollTo(0, 0);
+      scrollTop();
     }
   };
 
   const prevStep = () => {
     setStep(s => Math.max(0, s - 1));
-    window.scrollTo(0, 0);
+    scrollTop();
   };
 
   const addEvidenceFiles = (files: FileList | File[]) => {
@@ -531,130 +529,6 @@ export default function NewCase() {
   };
 
   const CurrentStepIcon = STEPS[step].icon;
-
-  if (showPaywall) {
-    const vals = form.getValues();
-    const claimTypes = (Array.isArray(vals.claimType) ? vals.claimType : [vals.claimType])
-      .filter(Boolean)
-      .map((t: string) => t.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' '))
-      .join(', ');
-    return (
-      <div className="p-6 md:p-8 max-w-2xl mx-auto animate-in fade-in duration-500">
-        <Button variant="ghost" size="sm" className="mb-6 text-muted-foreground hover:text-foreground" onClick={() => { setShowPaywall(false); window.scrollTo(0, 0); }}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Form
-        </Button>
-
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mb-4">
-            <CheckCircle2 className="h-9 w-9 text-green-600" />
-          </div>
-          <h1 className="text-3xl font-serif font-bold text-foreground mb-2">Your Case Is Ready to File</h1>
-          <p className="text-muted-foreground">Unlock your full case to generate documents and take legal action.</p>
-        </div>
-
-        {/* Case preview */}
-        <div className="rounded-xl border border-border bg-muted/30 p-5 mb-6 space-y-3">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Case Summary</h2>
-          <div className="flex justify-between items-center py-2 border-b border-border/50">
-            <span className="text-sm text-muted-foreground">Defendant</span>
-            <span className="text-sm font-semibold">{vals.tenantName || "—"}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-border/50">
-            <span className="text-sm text-muted-foreground">Property</span>
-            <span className="text-sm font-semibold text-right max-w-[55%]">{vals.propertyAddress || "—"}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-border/50">
-            <span className="text-sm text-muted-foreground">Claim Type</span>
-            <span className="text-sm font-semibold">{claimTypes || "—"}</span>
-          </div>
-          <div className="flex justify-between items-center py-2">
-            <span className="text-sm text-muted-foreground">Claim Amount</span>
-            <span className="text-lg font-bold text-primary">${Number(vals.claimAmount || 0).toLocaleString()}</span>
-          </div>
-        </div>
-
-        {/* Teased locked features */}
-        <div className="rounded-xl border border-border bg-card p-5 mb-6">
-          <h2 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Included with Unlock</h2>
-          <ul className="space-y-3">
-            {[
-              "Court-ready demand letter (print & send)",
-              "Step-by-step small claims filing guide",
-              "Evidence checklist for your state",
-              "Downloadable case documents",
-            ].map((feature) => (
-              <li key={feature} className="flex items-center gap-3 text-sm">
-                <div className="w-5 h-5 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
-                  <Lock className="h-2.5 w-2.5 text-accent" />
-                </div>
-                <span className="text-foreground/70">{feature}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* Primary CTA — $29 one-time */}
-        <div className="rounded-xl border-2 border-accent bg-accent/5 p-6 mb-4">
-          <div className="text-center mb-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-1">Best Option</p>
-            <p className="text-3xl font-bold text-foreground">$29 <span className="text-base font-normal text-muted-foreground">one-time</span></p>
-            <p className="text-sm text-muted-foreground mt-1">Full access to this case, forever</p>
-          </div>
-          <Button
-            className="w-full h-12 text-base bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
-            disabled={!!paywallLoading}
-            onClick={async () => {
-              setPaywallLoading("unlock");
-              try {
-                await startUnlockCheckout(vals.landlordEmail || undefined);
-              } catch {
-                toast({ title: "Checkout unavailable", description: "Please try again.", variant: "destructive" });
-                setPaywallLoading(null);
-              }
-            }}
-          >
-            {paywallLoading === "unlock"
-              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirecting to checkout…</>
-              : "Unlock Full Case — $29"}
-          </Button>
-          <div className="flex justify-center gap-6 mt-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><Check className="h-3 w-3 text-green-500" /> One-time payment</span>
-            <span className="flex items-center gap-1"><Check className="h-3 w-3 text-green-500" /> No subscription</span>
-            <span className="flex items-center gap-1"><Check className="h-3 w-3 text-green-500" /> Use immediately</span>
-          </div>
-        </div>
-
-        {/* Secondary — monthly sub */}
-        <div className="rounded-xl border border-border bg-card p-5 text-center">
-          <p className="text-sm font-medium text-foreground mb-1">Need access to multiple cases?</p>
-          <p className="text-xs text-muted-foreground mb-3">Get unlimited cases, documents, and AI letters for one flat rate.</p>
-          <Button
-            variant="outline"
-            className="w-full border-primary text-primary hover:bg-primary/5"
-            disabled={!!paywallLoading}
-            onClick={async () => {
-              setPaywallLoading("subscribe");
-              try {
-                await startSubscriptionCheckout(vals.landlordEmail || undefined);
-              } catch {
-                toast({ title: "Checkout unavailable", description: "Please try again.", variant: "destructive" });
-                setPaywallLoading(null);
-              }
-            }}
-          >
-            {paywallLoading === "subscribe"
-              ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirecting…</>
-              : "Subscribe — $49/month · Cancel anytime"}
-          </Button>
-        </div>
-
-        <p className="text-center text-xs text-muted-foreground mt-4">
-          Secured by Stripe. Your payment info is never stored on our servers.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 md:p-8 max-w-4xl mx-auto animate-in fade-in duration-500">
@@ -1424,7 +1298,96 @@ export default function NewCase() {
               )}
 
               {/* STEP 3: PROPERTY & LEASE */}
-              {step === 3 && (
+              {step === 3 && !isPro && (
+                <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-5">
+                  <div className="text-center py-4">
+                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-accent/10 mb-4">
+                      <Lock className="h-7 w-7 text-accent" />
+                    </div>
+                    <h2 className="text-xl font-serif font-bold text-foreground mb-1">Unlock to Continue</h2>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                      Complete your case file and generate court-ready documents by unlocking full access.
+                    </p>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-muted/30 p-5 space-y-2.5">
+                    <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">What you get</h3>
+                    {[
+                      "Property & lease details step",
+                      "Court-ready demand letter (print & send)",
+                      "Step-by-step small claims filing guide",
+                      "Downloadable case documents",
+                    ].map((feature) => (
+                      <div key={feature} className="flex items-center gap-3 text-sm">
+                        <div className="w-5 h-5 rounded-full bg-accent/15 flex items-center justify-center shrink-0">
+                          <Check className="h-3 w-3 text-accent" />
+                        </div>
+                        <span className="text-foreground/80">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border-2 border-accent bg-accent/5 p-5">
+                    <div className="text-center mb-4">
+                      <p className="text-xs font-semibold uppercase tracking-wider text-accent mb-1">Best Option</p>
+                      <p className="text-2xl font-bold text-foreground">$29 <span className="text-base font-normal text-muted-foreground">one-time</span></p>
+                      <p className="text-xs text-muted-foreground mt-0.5">Full access to this case, forever</p>
+                    </div>
+                    <Button
+                      type="button"
+                      className="w-full h-11 text-sm bg-accent text-accent-foreground hover:bg-accent/90 font-semibold"
+                      disabled={!!paywallLoading}
+                      onClick={async () => {
+                        setPaywallLoading("unlock");
+                        try {
+                          await startUnlockCheckout(form.getValues("landlordEmail") || undefined);
+                        } catch {
+                          toast({ title: "Checkout unavailable", description: "Please try again.", variant: "destructive" });
+                          setPaywallLoading(null);
+                        }
+                      }}
+                    >
+                      {paywallLoading === "unlock"
+                        ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirecting to checkout…</>
+                        : "Unlock Full Case — $29"}
+                    </Button>
+                    <div className="flex justify-center gap-5 mt-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1"><Check className="h-3 w-3 text-green-500" /> One-time payment</span>
+                      <span className="flex items-center gap-1"><Check className="h-3 w-3 text-green-500" /> No subscription</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-border bg-card p-4 text-center">
+                    <p className="text-sm font-medium text-foreground mb-1">Need multiple cases?</p>
+                    <p className="text-xs text-muted-foreground mb-3">Unlimited cases and documents for one flat rate.</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full border-primary text-primary hover:bg-primary/5"
+                      disabled={!!paywallLoading}
+                      onClick={async () => {
+                        setPaywallLoading("subscribe");
+                        try {
+                          await startSubscriptionCheckout(form.getValues("landlordEmail") || undefined);
+                        } catch {
+                          toast({ title: "Checkout unavailable", description: "Please try again.", variant: "destructive" });
+                          setPaywallLoading(null);
+                        }
+                      }}
+                    >
+                      {paywallLoading === "subscribe"
+                        ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Redirecting…</>
+                        : "Subscribe — $49/month · Cancel anytime"}
+                    </Button>
+                  </div>
+
+                  <p className="text-center text-xs text-muted-foreground">
+                    Secured by Stripe. Your payment info is never stored on our servers.
+                  </p>
+                </div>
+              )}
+
+              {step === 3 && isPro && (
                 <div className="grid gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
                   <FormField
                     control={form.control}
@@ -1658,7 +1621,7 @@ export default function NewCase() {
                   <ArrowLeft className="mr-2 h-4 w-4" /> Back
                 </Button>
                 
-                {step < STEPS.length - 1 ? (
+                {step === 3 && !isPro ? null : step < STEPS.length - 1 ? (
                   <Button type="button" onClick={nextStep} className="bg-primary text-primary-foreground">
                     Next Step <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
