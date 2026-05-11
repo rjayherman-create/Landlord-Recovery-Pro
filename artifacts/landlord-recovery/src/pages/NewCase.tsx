@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
 import { useSubscription, startUnlockCheckout, startSubscriptionCheckout } from "@/hooks/useSubscription";
-import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle, ChevronsUpDown, Lock, Paperclip, X, ImageIcon, FileIcon, Upload } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle, ChevronsUpDown, Lock, Paperclip, X, FileIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,6 +43,7 @@ interface EvidenceItem {
   label: string;
   category: string;
   previewUrl: string | null;
+  suggestionName?: string;
 }
 
 const STATES = [
@@ -208,11 +209,11 @@ export default function NewCase() {
   const [step, setStep] = useState(0);
   const [paywallLoading, setPaywallLoading] = useState<"unlock" | "subscribe" | null>(null);
   const [evidenceItems, setEvidenceItems] = useState<EvidenceItem[]>([]);
-  const [isDragOver, setIsDragOver] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const evidenceFileInputRef = useRef<HTMLInputElement>(null);
+  const uploadTargetRef = useRef<string | null>(null);
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
@@ -489,19 +490,37 @@ export default function NewCase() {
     scrollTop();
   };
 
-  const addEvidenceFiles = (files: FileList | File[]) => {
+  const addEvidenceFiles = (files: FileList | File[], suggestionName?: string) => {
     const fileArray = Array.from(files);
     const allowed = ["image/jpeg","image/png","image/gif","image/webp","image/heic","application/pdf","text/plain","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-    const newItems: EvidenceItem[] = fileArray
-      .filter(f => allowed.includes(f.type))
-      .map(f => ({
+    const filtered = fileArray.filter(f => allowed.includes(f.type));
+    if (filtered.length === 0) return;
+
+    if (suggestionName) {
+      const f = filtered[0];
+      const newItem: EvidenceItem = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file: f,
+        label: f.name.replace(/\.[^/.]+$/, ""),
+        category: f.type.startsWith("image/") ? "photo" : "correspondence",
+        previewUrl: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
+        suggestionName,
+      };
+      setEvidenceItems(prev => {
+        const existing = prev.find(i => i.suggestionName === suggestionName);
+        if (existing?.previewUrl) URL.revokeObjectURL(existing.previewUrl);
+        return [...prev.filter(i => i.suggestionName !== suggestionName), newItem];
+      });
+    } else {
+      const newItems: EvidenceItem[] = filtered.map(f => ({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         file: f,
         label: f.name.replace(/\.[^/.]+$/, ""),
         category: f.type.startsWith("image/") ? "photo" : "other",
         previewUrl: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
       }));
-    setEvidenceItems(prev => [...prev, ...newItems]);
+      setEvidenceItems(prev => [...prev, ...newItems]);
+    }
   };
 
   const removeEvidenceItem = (id: string) => {
@@ -1218,7 +1237,22 @@ export default function NewCase() {
               {step === 2 && (
                 <div className="grid gap-6 animate-in fade-in slide-in-from-right-4 duration-300">
 
-                  {/* Suggested evidence checklist */}
+                  {/* Single hidden file input — triggered per suggestion row */}
+                  <input
+                    ref={evidenceFileInputRef}
+                    type="file"
+                    accept="image/*,.pdf,.doc,.docx,.txt"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        addEvidenceFiles(e.target.files, uploadTargetRef.current ?? undefined);
+                        e.target.value = "";
+                        uploadTargetRef.current = null;
+                      }
+                    }}
+                  />
+
+                  {/* Per-item evidence checklist */}
                   {(() => {
                     const claimTypes = Array.isArray(watchedClaimType) ? watchedClaimType : [];
                     const seen = new Set<string>();
@@ -1233,26 +1267,89 @@ export default function NewCase() {
                       }
                     }
                     if (suggestions.length === 0) return null;
+                    const attachedCount = evidenceItems.filter(i => i.suggestionName).length;
                     return (
                       <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
                         <div className="px-4 py-3 border-b border-border bg-muted/40 flex items-center gap-2">
                           <CheckCircle2 className="h-4 w-4 text-primary" />
                           <p className="text-sm font-semibold text-foreground">Suggested Evidence for Your Claim</p>
-                          <span className="ml-auto text-xs text-muted-foreground">{suggestions.length} item{suggestions.length !== 1 ? "s" : ""}</span>
+                          <span className="ml-auto text-xs text-muted-foreground">
+                            {attachedCount} of {suggestions.length} attached
+                          </span>
                         </div>
                         <ul className="divide-y divide-border">
-                          {suggestions.map((s, i) => (
-                            <li key={i} className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
-                              <div className="mt-0.5 h-4 w-4 rounded-full border-2 border-muted-foreground/30 shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-foreground leading-snug">{s.name}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">{s.why}</p>
-                              </div>
-                              <span className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full mt-0.5 ${CATEGORY_COLORS[s.category] ?? "bg-muted text-muted-foreground"}`}>
-                                {CATEGORY_LABELS[s.category] ?? s.category}
-                              </span>
-                            </li>
-                          ))}
+                          {suggestions.map((s, i) => {
+                            const attached = evidenceItems.find(e => e.suggestionName === s.name);
+                            return (
+                              <li key={i} className="px-4 py-3 hover:bg-muted/20 transition-colors">
+                                <div className="flex items-start gap-3">
+                                  {/* Check indicator */}
+                                  <div className={`mt-0.5 shrink-0 h-5 w-5 rounded-full border-2 flex items-center justify-center transition-colors ${attached ? "border-emerald-500 bg-emerald-500" : "border-muted-foreground/30"}`}>
+                                    {attached && <Check className="h-3 w-3 text-white" />}
+                                  </div>
+
+                                  {/* Name + why + attached file preview */}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-foreground leading-snug">{s.name}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">{s.why}</p>
+                                    {attached && (
+                                      <div className="mt-2 flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-md px-2 py-1.5">
+                                        {attached.previewUrl ? (
+                                          <img src={attached.previewUrl} alt={attached.label} className="h-8 w-8 rounded object-cover border border-border shrink-0" />
+                                        ) : (
+                                          <div className="h-8 w-8 rounded border border-border bg-muted flex items-center justify-center shrink-0">
+                                            <FileIcon className="h-4 w-4 text-muted-foreground" />
+                                          </div>
+                                        )}
+                                        <span className="text-xs text-emerald-800 dark:text-emerald-300 truncate flex-1">{attached.file.name}</span>
+                                        <button
+                                          type="button"
+                                          onClick={() => removeEvidenceItem(attached.id)}
+                                          className="shrink-0 text-xs text-muted-foreground hover:text-destructive transition-colors flex items-center gap-0.5 ml-1"
+                                        >
+                                          <X className="h-3 w-3" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Category badge + attach / replace button */}
+                                  <div className="flex flex-col items-end gap-2 shrink-0 ml-2">
+                                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${CATEGORY_COLORS[s.category] ?? "bg-muted text-muted-foreground"}`}>
+                                      {CATEGORY_LABELS[s.category] ?? s.category}
+                                    </span>
+                                    {!attached ? (
+                                      <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        className="h-7 text-xs px-2.5"
+                                        onClick={() => {
+                                          uploadTargetRef.current = s.name;
+                                          evidenceFileInputRef.current?.click();
+                                        }}
+                                      >
+                                        <Paperclip className="h-3 w-3 mr-1" /> Attach
+                                      </Button>
+                                    ) : (
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="h-7 text-xs px-2.5 text-muted-foreground hover:text-foreground"
+                                        onClick={() => {
+                                          uploadTargetRef.current = s.name;
+                                          evidenceFileInputRef.current?.click();
+                                        }}
+                                      >
+                                        Replace
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              </li>
+                            );
+                          })}
                         </ul>
                         <div className="px-4 py-2.5 border-t border-border bg-muted/20">
                           <p className="text-xs text-muted-foreground">Upload what you have — you can always add more from the case detail page later.</p>
@@ -1261,96 +1358,8 @@ export default function NewCase() {
                     );
                   })()}
 
-                  {/* Drop zone */}
-                  <div
-                    className={`relative border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer ${isDragOver ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-muted/30"}`}
-                    onClick={() => evidenceFileInputRef.current?.click()}
-                    onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                    onDragLeave={() => setIsDragOver(false)}
-                    onDrop={(e) => { e.preventDefault(); setIsDragOver(false); if (e.dataTransfer.files) addEvidenceFiles(e.dataTransfer.files); }}
-                  >
-                    <input
-                      ref={evidenceFileInputRef}
-                      type="file"
-                      multiple
-                      accept="image/*,.pdf,.doc,.docx,.txt"
-                      className="hidden"
-                      onChange={(e) => { if (e.target.files) { addEvidenceFiles(e.target.files); e.target.value = ""; } }}
-                    />
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="rounded-full bg-muted p-4">
-                        <Upload className="h-6 w-6 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm">Drag and drop files here, or click to browse</p>
-                        <p className="text-xs text-muted-foreground mt-1">Images, PDFs, and documents up to 25 MB each</p>
-                      </div>
-                      <Button type="button" variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); evidenceFileInputRef.current?.click(); }}>
-                        <Paperclip className="mr-2 h-4 w-4" /> Add Files
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Evidence items list */}
-                  {evidenceItems.length > 0 && (
-                    <div className="space-y-3">
-                      <p className="text-sm font-medium text-muted-foreground">{evidenceItems.length} file{evidenceItems.length !== 1 ? "s" : ""} attached</p>
-                      {evidenceItems.map((item) => (
-                        <div key={item.id} className="flex items-start gap-3 border border-border rounded-lg p-3 bg-muted/20">
-                          {/* Thumbnail or icon */}
-                          <div className="shrink-0 w-12 h-12 rounded-md overflow-hidden border border-border bg-muted flex items-center justify-center">
-                            {item.previewUrl ? (
-                              <img src={item.previewUrl} alt={item.label} className="w-full h-full object-cover" />
-                            ) : item.file.type === "application/pdf" ? (
-                              <FileIcon className="h-6 w-6 text-red-500" />
-                            ) : (
-                              <FileIcon className="h-6 w-6 text-muted-foreground" />
-                            )}
-                          </div>
-
-                          {/* Fields */}
-                          <div className="flex-1 grid gap-2">
-                            <div>
-                              <Label className="text-xs text-muted-foreground mb-1 block">Evidence Label</Label>
-                              <Input
-                                value={item.label}
-                                onChange={(e) => setEvidenceItems(prev => prev.map(i => i.id === item.id ? { ...i, label: e.target.value } : i))}
-                                placeholder="e.g. Front door damage — July 2023"
-                                className="h-8 text-sm"
-                              />
-                            </div>
-                            <div>
-                              <Label className="text-xs text-muted-foreground mb-1 block">Category</Label>
-                              <select
-                                value={item.category}
-                                onChange={(e) => setEvidenceItems(prev => prev.map(i => i.id === item.id ? { ...i, category: e.target.value } : i))}
-                                className="w-full h-8 text-sm border border-input rounded-md bg-background px-2 focus:outline-none focus:ring-2 focus:ring-ring"
-                              >
-                                {EVIDENCE_CATEGORIES.map(cat => (
-                                  <option key={cat.value} value={cat.value}>{cat.label}</option>
-                                ))}
-                              </select>
-                            </div>
-                            <p className="text-xs text-muted-foreground truncate">{item.file.name} · {(item.file.size / 1024).toFixed(0)} KB</p>
-                          </div>
-
-                          {/* Remove */}
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="shrink-0 h-7 w-7 text-muted-foreground hover:text-destructive"
-                            onClick={() => removeEvidenceItem(item.id)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
                   {evidenceItems.length === 0 && (
-                    <p className="text-xs text-center text-muted-foreground">Evidence is optional. You can also add documents later from the case detail page.</p>
+                    <p className="text-xs text-center text-muted-foreground">Evidence is optional. You can also attach documents later from the case detail page.</p>
                   )}
                 </div>
               )}
