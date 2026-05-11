@@ -90,7 +90,10 @@ const EVIDENCE_SUGGESTIONS: Record<string, EvidenceSuggestion[]> = {
   property_damage: [
     { name: "Move-in inspection report", why: "Establishes the baseline condition before tenant moved in", category: "inspection" },
     { name: "Move-in photos or video", why: "Visual proof of original condition", category: "photo" },
-    { name: "Move-out photos or video", why: "Documents the damage left behind", category: "photo" },
+    { name: "Move-out photos or video", why: "Documents the overall condition of the unit at move-out", category: "photo" },
+    { name: "Damage photos", why: "Close-up photographs of each damaged area — walls, floors, fixtures, and appliances", category: "photo" },
+    { name: "Abandoned property photos", why: "Photos of items the tenant left behind after vacating the unit", category: "photo" },
+    { name: "Abandoned property removal receipts", why: "Bills for dumpster rental, hauling, and labor costs to remove items left behind", category: "financial" },
     { name: "Repair estimates", why: "Shows the projected cost of the damage", category: "financial" },
     { name: "Paid contractor invoices", why: "Proves the money you actually spent repairing the unit", category: "financial" },
     { name: "Texts or emails about the damage", why: "Shows the tenant was aware of the damage claims", category: "correspondence" },
