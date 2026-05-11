@@ -1,0 +1,461 @@
+// ============================================================
+// TENANT RECOVERY PRO
+// Tenant Tracking + Skip Trace Intake System
+// Railway + Replit + React + Tailwind Compatible
+// FRONTEND ONLY
+//
+// FILE:
+// artifacts/scar-filing/src/pages/TenantTrackingPage.tsx
+//
+// ADD ROUTE:
+// <Route path="/tenant-tracking" element={<TenantTrackingPage />} />
+// ============================================================
+
+import { useState } from "react";
+import {
+  Search,
+  AlertTriangle,
+  Phone,
+  Car,
+  Building2,
+  User,
+  MapPin,
+  FileText,
+  DollarSign,
+} from "lucide-react";
+
+export default function TenantTrackingPage() {
+  const [formData, setFormData] = useState({
+    tenantName: "",
+    dob: "",
+    ssnLast4: "",
+    driversLicense: "",
+
+    primaryPhone: "",
+    secondaryPhone: "",
+    email: "",
+
+    employerName: "",
+    employerPhone: "",
+    employerAddress: "",
+
+    emergencyContact: "",
+    emergencyPhone: "",
+
+    coSignerName: "",
+    coSignerPhone: "",
+
+    vehicleMake: "",
+    vehicleModel: "",
+    vehicleColor: "",
+    licensePlate: "",
+
+    lastKnownAddress: "",
+    forwardingAddress: "",
+
+    utilities: "",
+    bankName: "",
+
+    facebook: "",
+    instagram: "",
+    linkedin: "",
+    tiktok: "",
+
+    rentOwed: "",
+    damagesOwed: "",
+    utilityBalance: "",
+
+    moveOutDate: "",
+    lastPaymentDate: "",
+
+    knownRelatives: "",
+    knownFriends: "",
+    knownHangouts: "",
+
+    workplaceClues: "",
+    possibleNewAddress: "",
+
+    notes: "",
+  });
+
+  const updateField = (field: string, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const Field = ({
+    label,
+    field,
+    placeholder,
+    type = "text",
+    icon,
+  }: any) => (
+    <div className="flex flex-col gap-2">
+      <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+        {icon}
+        {label}
+      </label>
+
+      <input
+        type={type}
+        value={(formData as any)[field]}
+        onChange={(e) => updateField(field, e.target.value)}
+        placeholder={placeholder}
+        className="border border-gray-300 rounded-2xl px-4 py-3 bg-white focus:outline-none focus:ring-2 focus:ring-black"
+      />
+    </div>
+  );
+
+  const saveRecoveryFile = () => {
+    console.log("Tenant Tracking File:", formData);
+
+    alert(
+      "Tenant tracking file saved. Begin recovery actions immediately while the trail is fresh."
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100 p-6">
+      <div className="max-w-7xl mx-auto">
+
+        {/* HEADER */}
+
+        <div className="bg-black text-white rounded-3xl p-8 shadow-2xl">
+          <div className="flex items-center gap-4">
+            <Search size={42} />
+
+            <div>
+              <h1 className="text-4xl font-bold">
+                Tenant Tracking & Recovery Intake
+              </h1>
+
+              <p className="text-gray-300 mt-2 max-w-3xl">
+                Collect every possible piece of intelligence immediately after
+                move-out. Recovery success decreases dramatically after 30–60 days.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* ALERT */}
+
+        <div className="mt-6 bg-yellow-50 border border-yellow-300 rounded-3xl p-6 flex gap-4">
+          <AlertTriangle className="text-yellow-700 mt-1" />
+
+          <div>
+            <h2 className="font-bold text-yellow-900 text-lg">
+              Recovery Probability Warning
+            </h2>
+
+            <p className="text-yellow-800 mt-1">
+              The first few weeks after a tenant leaves are critical. Employers,
+              phone numbers, social profiles, and forwarding information become
+              harder to trace over time.
+            </p>
+          </div>
+        </div>
+
+        {/* MAIN FORM */}
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+
+          {/* LEFT COLUMN */}
+
+          <div className="bg-white rounded-3xl p-8 shadow-lg space-y-6">
+
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <User />
+              Tenant Identity
+            </h2>
+
+            <Field
+              label="Tenant Full Name"
+              field="tenantName"
+              placeholder="John Smith"
+              icon={<User size={16} />}
+            />
+
+            <Field
+              label="Date of Birth"
+              field="dob"
+              type="date"
+            />
+
+            <Field
+              label="Last 4 Digits of SSN"
+              field="ssnLast4"
+              placeholder="1234"
+            />
+
+            <Field
+              label="Driver License Number"
+              field="driversLicense"
+              placeholder="License Number"
+            />
+
+            <h2 className="text-2xl font-bold pt-6 flex items-center gap-2">
+              <Phone />
+              Contact Information
+            </h2>
+
+            <Field
+              label="Primary Phone"
+              field="primaryPhone"
+              placeholder="(555) 555-5555"
+            />
+
+            <Field
+              label="Secondary Phone"
+              field="secondaryPhone"
+              placeholder="Alternative Number"
+            />
+
+            <Field
+              label="Email Address"
+              field="email"
+              placeholder="tenant@email.com"
+            />
+
+            <h2 className="text-2xl font-bold pt-6 flex items-center gap-2">
+              <Building2 />
+              Employment Information
+            </h2>
+
+            <Field
+              label="Employer Name"
+              field="employerName"
+              placeholder="Company Name"
+            />
+
+            <Field
+              label="Employer Phone"
+              field="employerPhone"
+              placeholder="Employer Phone"
+            />
+
+            <Field
+              label="Employer Address"
+              field="employerAddress"
+              placeholder="Employer Address"
+            />
+          </div>
+
+          {/* RIGHT COLUMN */}
+
+          <div className="bg-white rounded-3xl p-8 shadow-lg space-y-6">
+
+            <h2 className="text-2xl font-bold flex items-center gap-2">
+              <Car />
+              Vehicle Information
+            </h2>
+
+            <Field
+              label="Vehicle Make"
+              field="vehicleMake"
+              placeholder="Honda"
+            />
+
+            <Field
+              label="Vehicle Model"
+              field="vehicleModel"
+              placeholder="Civic"
+            />
+
+            <Field
+              label="Vehicle Color"
+              field="vehicleColor"
+              placeholder="Black"
+            />
+
+            <Field
+              label="License Plate"
+              field="licensePlate"
+              placeholder="ABC-1234"
+            />
+
+            <h2 className="text-2xl font-bold pt-6 flex items-center gap-2">
+              <MapPin />
+              Address Information
+            </h2>
+
+            <Field
+              label="Last Known Address"
+              field="lastKnownAddress"
+              placeholder="123 Main St"
+            />
+
+            <Field
+              label="Forwarding Address"
+              field="forwardingAddress"
+              placeholder="If known"
+            />
+
+            <Field
+              label="Possible New Address"
+              field="possibleNewAddress"
+              placeholder="Possible relocation clue"
+            />
+
+            <h2 className="text-2xl font-bold pt-6 flex items-center gap-2">
+              <DollarSign />
+              Financial Recovery
+            </h2>
+
+            <Field
+              label="Rent Owed"
+              field="rentOwed"
+              placeholder="$3,500"
+            />
+
+            <Field
+              label="Damages Owed"
+              field="damagesOwed"
+              placeholder="$1,200"
+            />
+
+            <Field
+              label="Utility Balance"
+              field="utilityBalance"
+              placeholder="$400"
+            />
+          </div>
+        </div>
+
+        {/* SOCIAL + CONTACTS */}
+
+        <div className="bg-white rounded-3xl p-8 shadow-lg mt-8">
+          <h2 className="text-2xl font-bold mb-6">
+            Social Media + Recovery Intelligence
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            <Field
+              label="Facebook"
+              field="facebook"
+              placeholder="facebook.com/profile"
+            />
+
+            <Field
+              label="Instagram"
+              field="instagram"
+              placeholder="@instagram"
+            />
+
+            <Field
+              label="LinkedIn"
+              field="linkedin"
+              placeholder="linkedin profile"
+            />
+
+            <Field
+              label="TikTok"
+              field="tiktok"
+              placeholder="@tiktok"
+            />
+
+            <Field
+              label="Emergency Contact Name"
+              field="emergencyContact"
+              placeholder="Relative or friend"
+            />
+
+            <Field
+              label="Emergency Contact Phone"
+              field="emergencyPhone"
+              placeholder="(555) 555-5555"
+            />
+
+            <Field
+              label="Co-Signer Name"
+              field="coSignerName"
+              placeholder="Co-signer"
+            />
+
+            <Field
+              label="Co-Signer Phone"
+              field="coSignerPhone"
+              placeholder="(555) 555-5555"
+            />
+
+            <Field
+              label="Utility Companies"
+              field="utilities"
+              placeholder="National Grid, Verizon, etc."
+            />
+
+            <Field
+              label="Bank Name"
+              field="bankName"
+              placeholder="If known"
+            />
+
+            <Field
+              label="Known Relatives"
+              field="knownRelatives"
+              placeholder="Names / locations"
+            />
+
+            <Field
+              label="Known Friends"
+              field="knownFriends"
+              placeholder="Associates / roommates"
+            />
+
+            <Field
+              label="Known Hangouts"
+              field="knownHangouts"
+              placeholder="Bars, gyms, workplaces, etc."
+            />
+
+            <Field
+              label="Workplace Clues"
+              field="workplaceClues"
+              placeholder="Uniforms, vehicles, job sites"
+            />
+
+            <Field
+              label="Move-Out Date"
+              field="moveOutDate"
+              type="date"
+            />
+
+            <Field
+              label="Last Payment Date"
+              field="lastPaymentDate"
+              type="date"
+            />
+
+          </div>
+
+          <div className="mt-8">
+            <label className="font-semibold text-gray-700 flex items-center gap-2">
+              <FileText size={16} />
+              Additional Recovery Notes
+            </label>
+
+            <textarea
+              value={formData.notes}
+              onChange={(e) => updateField("notes", e.target.value)}
+              rows={8}
+              placeholder="Neighbors said tenant moved to another county... Saw tenant working construction in Nassau... Cash App username... Girlfriend address... etc."
+              className="w-full mt-3 border border-gray-300 rounded-2xl p-4 focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+
+          <div className="mt-10 flex justify-end">
+            <button
+              onClick={saveRecoveryFile}
+              className="bg-black hover:bg-gray-800 text-white px-8 py-4 rounded-2xl font-bold text-lg transition-all"
+            >
+              Save Tenant Recovery File
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  );
+}

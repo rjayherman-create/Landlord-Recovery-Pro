@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, FileText, Settings, Menu, PieChart, Info, BookOpen, CreditCard, Library, X, User, Zap } from "lucide-react";
+import { Home, FileText, Settings, Menu, PieChart, Info, BookOpen, CreditCard, Library, X, User, Zap, ScanSearch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -184,6 +184,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <Library className="h-4 w-4" />
               Documents
             </Link>
+            <Link href="/tenant-tracking" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${location === '/tenant-tracking' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
+              <ScanSearch className="h-4 w-4" />
+              Tenant Tracking
+            </Link>
           </nav>
 
           <div className="mt-8 mb-4 px-3">
@@ -261,6 +265,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   { href: "/dashboard", icon: <PieChart className="h-4 w-4" />, label: "Dashboard" },
                   { href: "/cases", icon: <FileText className="h-4 w-4" />, label: "My Cases" },
                   { href: "/documents", icon: <Library className="h-4 w-4" />, label: "Documents" },
+                  { href: "/tenant-tracking", icon: <ScanSearch className="h-4 w-4" />, label: "Tenant Tracking" },
                 ].map(({ href, icon, label }) => (
                   <Link key={href} href={href} className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${(href === '/cases' ? location.startsWith('/cases') : location === href) ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
                     {icon} {label}

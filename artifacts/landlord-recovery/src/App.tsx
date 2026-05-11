@@ -18,6 +18,7 @@ import HowItWorks from "@/pages/HowItWorks";
 import Resources from "@/pages/Resources";
 import Pricing from "@/pages/Pricing";
 import Documents from "@/pages/Documents";
+import TenantTracking from "@/pages/TenantTracking";
 import ServeTenant from "@/pages/ServeTenant";
 import CheckoutSuccess from "@/pages/CheckoutSuccess";
 import CheckoutCancel from "@/pages/CheckoutCancel";
@@ -133,6 +134,7 @@ function Router() {
             <Route path="/resources" component={Resources} />
             <Route path="/pricing" component={Pricing} />
             <Route path="/documents" component={Documents} />
+            <Route path="/tenant-tracking" component={TenantTracking} />
             <Route component={NotFound} />
           </Switch>
         </AppLayout>
