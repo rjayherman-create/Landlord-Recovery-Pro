@@ -424,26 +424,46 @@ export default function NewCase() {
   const today = new Date();
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
   const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set());
+  const [monthOverrides, setMonthOverrides] = useState<Map<string, number>>(new Map());
 
   const toggleMonth = (key: string) => {
     setSelectedMonths(prev => {
       const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (next.has(key)) {
+        next.delete(key);
+        setMonthOverrides(m => { const n = new Map(m); n.delete(key); return n; });
+      } else {
+        next.add(key);
+      }
       return next;
     });
   };
+
+  const getMonthAmount = (key: string): number => {
+    if (monthOverrides.has(key)) return monthOverrides.get(key)!;
+    return Number(watchedMonthlyRent) || 0;
+  };
+
+  const setMonthAmount = (key: string, value: number) => {
+    setMonthOverrides(prev => { const next = new Map(prev); next.set(key, value); return next; });
+  };
+
+  const sortedSelectedMonths = [...selectedMonths].sort();
+
+  const monthlyTotal = sortedSelectedMonths.reduce((sum, key) => sum + getMonthAmount(key), 0);
 
   useEffect(() => {
     const count = selectedMonths.size;
     form.setValue("monthsOwed", count, { shouldValidate: false });
     form.setValue("rentPeriod", formatRentPeriod([...selectedMonths]), { shouldValidate: false });
-    if (watchedClaimType?.includes("unpaid_rent") && watchedMonthlyRent && count > 0) {
-      const total = Number(watchedMonthlyRent) * count;
+    if (watchedClaimType?.includes("unpaid_rent") && count > 0) {
+      const total = sortedSelectedMonths.reduce((sum, key) => {
+        return sum + (monthOverrides.has(key) ? monthOverrides.get(key)! : (Number(watchedMonthlyRent) || 0));
+      }, 0);
       const capped = stateLimit ? Math.min(total, stateLimit) : total;
       if (capped > 0) form.setValue("claimAmount", capped, { shouldValidate: true });
     }
-  }, [selectedMonths, watchedMonthlyRent, watchedClaimType, stateLimit]);
+  }, [selectedMonths, monthOverrides, watchedMonthlyRent, watchedClaimType, stateLimit]);
 
   const scrollTop = () => {
     document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -807,33 +827,71 @@ export default function NewCase() {
                         )}
                       </div>
 
-                      {/* Calculation Summary */}
-                      {selectedMonths.size > 0 && watchedMonthlyRent && Number(watchedMonthlyRent) > 0 ? (
-                        <div className="rounded-lg border border-accent/30 bg-accent/5 p-4">
-                          <div className="text-sm text-muted-foreground mb-2 font-medium uppercase tracking-wider">Rent Breakdown</div>
-                          <div className="text-xs text-muted-foreground mb-2 leading-relaxed">
-                            {formatRentPeriod([...selectedMonths])}
+                      {/* Calculation Summary — per-month editable */}
+                      {selectedMonths.size > 0 ? (
+                        <div className="rounded-lg border border-accent/30 bg-accent/5 p-4 space-y-3">
+                          <div className="text-sm font-medium uppercase tracking-wider text-muted-foreground">Rent Breakdown</div>
+                          <p className="text-xs text-muted-foreground -mt-1">
+                            Each month defaults to the full monthly rent. Edit any month where only partial rent was paid or owed.
+                          </p>
+
+                          <div className="space-y-2">
+                            {sortedSelectedMonths.map(key => {
+                              const [yr, mo] = key.split("-");
+                              const label = `${MONTH_NAMES[parseInt(mo) - 1]} ${yr}`;
+                              const amount = getMonthAmount(key);
+                              const isPartial = monthOverrides.has(key) && monthOverrides.get(key)! < (Number(watchedMonthlyRent) || 0);
+                              return (
+                                <div key={key} className="flex items-center gap-3">
+                                  <span className="text-sm text-foreground w-36 shrink-0">{label}</span>
+                                  <div className="relative flex-1">
+                                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm select-none">$</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      value={amount === 0 ? "" : amount}
+                                      onChange={e => {
+                                        const val = parseFloat(e.target.value);
+                                        setMonthAmount(key, isNaN(val) ? 0 : val);
+                                      }}
+                                      className="w-full pl-7 pr-3 py-1.5 text-sm rounded-md border border-border bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+                                    />
+                                  </div>
+                                  {isPartial && (
+                                    <span className="text-xs text-amber-600 font-medium shrink-0">partial</span>
+                                  )}
+                                  {monthOverrides.has(key) && (
+                                    <button
+                                      type="button"
+                                      className="text-xs text-muted-foreground hover:text-foreground underline shrink-0"
+                                      onClick={() => setMonthOverrides(prev => { const next = new Map(prev); next.delete(key); return next; })}
+                                    >
+                                      reset
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
-                          <div className="flex items-center justify-between">
+
+                          <div className="border-t border-accent/20 pt-3 flex items-center justify-between">
                             <div className="text-sm text-muted-foreground">
-                              ${Number(watchedMonthlyRent).toLocaleString()} &times; {selectedMonths.size} month{selectedMonths.size !== 1 ? "s" : ""}
+                              {selectedMonths.size} month{selectedMonths.size !== 1 ? "s" : ""} total
                             </div>
-                            <div className={`text-xl font-bold ${stateLimit && Number(watchedMonthlyRent) * selectedMonths.size > stateLimit ? "text-amber-600" : "text-foreground"}`}>
-                              ${(Number(watchedMonthlyRent) * selectedMonths.size).toLocaleString()}
+                            <div className={`text-xl font-bold ${stateLimit && monthlyTotal > stateLimit ? "text-amber-600" : "text-foreground"}`}>
+                              ${monthlyTotal.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                             </div>
                           </div>
-                          {stateLimit && Number(watchedMonthlyRent) * selectedMonths.size > stateLimit ? (
-                            <div className="mt-2 flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800">
+
+                          {stateLimit && monthlyTotal > stateLimit ? (
+                            <div className="flex items-start gap-2 rounded-md bg-amber-50 border border-amber-200 p-2 text-xs text-amber-800">
                               <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0 text-amber-500" />
                               <span>This exceeds the {stateInfo?.name} small claims limit of ${stateLimit.toLocaleString()}. Your claim will be capped at that amount.</span>
                             </div>
                           ) : (
-                            <div className="text-xs text-muted-foreground mt-1">This becomes your total claim amount</div>
+                            <div className="text-xs text-muted-foreground">This becomes your total claim amount</div>
                           )}
-                        </div>
-                      ) : selectedMonths.size > 0 ? (
-                        <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
-                          {selectedMonths.size} month{selectedMonths.size !== 1 ? "s" : ""} selected — enter monthly rent above to calculate total.
                         </div>
                       ) : (
                         <div className="rounded-lg border border-dashed p-3 text-center text-sm text-muted-foreground">
