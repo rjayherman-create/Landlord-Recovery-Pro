@@ -1,0 +1,328 @@
+{/* =========================================================
+   LANDLORD RECOVERY PRO
+   SMART DOCUMENT WORKFLOW UI
+   REPLACES OLD DOCUMENT LIBRARY LAYOUT
+   ========================================================= */}
+
+import {
+  FileText,
+  CheckCircle2,
+  AlertTriangle,
+  Lock,
+  ArrowRight,
+  Upload,
+  Clock3,
+  Home,
+  User,
+  DollarSign,
+} from "lucide-react";
+
+export default function RecoveryWorkspace() {
+  const documents = [
+    {
+      title: "7-Day Pay or Quit Notice",
+      status: "ready",
+      description: "Generated from unpaid rent information.",
+    },
+    {
+      title: "Security Deposit Deduction Letter",
+      status: "needs-info",
+      description: "Requires damage photos and repair costs.",
+    },
+    {
+      title: "Small Claims Filing Packet",
+      status: "locked",
+      description: "Unlock after payment to download court-ready PDF.",
+    },
+    {
+      title: "Service Instructions",
+      status: "ready",
+      description: "Instructions for serving tenant properly.",
+    },
+    {
+      title: "Evidence Checklist",
+      status: "ready",
+      description: "Checklist of recommended evidence for court.",
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-[#f6f8fb]">
+      {/* TOP HEADER */}
+      <div className="border-b bg-white px-8 py-5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#0f172a] text-white flex items-center justify-center">
+            <Home size={18} />
+          </div>
+
+          <div>
+            <h1 className="text-xl font-semibold text-slate-900">
+              Landlord Recovery Pro
+            </h1>
+            <p className="text-sm text-slate-500">
+              Guided Tenant Recovery Workflow
+            </p>
+          </div>
+        </div>
+
+        <button className="bg-[#0f172a] hover:bg-black text-white px-5 py-2.5 rounded-xl text-sm font-medium transition">
+          Start New Case
+        </button>
+      </div>
+
+      {/* MAIN CONTENT */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* CASE HEADER */}
+        <div className="bg-white rounded-3xl shadow-sm border p-6 mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-red-50 text-red-700 px-3 py-1 rounded-full text-xs font-semibold mb-3">
+                PRE-FILING STAGE
+              </div>
+
+              <h2 className="text-3xl font-bold text-slate-900">
+                145 Oak Street
+              </h2>
+
+              <div className="flex flex-wrap gap-6 mt-4 text-sm text-slate-600">
+                <div className="flex items-center gap-2">
+                  <User size={16} />
+                  Tenant: John Smith
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <DollarSign size={16} />
+                  Owed: $4,850
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Clock3 size={16} />
+                  Started 3 days ago
+                </div>
+              </div>
+            </div>
+
+            {/* PROGRESS */}
+            <div className="w-full lg:w-[320px]">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-slate-700">
+                  Case Completion
+                </span>
+
+                <span className="text-sm font-semibold text-slate-900">
+                  68%
+                </span>
+              </div>
+
+              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <div className="bg-[#0f172a] h-full w-[68%] rounded-full"></div>
+              </div>
+
+              <p className="text-xs text-slate-500 mt-2">
+                Complete remaining items to generate filing packet.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* TWO COLUMN LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
+          {/* LEFT SIDE */}
+          <div className="space-y-6">
+            {/* RECOVERY STEPS */}
+            <div className="bg-white rounded-3xl shadow-sm border p-6">
+              <h3 className="text-lg font-semibold mb-5">
+                Recovery Workflow
+              </h3>
+
+              <div className="space-y-4">
+                {[
+                  "Property & Tenant Information",
+                  "Rent Owed & Lease Violations",
+                  "Upload Evidence",
+                  "Generate Notices",
+                  "Prepare Court Filing",
+                ].map((step, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start gap-4"
+                  >
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold ${
+                        index < 3
+                          ? "bg-green-100 text-green-700"
+                          : "bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {index < 3 ? (
+                        <CheckCircle2 size={16} />
+                      ) : (
+                        index + 1
+                      )}
+                    </div>
+
+                    <div>
+                      <p className="font-medium text-slate-800">
+                        {step}
+                      </p>
+
+                      <p className="text-sm text-slate-500">
+                        {index < 3
+                          ? "Completed"
+                          : "Pending"}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* QUICK ACTIONS */}
+            <div className="bg-white rounded-3xl shadow-sm border p-6">
+              <h3 className="text-lg font-semibold mb-5">
+                Quick Actions
+              </h3>
+
+              <div className="space-y-3">
+                <button className="w-full flex items-center justify-between bg-slate-100 hover:bg-slate-200 transition rounded-2xl px-4 py-4 text-left">
+                  <div className="flex items-center gap-3">
+                    <Upload size={18} />
+                    Upload Move-Out Photos
+                  </div>
+
+                  <ArrowRight size={16} />
+                </button>
+
+                <button className="w-full flex items-center justify-between bg-slate-100 hover:bg-slate-200 transition rounded-2xl px-4 py-4 text-left">
+                  <div className="flex items-center gap-3">
+                    <FileText size={18} />
+                    Add Repair Invoices
+                  </div>
+
+                  <ArrowRight size={16} />
+                </button>
+
+                <button className="w-full flex items-center justify-between bg-slate-100 hover:bg-slate-200 transition rounded-2xl px-4 py-4 text-left">
+                  <div className="flex items-center gap-3">
+                    <DollarSign size={18} />
+                    Enter Additional Charges
+                  </div>
+
+                  <ArrowRight size={16} />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT SIDE */}
+          <div className="bg-white rounded-3xl shadow-sm border overflow-hidden">
+            {/* HEADER */}
+            <div className="border-b px-6 py-5 flex items-center justify-between">
+              <div>
+                <h3 className="text-xl font-semibold text-slate-900">
+                  Recommended Documents
+                </h3>
+
+                <p className="text-sm text-slate-500 mt-1">
+                  Automatically generated based on your case.
+                </p>
+              </div>
+
+              <button className="bg-[#0f172a] hover:bg-black text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+                Generate All
+              </button>
+            </div>
+
+            {/* DOCUMENTS */}
+            <div className="divide-y">
+              {documents.map((doc, index) => (
+                <div
+                  key={index}
+                  className="p-6 hover:bg-slate-50 transition"
+                >
+                  <div className="flex items-start justify-between gap-5">
+                    <div className="flex gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center">
+                        <FileText className="text-slate-700" size={22} />
+                      </div>
+
+                      <div>
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <h4 className="font-semibold text-slate-900">
+                            {doc.title}
+                          </h4>
+
+                          {doc.status === "ready" && (
+                            <span className="bg-green-100 text-green-700 text-xs font-semibold px-2 py-1 rounded-full">
+                              READY
+                            </span>
+                          )}
+
+                          {doc.status === "needs-info" && (
+                            <span className="bg-yellow-100 text-yellow-700 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
+                              <AlertTriangle size={12} />
+                              NEEDS INFO
+                            </span>
+                          )}
+
+                          {doc.status === "locked" && (
+                            <span className="bg-slate-200 text-slate-700 text-xs font-semibold px-2 py-1 rounded-full flex items-center gap-1">
+                              <Lock size={12} />
+                              LOCKED
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-sm text-slate-500 mt-2 max-w-xl">
+                          {doc.description}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* ACTION BUTTON */}
+                    <div>
+                      {doc.status === "ready" && (
+                        <button className="bg-[#0f172a] hover:bg-black text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+                          Open
+                        </button>
+                      )}
+
+                      {doc.status === "needs-info" && (
+                        <button className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-xl text-sm font-medium transition">
+                          Complete
+                        </button>
+                      )}
+
+                      {doc.status === "locked" && (
+                        <button className="bg-slate-300 text-slate-700 px-4 py-2 rounded-xl text-sm font-medium">
+                          Unlock
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* BOTTOM SECTION */}
+            <div className="bg-slate-50 border-t px-6 py-5 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+              <div>
+                <h4 className="font-semibold text-slate-900">
+                  Filing Packet Progress
+                </h4>
+
+                <p className="text-sm text-slate-500">
+                  3 of 5 required documents are complete.
+                </p>
+              </div>
+
+              <button className="bg-[#0f172a] hover:bg-black text-white px-5 py-3 rounded-2xl font-medium transition">
+                Continue Recovery Process
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
