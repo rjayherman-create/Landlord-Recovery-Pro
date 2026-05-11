@@ -5,6 +5,7 @@ import { z } from "zod";
 import { useLocation } from "wouter";
 import { useCreateLandlordCase } from "@workspace/api-client-react";
 import { useSubscription, startUnlockCheckout, startSubscriptionCheckout } from "@/hooks/useSubscription";
+import { loadCompanyProfile, saveCompanyProfile } from "@/lib/companyProfile";
 import { ArrowLeft, ArrowRight, CheckCircle2, Building, User, FileText, ChevronLeft, ChevronRight, Sparkles, Loader2, Info, Check, AlertCircle, ChevronsUpDown, Lock, Paperclip, X, FileIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -262,6 +263,22 @@ export default function NewCase() {
   const { data: subscription } = useSubscription();
   const isPro = subscription?.isPro ?? false;
   const filingAsLLC = useWatch({ control: form.control, name: "filingAsLLC" });
+
+  // Auto-fill landlord fields from saved company profile on first load
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  useEffect(() => {
+    const profile = loadCompanyProfile();
+    if (profile) {
+      form.setValue("landlordName", profile.landlordName || "");
+      form.setValue("landlordCompany", profile.landlordCompany || "");
+      form.setValue("filingAsLLC", profile.filingAsLLC ?? false);
+      form.setValue("landlordAddress", profile.landlordAddress || "");
+      form.setValue("landlordEmail", profile.landlordEmail || "");
+      form.setValue("landlordPhone", profile.landlordPhone || "");
+      setProfileLoaded(true);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Currency display state for claim amount
   const [claimDisplay, setClaimDisplay] = useState("");
@@ -1055,7 +1072,14 @@ export default function NewCase() {
                 <div className="grid gap-8 animate-in fade-in slide-in-from-right-4 duration-300">
                   {/* Landlord */}
                   <div>
-                    <h3 className="text-lg font-semibold border-b pb-2 mb-4">Your Information (Plaintiff)</h3>
+                    <div className="flex items-center justify-between border-b pb-2 mb-4">
+                      <h3 className="text-lg font-semibold">Your Information (Plaintiff)</h3>
+                      {profileLoaded && (
+                        <span className="text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-full px-2.5 py-0.5 flex items-center gap-1">
+                          <Check className="h-3 w-3" /> Filled from profile
+                        </span>
+                      )}
+                    </div>
 
                     {/* Filing capacity toggle */}
                     <div className="mb-5">
@@ -1169,6 +1193,32 @@ export default function NewCase() {
                           </FormItem>
                         )}
                       />
+                    </div>
+
+                    {/* Save to profile */}
+                    <div className="mt-4 flex items-center justify-between rounded-lg border border-dashed border-border px-4 py-3 bg-muted/20">
+                      <p className="text-xs text-muted-foreground">Save this info to your profile so future cases auto-fill it.</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="gap-1.5 shrink-0 ml-4"
+                        onClick={() => {
+                          const vals = form.getValues();
+                          saveCompanyProfile({
+                            filingAsLLC: vals.filingAsLLC ?? false,
+                            landlordName: vals.landlordName ?? "",
+                            landlordCompany: vals.landlordCompany ?? "",
+                            landlordAddress: vals.landlordAddress ?? "",
+                            landlordEmail: vals.landlordEmail ?? "",
+                            landlordPhone: vals.landlordPhone ?? "",
+                          });
+                          toast({ title: "Profile saved", description: "Your plaintiff info will auto-fill on all new cases." });
+                        }}
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                        Save to profile
+                      </Button>
                     </div>
                   </div>
 

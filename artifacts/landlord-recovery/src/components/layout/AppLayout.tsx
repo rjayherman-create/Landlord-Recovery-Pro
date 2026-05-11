@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Home, FileText, Settings, Menu, PieChart, Info, BookOpen, CreditCard, Library, X, User, Zap, ScanSearch } from "lucide-react";
+import { Home, FileText, Settings, Menu, PieChart, Info, BookOpen, CreditCard, Library, X, User, Zap, ScanSearch, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -188,6 +188,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <ScanSearch className="h-4 w-4" />
               Tenant Tracking
             </Link>
+            <Link href="/company-profile" className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${location === '/company-profile' ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
+              <Building2 className="h-4 w-4" />
+              Company Profile
+            </Link>
           </nav>
 
           <div className="mt-8 mb-4 px-3">
@@ -266,6 +270,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   { href: "/cases", icon: <FileText className="h-4 w-4" />, label: "My Cases" },
                   { href: "/documents", icon: <Library className="h-4 w-4" />, label: "Documents" },
                   { href: "/tenant-tracking", icon: <ScanSearch className="h-4 w-4" />, label: "Tenant Tracking" },
+                  { href: "/company-profile", icon: <Building2 className="h-4 w-4" />, label: "Company Profile" },
                 ].map(({ href, icon, label }) => (
                   <Link key={href} href={href} className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${(href === '/cases' ? location.startsWith('/cases') : location === href) ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'}`}>
                     {icon} {label}
